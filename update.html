@@ -4,51 +4,51 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>更新條碼資料</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@600;700;800&family=IBM+Plex+Mono:wght@400;500;600&family=Noto+Sans+TC:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
   :root{
-    --ink:#16213A; --paper:#FBF7EE; --paper-alt:#F2EBDC;
-    --gold:#C98A1F; --gold-deep:#9C6712; --line:#DCD2BC;
-    --red:#B5443A; --green:#3D7A54; --card:#FFFFFF;
-    --shadow: 0 1px 2px rgba(22,33,58,0.06), 0 4px 14px rgba(22,33,58,0.05);
+    --sysfont: -apple-system, BlinkMacSystemFont, "SF Pro Text", "PingFang TC", "Helvetica Neue", Arial, sans-serif;
+    --monofont: ui-monospace, "SF Mono", Menlo, Monaco, Consolas, monospace;
+    --ink:#1C1C1E; --paper:#F2F2F7; --paper-alt:#EFEFF4;
+    --blue:#007AFF; --gray-fill:#E9E9EB; --line:#E5E5EA;
+    --red:#FF3B30; --green:#34C759; --secondary:#8E8E93; --card:#FFFFFF;
+    --shadow: 0 1px 2px rgba(0,0,0,0.04), 0 2px 10px rgba(0,0,0,0.05);
   }
   *{box-sizing:border-box;}
   html,body{margin:0;padding:0;}
-  body{background:var(--paper); color:var(--ink); font-family:'Noto Sans TC','Archivo',sans-serif; -webkit-font-smoothing:antialiased; min-height:100vh;}
-  header{background:var(--ink); color:var(--paper); padding:28px 24px 22px; position:relative;}
+  body{background:var(--paper); color:var(--ink); font-family:var(--sysfont); -webkit-font-smoothing:antialiased; min-height:100vh;}
+  header{background:var(--paper); color:var(--ink); padding:22px 24px 14px; position:relative;}
   header .inner{max-width:760px; margin:0 auto;}
-  .eyebrow{font-family:'IBM Plex Mono',monospace; font-size:12px; letter-spacing:0.14em; text-transform:uppercase; color:var(--gold); margin:0 0 8px; display:flex; align-items:center; gap:10px;}
-  .eyebrow .dot{width:6px;height:6px;background:var(--gold);border-radius:50%;display:inline-block;}
-  h1{font-family:'Archivo',sans-serif; font-weight:800; font-size:clamp(24px,4vw,34px); margin:0 0 6px;}
-  .sub{font-size:13.5px; color:#B9C0D4; margin:0; font-family:'IBM Plex Mono',monospace;}
-  .back-link{color:var(--gold); font-family:'IBM Plex Mono',monospace; font-size:12px; text-decoration:none; display:inline-block; margin-top:10px;}
-  main{max-width:760px; margin:0 auto; padding:26px 24px 80px;}
-  .step{background:var(--card); border:1px solid var(--line); border-radius:14px; box-shadow:var(--shadow); padding:20px 22px; margin-bottom:16px;}
-  .step h3{margin:0 0 8px; font-size:15px; display:flex; align-items:center; gap:8px;}
-  .step h3 .num{font-family:'IBM Plex Mono',monospace; background:var(--ink); color:var(--gold); width:24px;height:24px;border-radius:50%; display:flex;align-items:center;justify-content:center; font-size:12px; flex-shrink:0;}
-  .step p{font-size:13.5px; color:#5B5646; line-height:1.7; margin:0 0 4px;}
-  .drop-zone{border:1.5px dashed var(--line); border-radius:10px; padding:26px 16px; text-align:center; cursor:pointer; transition:border-color .15s, background .15s; font-family:'IBM Plex Mono',monospace; font-size:12.5px; color:#8A8270; margin-top:10px;}
-  .drop-zone.drag{border-color:var(--gold-deep); background:rgba(201,138,31,0.06);}
+  .eyebrow{font-family:var(--monofont); font-size:11.5px; letter-spacing:0.08em; text-transform:uppercase; color:var(--secondary); margin:0 0 6px; display:flex; align-items:center; gap:8px;}
+  .eyebrow .dot{width:6px;height:6px;background:var(--blue);border-radius:50%;display:inline-block;}
+  h1{font-family:var(--sysfont); font-weight:700; font-size:clamp(24px,4vw,32px); margin:0 0 4px; letter-spacing:-0.02em;}
+  .sub{font-size:13.5px; color:var(--secondary); margin:0; font-family:var(--sysfont);}
+  .back-link{color:var(--blue); font-family:var(--sysfont); font-weight:600; font-size:13px; text-decoration:none; display:inline-block; margin-top:10px;}
+  main{max-width:760px; margin:0 auto; padding:14px 24px 80px;}
+  .step{background:var(--card); border:none; border-radius:14px; box-shadow:var(--shadow); padding:20px 22px; margin-bottom:16px;}
+  .step h3{margin:0 0 8px; font-size:15px; display:flex; align-items:center; gap:8px; font-family:var(--sysfont);}
+  .step h3 .num{font-family:var(--sysfont); background:var(--blue); color:#fff; width:24px;height:24px;border-radius:50%; display:flex;align-items:center;justify-content:center; font-size:12px; flex-shrink:0; font-weight:700;}
+  .step p{font-size:13.5px; color:#4A4A4C; line-height:1.7; margin:0 0 4px; font-family:var(--sysfont);}
+  .drop-zone{border:1.5px dashed var(--line); border-radius:12px; padding:26px 16px; text-align:center; cursor:pointer; transition:border-color .15s, background .15s; font-family:var(--sysfont); font-size:12.5px; color:var(--secondary); margin-top:10px;}
+  .drop-zone.drag{border-color:var(--blue); background:rgba(0,122,255,0.05);}
   .drop-zone strong{color:var(--ink);}
   #fileInput{display:none;}
-  #uploadLog{margin-top:12px; font-family:'IBM Plex Mono',monospace; font-size:12px; line-height:1.8; max-height:200px; overflow-y:auto;}
+  #uploadLog{margin-top:12px; font-family:var(--monofont); font-size:12px; line-height:1.8; max-height:200px; overflow-y:auto;}
   #uploadLog .ok{color:var(--green);}
   #uploadLog .err{color:var(--red);}
   .summary{display:flex; gap:10px; flex-wrap:wrap; margin-top:14px;}
-  .stat{background:var(--paper-alt); border-radius:8px; padding:10px 14px; font-family:'IBM Plex Mono',monospace; font-size:12px; color:#5B5646;}
-  .stat b{display:block; font-size:18px; color:var(--ink); font-family:'Archivo',sans-serif;}
+  .stat{background:var(--paper-alt); border-radius:10px; padding:10px 14px; font-family:var(--sysfont); font-size:12px; color:#4A4A4C;}
+  .stat b{display:block; font-size:20px; color:var(--ink); font-family:var(--sysfont); font-weight:700;}
   .download-btn{
     display:inline-flex; align-items:center; gap:8px;
-    background:var(--ink); color:var(--gold);
-    font-family:'IBM Plex Mono',monospace; font-size:13.5px; font-weight:600;
-    padding:12px 20px; border-radius:10px; border:none; cursor:pointer;
+    background:var(--blue); color:#fff;
+    font-family:var(--sysfont); font-size:14px; font-weight:600;
+    padding:12px 20px; border-radius:12px; border:none; cursor:pointer;
     margin-top:16px; opacity:0.4; pointer-events:none; transition:opacity .15s;
   }
   .download-btn.ready{opacity:1; pointer-events:auto;}
-  .download-btn:hover.ready{background:#0E1626;}
-  code{background:var(--paper-alt); padding:1px 6px; border-radius:4px; font-family:'IBM Plex Mono',monospace; font-size:12.5px;}
+  .download-btn:hover.ready{background:#0062CC;}
+  code{background:var(--paper-alt); padding:1px 6px; border-radius:4px; font-family:var(--monofont); font-size:12.5px;}
 </style>
 </head>
 <body>
