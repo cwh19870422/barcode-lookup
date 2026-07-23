@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>條碼資料查詢</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&family=Noto+Sans+TC:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#16213A; --paper:#FBF7EE; --paper-alt:#F2EBDC;
+    --gold:#C98A1F; --gold-deep:#9C6712; --line:#DCD2BC;
+    --red:#B5443A; --green:#3D7A54; --card:#FFFFFF;
+    --shadow: 0 1px 2px rgba(22,33,58,0.06), 0 4px 14px rgba(22,33,58,0.05);
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{background:var(--paper); color:var(--ink); font-family:'Noto Sans TC','Archivo',sans-serif; -webkit-font-smoothing:antialiased; min-height:100vh;}
+  .barcode-strip{height:14px; width:100%; background-image: repeating-linear-gradient(90deg,var(--ink) 0px, var(--ink) 2px,transparent 2px, transparent 5px,var(--ink) 5px, var(--ink) 6px,transparent 6px, transparent 10px,var(--ink) 10px, var(--ink) 13px,transparent 13px, transparent 16px); opacity:0.9;}
+  header{background:var(--ink); color:var(--paper); padding:28px 24px 22px; position:relative; overflow:hidden;}
+  header .inner{max-width:920px; margin:0 auto; position:relative; z-index:2;}
+  .eyebrow{font-family:'IBM Plex Mono',monospace; font-size:12px; letter-spacing:0.14em; text-transform:uppercase; color:var(--gold); margin:0 0 8px; display:flex; align-items:center; gap:10px;}
+  .eyebrow .dot{width:6px;height:6px;background:var(--gold);border-radius:50%;display:inline-block;}
+  h1{font-family:'Archivo',sans-serif; font-weight:800; font-size:clamp(28px,4.2vw,40px); margin:0 0 6px; letter-spacing:-0.01em;}
+  .sub{font-size:14px; color:#B9C0D4; margin:0; font-family:'IBM Plex Mono',monospace;}
+  .top-link{position:absolute; top:26px; right:24px; z-index:3; background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.22); color:var(--paper); font-family:'IBM Plex Mono',monospace; font-size:11.5px; letter-spacing:0.04em; padding:8px 13px; border-radius:999px; text-decoration:none; display:flex; align-items:center; gap:6px;}
+  .top-link:hover{background:rgba(255,255,255,0.16);}
+  main{max-width:920px; margin:0 auto; padding:22px 24px 80px;}
+  .search-wrap{margin-top:-28px; position:relative; z-index:5;}
+  .search-box{background:var(--card); border:1px solid var(--line); border-radius:14px; box-shadow:var(--shadow); padding:6px 6px 6px 18px; display:flex; align-items:center; gap:10px;}
+  .search-box svg{flex-shrink:0; color:var(--gold-deep);}
+  .search-box input{flex:1; border:none; outline:none; background:transparent; font-size:17px; padding:14px 4px; font-family:'Noto Sans TC',sans-serif; color:var(--ink);}
+  .search-box input::placeholder{color:#B4AC98;}
+  .clear-btn{border:none; background:var(--paper-alt); color:var(--ink); width:34px;height:34px; border-radius:9px; cursor:pointer; font-size:16px; display:flex;align-items:center;justify-content:center; flex-shrink:0; transition:background .15s;}
+  .clear-btn:hover{background:var(--line);}
+  .chips{display:flex; gap:8px; flex-wrap:wrap; margin:18px 0 4px;}
+  .chip{font-family:'IBM Plex Mono',monospace; font-size:12.5px; padding:7px 13px; border-radius:999px; border:1px solid var(--line); background:var(--card); color:var(--ink); cursor:pointer; transition:all .15s; white-space:nowrap;}
+  .chip:hover{border-color:var(--gold-deep);}
+  .chip.active{background:var(--ink); border-color:var(--ink); color:var(--gold);}
+  .status-row{display:flex; justify-content:space-between; align-items:baseline; margin:22px 0 12px; font-family:'IBM Plex Mono',monospace; font-size:12.5px; color:#8A8270;}
+  .status-row b{color:var(--ink); font-weight:600;}
+  .results{display:flex; flex-direction:column; gap:10px;}
+  .card{background:var(--card); border:1px solid var(--line); border-radius:12px; padding:16px 18px; box-shadow:var(--shadow);}
+  .card-top{display:flex; justify-content:space-between; align-items:flex-start; gap:12px; margin-bottom:12px;}
+  .name{font-size:16.5px; font-weight:600; line-height:1.4;}
+  .name mark{background:rgba(201,138,31,0.28); color:var(--ink); border-radius:3px; padding:0 1px;}
+  .tag{font-family:'IBM Plex Mono',monospace; font-size:11px; color:var(--gold-deep); background:rgba(201,138,31,0.12); border:1px solid rgba(201,138,31,0.3); padding:3px 9px; border-radius:999px; white-space:nowrap; flex-shrink:0;}
+  .meta-row{display:flex; gap:16px; flex-wrap:wrap; font-family:'IBM Plex Mono',monospace; font-size:12px; color:#8A8270; margin-bottom:14px;}
+  .meta-row mark{background:rgba(201,138,31,0.28); color:var(--ink); border-radius:2px;}
+  .prices{display:grid; grid-template-columns:repeat(4,1fr); gap:8px;}
+  .price-cell{background:var(--paper-alt); border-radius:8px; padding:9px 8px; text-align:center;}
+  .price-cell .lbl{font-size:10.5px; color:#8A8270; font-family:'IBM Plex Mono',monospace; margin-bottom:3px; letter-spacing:0.03em;}
+  .price-cell .val{font-family:'IBM Plex Mono',monospace; font-size:16px; font-weight:600; color:var(--ink);}
+  .price-cell.cost .val{color:var(--red);}
+  .price-cell.sell .val{color:var(--green);}
+  .empty{text-align:center; padding:70px 20px; color:#8A8270;}
+  .empty .big{font-family:'IBM Plex Mono',monospace; font-size:13px; letter-spacing:0.1em; text-transform:uppercase; margin-bottom:8px; color:var(--gold-deep);}
+  .empty .msg{font-size:15px;}
+  footer{max-width:920px; margin:30px auto 0; padding:14px 24px 0; border-top:1px dashed var(--line); font-family:'IBM Plex Mono',monospace; font-size:11px; color:#A39B87; display:flex; justify-content:space-between; flex-wrap:wrap; gap:6px;}
+  @media (max-width:520px){.prices{grid-template-columns:repeat(2,1fr);} header{padding:24px 16px 20px;} main{padding:18px 16px 60px;}}
+  ::selection{background:rgba(201,138,31,0.35);}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="inner">
+    <p class="eyebrow"><span class="dot"></span>BARCODE DATABASE</p>
+    <h1>條碼資料查詢</h1>
+    <p class="sub" id="headerStats">載入中…</p>
+  </div>
+  <a class="top-link" href="./update.html">⚙ 更新資料</a>
+</header>
+<div class="barcode-strip"></div>
+
+<main>
+  <div class="search-wrap">
+    <div class="search-box">
+      <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <input id="searchInput" type="text" placeholder="輸入商品名稱、條碼或商品編號…" autocomplete="off" autofocus>
+      <button class="clear-btn" id="clearBtn" title="清除">✕</button>
+    </div>
+  </div>
+
+  <div class="chips" id="chips"></div>
+
+  <div class="status-row">
+    <span id="statusText">載入中…</span>
+    <span id="dataDate"></span>
+  </div>
+
+  <div class="results" id="results"></div>
+</main>
+
+<footer>
+  <span>資料來源：data.json（可於「更新資料」頁面重新產生）</span>
+  <span>本錢=AVERAGECOST · 售價=priceA · 批3=priceC · 批4=priceD</span>
+</footer>
+
+<script>
+let cats = [];
+let rows = [];
+
+const chipsEl = document.getElementById('chips');
+const resultsEl = document.getElementById('results');
+const statusEl = document.getElementById('statusText');
+const input = document.getElementById('searchInput');
+const clearBtn = document.getElementById('clearBtn');
+let activeCat = null;
+let debounceTimer = null;
+
+async function init(){
+  try{
+    const res = await fetch('./data.json?_=' + Date.now());
+    if(!res.ok) throw new Error('HTTP ' + res.status);
+    const data = await res.json();
+    cats = data.cats || [];
+    rows = data.rows || [];
+    document.getElementById('headerStats').textContent =
+      rows.length.toLocaleString() + ' 筆商品 · ' + cats.length + ' 個分類';
+    statusEl.textContent = '請輸入關鍵字開始搜尋';
+  }catch(e){
+    statusEl.textContent = '⚠ 無法載入 data.json（' + e.message + '）';
+    document.getElementById('headerStats').textContent = '資料載入失敗';
+  }
+  renderChips();
+}
+
+function renderChips(){
+  let html = `<button class="chip${activeCat===null?' active':''}" data-cat="all">全部</button>`;
+  cats.forEach((c,i)=>{
+    html += `<button class="chip${activeCat===i?' active':''}" data-cat="${i}">${escapeHtml(c)}</button>`;
+  });
+  chipsEl.innerHTML = html;
+  chipsEl.querySelectorAll('.chip').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      const v = btn.getAttribute('data-cat');
+      activeCat = (v==='all') ? null : parseInt(v,10);
+      renderChips();
+      doSearch();
+    });
+  });
+}
+
+function escapeHtml(s){
+  return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+function highlight(text, q){
+  if(!q) return escapeHtml(text);
+  const esc = escapeHtml(text);
+  const escQ = escapeHtml(q);
+  try{
+    const re = new RegExp('('+escQ.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+')','ig');
+    return esc.replace(re, '<mark>$1</mark>');
+  }catch(e){ return esc; }
+}
+function fmt(n){
+  if(n===null || n===undefined || n==='' || (typeof n==='number' && isNaN(n))) return '—';
+  const num = Number(n);
+  if(isNaN(num)) return '—';
+  return num.toLocaleString('en-US', {maximumFractionDigits:0});
+}
+
+function doSearch(){
+  const q = input.value.trim();
+  clearBtn.style.visibility = q ? 'visible' : 'hidden';
+
+  if(!q && activeCat===null){
+    statusEl.textContent = '請輸入關鍵字開始搜尋';
+    resultsEl.innerHTML = '';
+    return;
+  }
+
+  const qLower = q.toLowerCase();
+  let matches = [];
+  for(let i=0;i<rows.length;i++){
+    const r = rows[i];
+    if(activeCat!==null && r[0]!==activeCat) continue;
+    if(q){
+      const name = r[4] || '', barcode = r[3] || '', code = r[2] || '', note = r[1] || '';
+      if(!(name.toLowerCase().includes(qLower) || barcode.includes(q) || code.toLowerCase().includes(qLower) || note.toLowerCase().includes(qLower))) continue;
+    }
+    matches.push(r);
+    if(matches.length >= 300) break;
+  }
+
+  const total = matches.length;
+  statusEl.innerHTML = `找到 <b>${total}${total>=300?'+':''}</b> 筆結果`;
+
+  if(total===0){
+    resultsEl.innerHTML = `<div class="empty"><div class="big">NO MATCH</div><div class="msg">沒有找到符合「${escapeHtml(q)}」的商品，換個關鍵字試試？</div></div>`;
+    return;
+  }
+
+  let html = '';
+  for(const r of matches){
+    const [catIdx, note, code, barcode, name, cost, priceA, priceC, priceD] = r;
+    html += `
+    <div class="card">
+      <div class="card-top">
+        <div class="name">${highlight(name, q)}</div>
+        <div class="tag">${escapeHtml(cats[catIdx] ?? '')}</div>
+      </div>
+      <div class="meta-row">
+        <span>條碼 ${highlight(barcode||'—', q)}</span>
+        <span>編號 ${highlight(code||'—', q)}</span>
+        ${note ? `<span>備註 ${highlight(note, q)}</span>` : ''}
+      </div>
+      <div class="prices">
+        <div class="price-cell cost"><div class="lbl">本錢</div><div class="val">${fmt(cost)}</div></div>
+        <div class="price-cell sell"><div class="lbl">售價 A</div><div class="val">${fmt(priceA)}</div></div>
+        <div class="price-cell"><div class="lbl">批3 C</div><div class="val">${fmt(priceC)}</div></div>
+        <div class="price-cell"><div class="lbl">批4 D</div><div class="val">${fmt(priceD)}</div></div>
+      </div>
+    </div>`;
+  }
+  resultsEl.innerHTML = html;
+}
+
+input.addEventListener('input', ()=>{
+  clearTimeout(debounceTimer);
+  debounceTimer = setTimeout(doSearch, 90);
+});
+clearBtn.addEventListener('click', ()=>{ input.value=''; doSearch(); input.focus(); });
+clearBtn.style.visibility = 'hidden';
+
+init();
+</script>
+</body>
+</html>
