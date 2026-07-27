@@ -101,7 +101,14 @@ async function loadCurrentData(){
     const res = await fetch('./data.json?_=' + Date.now());
     if(res.ok){
       const data = await res.json();
-      cats = data.cats || [];
+      cats = (data.cats || []).map(c => {
+        if(c && typeof c === 'object' && 'name' in c){
+          return {name: normalizeCatName(c.name), key: c.key || normalizeCatName(c.name)};
+        }
+        // legacy format: plain string, no stored key — use the name itself as a best-effort key
+        const n = normalizeCatName(c);
+        return {name: n, key: n};
+      });
       rows = data.rows || [];
     }
   }catch(e){ /* start empty if not found */ }
@@ -133,11 +140,25 @@ function log(msg, type){
   uploadLog.prepend(line);
 }
 
-function deriveCategory(filename){
+function deriveCategoryKey(filename){
+  // unique per source file — keeps 新版01沙龍美髮 and 新版02沙龍美髮 as separate categories
+  let name = filename.replace(/\.(xls|xlsx)$/i, '');
+  name = name.replace(/_/g, ' ');
+  name = name.replace(/\s+/g, ' ').trim();
+  return name || filename;
+}
+
+function deriveCategoryLabel(filename){
+  // friendly display name — strips the leading 新版NN
   let name = filename.replace(/\.(xls|xlsx)$/i, '');
   name = name.replace(/^新版\s*\d+/, '');
-  name = name.replace(/^[_\s]+|[_\s]+$/g, '');
+  name = name.replace(/_/g, ' ');
+  name = name.replace(/\s+/g, ' ').trim();
   return name || filename;
+}
+
+function normalizeCatName(name){
+  return String(name).replace(/_/g, ' ').replace(/\s+/g, ' ').trim();
 }
 
 function findHeaderRowIndex(aoa){
@@ -157,7 +178,8 @@ async function handleFiles(fileList){
   let newCats = cats.slice();
   let newRows = rows.slice();
   const catIndexMap = {};
-  newCats.forEach((c,i)=> catIndexMap[c] = i);
+  newCats.forEach((c,i)=> catIndexMap[c.key] = i);
+  const replacedThisBatch = new Set();
 
   let successCount = 0;
   let addedTotal = 0;
@@ -192,15 +214,21 @@ async function handleFiles(fileList){
 
       if(cDesc === -1) throw new Error('找不到 DESCRIPTION 欄位，跳過此檔');
 
-      const cat = deriveCategory(file.name);
+      const catKey = deriveCategoryKey(file.name);
+      const catLabel = deriveCategoryLabel(file.name);
       let catIdx;
-      if(catIndexMap.hasOwnProperty(cat)){
-        catIdx = catIndexMap[cat];
-        newRows = newRows.filter(r => r[0] !== catIdx);
+      if(catIndexMap.hasOwnProperty(catKey)){
+        catIdx = catIndexMap[catKey];
+        if(!replacedThisBatch.has(catIdx)){
+          newRows = newRows.filter(r => r[0] !== catIdx); // replace this exact file's OLD data (once)
+          replacedThisBatch.add(catIdx);
+        }
+        newCats[catIdx] = {name: catLabel, key: catKey}; // refresh label in case it changed
       }else{
         catIdx = newCats.length;
-        newCats.push(cat);
-        catIndexMap[cat] = catIdx;
+        newCats.push({name: catLabel, key: catKey});
+        catIndexMap[catKey] = catIdx;
+        replacedThisBatch.add(catIdx);
       }
 
       let rowCount = 0;
@@ -221,7 +249,7 @@ async function handleFiles(fileList){
         ]);
         rowCount++;
       }
-      log(`✓ ${file.name} → 分類「${cat}」，${rowCount} 筆`, 'ok');
+      log(`✓ ${file.name} → 分類「${catLabel}」，${rowCount} 筆`, 'ok');
       successCount++;
       addedTotal += rowCount;
     }catch(err){
