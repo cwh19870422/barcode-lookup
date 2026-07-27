@@ -149,12 +149,8 @@ function deriveCategoryKey(filename){
 }
 
 function deriveCategoryLabel(filename){
-  // friendly display name — strips the leading 新版NN
-  let name = filename.replace(/\.(xls|xlsx)$/i, '');
-  name = name.replace(/^新版\s*\d+/, '');
-  name = name.replace(/_/g, ' ');
-  name = name.replace(/\s+/g, ' ').trim();
-  return name || filename;
+  // display name — full filename (including 新版NN), same as the key
+  return deriveCategoryKey(filename);
 }
 
 function normalizeCatName(name){
