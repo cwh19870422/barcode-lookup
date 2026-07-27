@@ -45,10 +45,12 @@
   .name{font-size:16.5px; font-weight:600; line-height:1.4; font-family:var(--sysfont);}
   .name mark{background:rgba(0,122,255,0.16); color:var(--ink); border-radius:3px; padding:0 1px;}
   .tag{font-family:var(--sysfont); font-weight:600; font-size:11.5px; color:var(--blue); background:rgba(0,122,255,0.1); padding:3px 10px; border-radius:999px; white-space:nowrap; flex-shrink:0;}
-  .meta-row{display:flex; gap:14px; flex-wrap:wrap; font-family:var(--sysfont); font-size:12.5px; color:var(--secondary); margin-bottom:12px;}
+  .meta-row{display:flex; gap:14px; flex-wrap:wrap; align-items:center; font-family:var(--sysfont); font-size:12.5px; color:var(--secondary); margin-bottom:12px;}
   .meta-row mark{background:rgba(0,122,255,0.16); color:var(--ink); border-radius:2px;}
   .prices{display:grid; grid-template-columns:repeat(4,1fr); gap:8px;}
-  .price-cell{display:flex; align-items:stretch; border-radius:12px; overflow:hidden;}
+  .price-cell{display:flex; align-items:stretch; border-radius:12px; overflow:hidden; cursor:pointer; user-select:none; -webkit-tap-highlight-color:transparent; transition:transform .1s;}
+  .price-cell:active{transform:scale(0.96);}
+  .price-cell.copied .val{color:var(--green) !important;}
   .price-cell .lbl{background:var(--paper-alt); color:#6B6B6F; font-family:var(--sysfont); font-weight:600; font-size:13px; display:flex; align-items:center; justify-content:center; padding:0 9px; flex-shrink:0;}
   .price-cell .val{background:var(--paper-alt); font-family:var(--sysfont); font-size:19px; font-weight:800; color:var(--ink); letter-spacing:-0.01em; flex:1; display:flex; align-items:center; justify-content:center; padding:9px 4px; text-align:center;}
   .price-cell.cost .val{color:var(--red);}
@@ -126,10 +128,14 @@ async function init(){
   renderChips();
 }
 
+function catLabel(c){
+  return (c && typeof c === 'object' && 'name' in c) ? c.name : c;
+}
+
 function renderChips(){
   let html = `<button class="chip${activeCat===null?' active':''}" data-cat="all">全部</button>`;
   cats.forEach((c,i)=>{
-    html += `<button class="chip${activeCat===i?' active':''}" data-cat="${i}">${escapeHtml(c)}</button>`;
+    html += `<button class="chip${activeCat===i?' active':''}" data-cat="${i}">${escapeHtml(catLabel(c))}</button>`;
   });
   chipsEl.innerHTML = html;
   chipsEl.querySelectorAll('.chip').forEach(btn=>{
@@ -199,7 +205,7 @@ function doSearch(){
     <div class="card">
       <div class="card-top">
         <div class="name">${highlight(name, q)}</div>
-        <div class="tag">${escapeHtml(cats[catIdx] ?? '')}</div>
+        <div class="tag">${escapeHtml(catLabel(cats[catIdx]) ?? '')}</div>
       </div>
       <div class="meta-row">
         <span>條碼 ${highlight(barcode||'—', q)}</span>
@@ -207,14 +213,45 @@ function doSearch(){
         ${note ? `<span>備註 ${highlight(note, q)}</span>` : ''}
       </div>
       <div class="prices">
-        <div class="price-cell cost"><div class="lbl">本</div><div class="val">${fmt(cost)}</div></div>
-        <div class="price-cell"><div class="lbl">4</div><div class="val">${fmt(priceD)}</div></div>
-        <div class="price-cell"><div class="lbl">3</div><div class="val">${fmt(priceC)}</div></div>
-        <div class="price-cell sell"><div class="lbl">賣</div><div class="val">${fmt(priceA)}</div></div>
+        <div class="price-cell cost" data-name="${escapeHtml(name)}" data-value="${escapeHtml(fmt(cost))}"><div class="lbl">本</div><div class="val">${fmt(cost)}</div></div>
+        <div class="price-cell" data-name="${escapeHtml(name)}" data-value="${escapeHtml(fmt(priceD))}"><div class="lbl">4</div><div class="val">${fmt(priceD)}</div></div>
+        <div class="price-cell" data-name="${escapeHtml(name)}" data-value="${escapeHtml(fmt(priceC))}"><div class="lbl">3</div><div class="val">${fmt(priceC)}</div></div>
+        <div class="price-cell sell" data-name="${escapeHtml(name)}" data-value="${escapeHtml(fmt(priceA))}"><div class="lbl">賣</div><div class="val">${fmt(priceA)}</div></div>
       </div>
     </div>`;
   }
   resultsEl.innerHTML = html;
+}
+
+resultsEl.addEventListener('click', (e)=>{
+  const cell = e.target.closest('.price-cell');
+  if(!cell) return;
+  const text = `${cell.dataset.name} ${cell.dataset.value}`;
+  const valEl = cell.querySelector('.val');
+  const original = valEl.textContent;
+  const showCopied = ()=>{
+    cell.classList.add('copied');
+    valEl.textContent = '已複製';
+    setTimeout(()=>{ cell.classList.remove('copied'); valEl.textContent = original; }, 900);
+  };
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(text).then(showCopied).catch(()=>{
+      fallbackCopy(text); showCopied();
+    });
+  }else{
+    fallbackCopy(text); showCopied();
+  }
+});
+
+function fallbackCopy(text){
+  const ta = document.createElement('textarea');
+  ta.value = text;
+  ta.style.position = 'fixed';
+  ta.style.opacity = '0';
+  document.body.appendChild(ta);
+  ta.select();
+  try{ document.execCommand('copy'); }catch(e){}
+  document.body.removeChild(ta);
 }
 
 input.addEventListener('input', ()=>{
