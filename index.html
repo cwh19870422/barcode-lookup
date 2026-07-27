@@ -33,10 +33,6 @@
   .search-box input::placeholder{color:var(--secondary);}
   .clear-btn{border:none; background:transparent; color:var(--secondary); width:30px;height:30px; border-radius:50%; cursor:pointer; font-size:14px; display:flex;align-items:center;justify-content:center; flex-shrink:0; transition:background .15s;}
   .clear-btn:hover{background:#DFDFE4;}
-  .chips{display:flex; gap:8px; flex-wrap:wrap; margin:16px 0 4px;}
-  .chip{font-family:var(--sysfont); font-weight:500; font-size:13px; padding:7px 14px; border-radius:999px; border:none; background:var(--gray-fill); color:var(--ink); cursor:pointer; transition:all .15s; white-space:nowrap;}
-  .chip:hover{background:#DFDFE4;}
-  .chip.active{background:var(--blue); color:#fff;}
   .status-row{display:flex; justify-content:space-between; align-items:baseline; margin:20px 0 10px; font-family:var(--sysfont); font-size:13px; color:var(--secondary);}
   .status-row b{color:var(--ink); font-weight:600;}
   .results{display:flex; flex-direction:column; gap:10px;}
@@ -84,8 +80,6 @@
     </div>
   </div>
 
-  <div class="chips" id="chips"></div>
-
   <div class="status-row">
     <span id="statusText">載入中…</span>
     <span id="dataDate"></span>
@@ -103,12 +97,10 @@
 let cats = [];
 let rows = [];
 
-const chipsEl = document.getElementById('chips');
 const resultsEl = document.getElementById('results');
 const statusEl = document.getElementById('statusText');
 const input = document.getElementById('searchInput');
 const clearBtn = document.getElementById('clearBtn');
-let activeCat = null;
 let debounceTimer = null;
 
 async function init(){
@@ -125,27 +117,10 @@ async function init(){
     statusEl.textContent = '⚠ 無法載入 data.json（' + e.message + '）';
     document.getElementById('headerStats').textContent = '資料載入失敗';
   }
-  renderChips();
 }
 
 function catLabel(c){
   return (c && typeof c === 'object' && 'name' in c) ? c.name : c;
-}
-
-function renderChips(){
-  let html = `<button class="chip${activeCat===null?' active':''}" data-cat="all">全部</button>`;
-  cats.forEach((c,i)=>{
-    html += `<button class="chip${activeCat===i?' active':''}" data-cat="${i}">${escapeHtml(catLabel(c))}</button>`;
-  });
-  chipsEl.innerHTML = html;
-  chipsEl.querySelectorAll('.chip').forEach(btn=>{
-    btn.addEventListener('click', ()=>{
-      const v = btn.getAttribute('data-cat');
-      activeCat = (v==='all') ? null : parseInt(v,10);
-      renderChips();
-      doSearch();
-    });
-  });
 }
 
 function escapeHtml(s){
@@ -171,7 +146,7 @@ function doSearch(){
   const q = input.value.trim();
   clearBtn.style.visibility = q ? 'visible' : 'hidden';
 
-  if(!q && activeCat===null){
+  if(!q){
     statusEl.textContent = '請輸入關鍵字開始搜尋';
     resultsEl.innerHTML = '';
     return;
@@ -181,7 +156,6 @@ function doSearch(){
   let matches = [];
   for(let i=0;i<rows.length;i++){
     const r = rows[i];
-    if(activeCat!==null && r[0]!==activeCat) continue;
     if(q){
       const name = r[4] || '', barcode = r[3] || '', code = r[2] || '', note = r[1] || '';
       if(!(name.toLowerCase().includes(qLower) || barcode.includes(q) || code.toLowerCase().includes(qLower) || note.toLowerCase().includes(qLower))) continue;
