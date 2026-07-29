@@ -65,7 +65,11 @@
 <main>
   <div class="step">
     <h3><span class="num">1</span>上傳更新後的 Excel 檔案</h3>
-    <p>可以一次選多個檔案。系統會依檔名判斷分類（例如「新版01沙龍美髮.xls」→ 沙龍美髮），並取代該分類原本的資料，其他分類保持不變。目前的資料會先從這個網站的 <code>data.json</code> 讀取，再套用你的更新。</p>
+    <p>可以一次選多個檔案。系統會用完整檔名判斷分類（例如「新版01沙龍美髮.xls」→ 分類名稱就是「新版01沙龍美髮」），並取代該分類原本的資料，其他分類保持不變。</p>
+    <label style="display:flex; align-items:center; gap:8px; margin:12px 0 4px; font-size:13px; color:#4A4A4C; font-family:var(--sysfont); cursor:pointer;">
+      <input type="checkbox" id="clearFirst" style="width:16px; height:16px; accent-color:#007AFF;">
+      清空所有舊資料，只用這次上傳的檔案重新建立（用來清掉重複/舊格式的分類）
+    </label>
     <div class="drop-zone" id="dropZone">
       <div><strong>拖曳檔案到這裡</strong>，或點擊選擇 Excel 檔案</div>
       <div style="margin-top:4px;">支援 .xls / .xlsx，可多選</div>
@@ -141,20 +145,18 @@ function log(msg, type){
 }
 
 function deriveCategoryKey(filename){
-  // unique per source file — keeps 新版01沙龍美髮 and 新版02沙龍美髮 as separate categories
+  // unique per source file, kept EXACTLY as the original filename (no _ / space conversion)
   let name = filename.replace(/\.(xls|xlsx)$/i, '');
-  name = name.replace(/_/g, ' ');
-  name = name.replace(/\s+/g, ' ').trim();
-  return name || filename;
+  return name.trim() || filename;
 }
 
 function deriveCategoryLabel(filename){
-  // display name — full filename (including 新版NN), same as the key
+  // display name — identical to the key (full original filename)
   return deriveCategoryKey(filename);
 }
 
 function normalizeCatName(name){
-  return String(name).replace(/_/g, ' ').replace(/\s+/g, ' ').trim();
+  return String(name).trim();
 }
 
 function findHeaderRowIndex(aoa){
@@ -171,8 +173,11 @@ async function handleFiles(fileList){
   const files = Array.from(fileList).filter(f => /\.(xls|xlsx)$/i.test(f.name));
   if(!files.length){ log('沒有找到 .xls / .xlsx 檔案', 'err'); return; }
 
-  let newCats = cats.slice();
-  let newRows = rows.slice();
+  const clearFirst = document.getElementById('clearFirst').checked;
+  let newCats = clearFirst ? [] : cats.slice();
+  let newRows = clearFirst ? [] : rows.slice();
+  if(clearFirst){ log('已清空舊資料，只使用這次上傳的檔案重新建立…', 'ok'); }
+
   const catIndexMap = {};
   newCats.forEach((c,i)=> catIndexMap[c.key] = i);
   const replacedThisBatch = new Set();
