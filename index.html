@@ -37,10 +37,11 @@
   .status-row b{color:var(--ink); font-weight:600;}
   .results{display:flex; flex-direction:column; gap:10px;}
   .card{background:var(--card); border:none; border-radius:14px; padding:16px 18px; box-shadow:var(--shadow);}
-  .card-top{display:flex; justify-content:space-between; align-items:flex-start; gap:12px; margin-bottom:10px;}
-  .name{font-size:16.5px; font-weight:600; line-height:1.4; font-family:var(--sysfont);}
+  .card-top{display:flex; align-items:flex-start; gap:10px; margin-bottom:10px; flex-wrap:wrap;}
+  .name{font-size:16.5px; font-weight:600; line-height:1.4; font-family:var(--sysfont); flex-shrink:0;}
+  .listprice{font-size:16.5px; font-weight:600; font-family:var(--sysfont); color:#FF9500; white-space:nowrap; margin-left:4ch;}
   .name mark{background:rgba(0,122,255,0.16); color:var(--ink); border-radius:3px; padding:0 1px;}
-  .tag{font-family:var(--sysfont); font-weight:600; font-size:11.5px; color:var(--blue); background:rgba(0,122,255,0.1); padding:3px 10px; border-radius:999px; white-space:nowrap; flex-shrink:0;}
+  .tag{font-family:var(--sysfont); font-weight:600; font-size:11.5px; color:var(--blue); background:rgba(0,122,255,0.1); padding:3px 10px; border-radius:999px; white-space:nowrap; flex-shrink:0; margin-left:auto;}
   .meta-row{display:flex; gap:14px; flex-wrap:wrap; align-items:center; font-family:var(--sysfont); font-size:12.5px; color:var(--secondary); margin-bottom:12px;}
   .meta-row mark{background:rgba(0,122,255,0.16); color:var(--ink); border-radius:2px;}
   .prices{display:grid; grid-template-columns:repeat(4,1fr); gap:8px;}
@@ -90,7 +91,7 @@
 
 <footer>
   <span>資料來源：data.json（可於「更新資料」頁面重新產生）</span>
-  <span>本=AVERAGECOST(本錢) · 賣=priceA(售價) · 3=priceC · 4=priceD</span>
+  <span>本=AVERAGECOST(本錢) · 賣=priceA(售價) · 3=priceC · 4=priceD · 定價=SELLINGPRICE</span>
 </footer>
 
 <script>
@@ -174,11 +175,12 @@ function doSearch(){
 
   let html = '';
   for(const r of matches){
-    const [catIdx, note, code, barcode, name, cost, priceA, priceC, priceD] = r;
+    const [catIdx, note, code, barcode, name, cost, priceA, priceC, priceD, sellingPrice] = r;
     html += `
     <div class="card">
       <div class="card-top">
         <div class="name">${highlight(name, q)}</div>
+        <div class="listprice">定價 ${fmt(sellingPrice)}</div>
         <div class="tag">${escapeHtml(catLabel(cats[catIdx]) ?? '')}</div>
       </div>
       <div class="meta-row">
