@@ -10,7 +10,7 @@
     --monofont: ui-monospace, "SF Mono", Menlo, Monaco, Consolas, monospace;
     --ink:#1C1C1E; --paper:#F2F2F7; --paper-alt:#EFEFF4;
     --blue:#007AFF; --gray-fill:#E9E9EB; --line:#E5E5EA;
-    --red:#FF3B30; --green:#34C759; --secondary:#8E8E93; --card:#FFFFFF;
+    --red:#FF3B30; --green:#34C759; --orange:#FF9500; --secondary:#8E8E93; --card:#FFFFFF;
     --shadow: 0 1px 2px rgba(0,0,0,0.04), 0 2px 10px rgba(0,0,0,0.05);
   }
   *{box-sizing:border-box;}
@@ -26,6 +26,13 @@
   .top-link{position:absolute; top:22px; right:24px; z-index:3; background:var(--gray-fill); border:none; color:var(--blue); font-family:var(--sysfont); font-weight:600; font-size:13px; padding:8px 14px; border-radius:999px; text-decoration:none; display:flex; align-items:center; gap:6px;}
   .top-link:hover{background:#DFDFE4;}
   main{max-width:920px; margin:0 auto; padding:14px 24px 80px;}
+
+  .tabs{max-width:920px; margin:0 auto; padding:0 24px; display:flex; gap:0; background:var(--gray-fill); border-radius:12px; padding-top:3px; padding-bottom:3px; margin-top:14px;}
+  .tab-btn{flex:1; text-align:center; padding:10px 6px; border-radius:9px; font-size:14px; font-weight:600; color:var(--secondary); background:none; border:none; cursor:pointer; font-family:var(--sysfont); display:flex; align-items:center; justify-content:center; gap:5px;}
+  .tab-btn.active{background:#fff; color:var(--ink); box-shadow:0 1px 2px rgba(0,0,0,0.08);}
+  .tab-panel{display:none;}
+  .tab-panel.active{display:block;}
+
   .search-wrap{position:relative; z-index:5;}
   .search-box{background:var(--gray-fill); border:none; border-radius:12px; padding:2px 4px 2px 14px; display:flex; align-items:center; gap:8px;}
   .search-box svg{flex-shrink:0; color:var(--secondary);}
@@ -37,9 +44,9 @@
   .status-row b{color:var(--ink); font-weight:600;}
   .results{display:flex; flex-direction:column; gap:10px;}
   .card{background:var(--card); border:none; border-radius:14px; padding:16px 18px; box-shadow:var(--shadow);}
-  .card-top{display:flex; align-items:flex-start; gap:10px; margin-bottom:10px; flex-wrap:wrap;}
+  .card-top{display:flex; align-items:center; gap:10px; margin-bottom:10px; flex-wrap:wrap;}
   .name{font-size:16.5px; font-weight:600; line-height:1.4; font-family:var(--sysfont); flex-shrink:0;}
-  .listprice{font-size:16.5px; font-weight:600; line-height:1.4; font-family:var(--sysfont); color:#FF9500; white-space:nowrap; margin-left:4ch;}
+  .listprice{font-size:16.5px; font-weight:600; line-height:1.4; font-family:var(--sysfont); color:var(--orange); white-space:nowrap; margin-left:4ch; display:flex; align-items:center; gap:10px;}
   .name mark{background:rgba(0,122,255,0.16); color:var(--ink); border-radius:3px; padding:0 1px;}
   .tag{font-family:var(--sysfont); font-weight:600; font-size:11.5px; color:var(--blue); background:rgba(0,122,255,0.1); padding:3px 10px; border-radius:999px; white-space:nowrap; flex-shrink:0; margin-left:auto;}
   .meta-row{display:flex; gap:14px; flex-wrap:wrap; align-items:center; font-family:var(--sysfont); font-size:12.5px; color:var(--secondary); margin-bottom:12px;}
@@ -56,8 +63,71 @@
   .empty .big{font-family:var(--monofont); font-size:12.5px; letter-spacing:0.08em; text-transform:uppercase; margin-bottom:8px; color:var(--secondary);}
   .empty .msg{font-size:15px; font-family:var(--sysfont);}
   footer{max-width:920px; margin:30px auto 0; padding:14px 24px 0; border-top:1px solid var(--line); font-family:var(--sysfont); font-size:11.5px; color:var(--secondary); display:flex; justify-content:space-between; flex-wrap:wrap; gap:6px;}
-  @media (max-width:520px){.prices{grid-template-columns:repeat(2,1fr);} header{padding:20px 16px 12px;} main{padding:12px 16px 60px;} .price-cell .val{font-size:17px;}}
+  @media (max-width:520px){.prices{grid-template-columns:repeat(2,1fr);} header{padding:20px 16px 12px;} main{padding:12px 16px 60px;} .tabs{padding-left:16px; padding-right:16px;} .price-cell .val{font-size:17px;}}
   ::selection{background:rgba(0,122,255,0.25);}
+
+  .qty-stepper{display:flex; align-items:center; background:var(--paper-alt); border-radius:8px; overflow:hidden; height:28px;}
+  .qty-stepper button{width:26px; height:28px; border:none; background:transparent; color:var(--ink); font-size:16px; font-weight:600; display:flex; align-items:center; justify-content:center; line-height:1; padding:0; cursor:pointer;}
+  .qty-stepper button:hover{background:var(--line);}
+  .qty-stepper .qty-num{width:26px; height:28px; display:flex; align-items:center; justify-content:center; font-size:13px; font-weight:600; color:var(--ink);}
+  .add-btn{background:var(--blue); color:#fff; border:none; font-weight:600; font-size:12.5px; padding:0 14px; height:28px; border-radius:999px; cursor:pointer; display:flex; align-items:center;}
+  .add-btn:hover{background:#0062CC;}
+  .add-btn.added{background:var(--green);}
+
+  .cust-picker{position:relative; margin-bottom:14px;}
+  .cust-dropdown{position:absolute; top:calc(100% + 6px); left:0; right:0; background:#fff; border-radius:12px; box-shadow:var(--shadow); max-height:260px; overflow-y:auto; z-index:20; display:none;}
+  .cust-dropdown.open{display:block;}
+  .cust-opt{padding:11px 14px; cursor:pointer; border-bottom:1px solid var(--line); display:flex; justify-content:space-between; align-items:center; gap:8px;}
+  .cust-opt:last-child{border-bottom:none;}
+  .cust-opt:hover{background:var(--paper-alt);}
+  .cust-opt .co-name{font-size:14px; font-weight:600; color:var(--ink);}
+  .cust-opt .co-sub{font-size:12px; color:var(--secondary);}
+  .cust-empty{padding:14px; font-size:13px; color:var(--secondary); text-align:center;}
+  .grade-badge{font-size:11px; font-weight:700; color:#fff; padding:2px 9px; border-radius:999px; flex-shrink:0;}
+  .grade-A{background:var(--orange);} .grade-B{background:var(--green);} .grade-C{background:var(--blue);} .grade-D{background:var(--secondary);}
+
+  .cust-info-bar{background:#fff; border-radius:14px; padding:14px 16px; box-shadow:var(--shadow); margin-bottom:14px;}
+  .cust-info-main{display:flex; align-items:center; gap:10px; margin-bottom:6px;}
+  .cust-info-main .cust-name{font-size:15px; font-weight:700; color:var(--ink);}
+  .change-cust-btn{margin-left:auto; background:var(--gray-fill); color:var(--blue); border:none; font-weight:600; font-size:12px; padding:7px 13px; border-radius:9px; cursor:pointer;}
+  .cust-info-sub{display:flex; gap:16px; flex-wrap:wrap; font-size:12.5px; color:var(--secondary);}
+
+  .order-card .card-top{margin-bottom:8px;}
+
+  .cart-section{background:#fff; border-radius:16px; padding:18px 20px; box-shadow:var(--shadow); margin-top:20px;}
+  .cart-title-row{display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;}
+  .cart-title{font-size:17px; font-weight:700;}
+  .cart-count{font-size:12px; color:var(--secondary);}
+  .price-source-row{display:flex; align-items:center; gap:10px; background:var(--paper); border-radius:10px; padding:10px 12px; margin-bottom:14px; flex-wrap:wrap;}
+  .price-source-row label{font-size:13px; color:#4A4A4C; font-weight:600;}
+  .price-source-row select{margin-left:auto; border:none; background:var(--gray-fill); border-radius:8px; padding:7px 10px; font-family:var(--sysfont); font-size:13px; font-weight:600; color:var(--ink);}
+  .cart-empty{text-align:center; padding:30px 10px; color:var(--secondary); font-size:13.5px;}
+  table.cart-table{width:100%; border-collapse:collapse;}
+  table.cart-table th{text-align:left; font-size:11px; color:var(--secondary); font-weight:600; padding:6px 4px; border-bottom:1px solid var(--line);}
+  table.cart-table td{padding:8px 4px; border-bottom:1px solid var(--line); font-size:13px; vertical-align:middle;}
+  table.cart-table input{width:100%; border:none; background:var(--paper-alt); border-radius:6px; padding:6px 8px; font-family:var(--sysfont); font-size:13px; color:var(--ink);}
+  table.cart-table input.cart-price, table.cart-table input.cart-qty{text-align:center; font-weight:600;}
+  .cart-subtotal{font-weight:700; white-space:nowrap;}
+  .cart-del{background:none; border:none; color:var(--red); font-size:16px; cursor:pointer; padding:4px;}
+  .cart-totals{display:flex; justify-content:flex-end; gap:26px; padding:14px 4px; border-top:1.5px solid var(--ink); margin-top:4px;}
+  .cart-totals .tline{font-size:13px; color:var(--secondary);}
+  .cart-totals .tline b{color:var(--ink); font-size:16px; margin-left:4px;}
+  .cart-actions{display:flex; gap:10px; margin-top:14px;}
+  .cart-actions button{flex:1; border:none; font-weight:600; font-size:14px; padding:12px; border-radius:12px; cursor:pointer; font-family:var(--sysfont);}
+  .btn-clear{background:var(--gray-fill); color:var(--red);}
+  .btn-print{background:var(--blue); color:#fff;}
+
+  .cust-table-wrap{background:#fff; border-radius:14px; overflow:hidden; box-shadow:var(--shadow);}
+  table.cust-list{width:100%; border-collapse:collapse;}
+  table.cust-list th{text-align:left; font-size:11px; color:var(--secondary); font-weight:600; padding:10px 14px; border-bottom:1px solid var(--line); background:var(--paper-alt);}
+  table.cust-list td{padding:11px 14px; border-bottom:1px solid var(--line); font-size:13px; color:var(--ink);}
+  table.cust-list tr:last-child td{border-bottom:none;}
+
+  #printArea{display:none;}
+  @media print{
+    body > *{display:none !important;}
+    body > #printArea{display:block !important; position:static;}
+  }
 </style>
 </head>
 <body>
@@ -68,60 +138,133 @@
     <h1>喬大百貨 POS</h1>
     <p class="sub" id="headerStats">載入中…</p>
   </div>
-  <a class="top-link" href="./update.html">⚙ 更新資料</a>
+  <a class="top-link" id="topLink" href="./update.html">⚙ 更新資料</a>
 </header>
 <div class="barcode-strip"></div>
 
+<div class="tabs">
+  <button class="tab-btn active" data-tab="search">🔍 搜尋</button>
+  <button class="tab-btn" data-tab="order">🧾 打單</button>
+  <button class="tab-btn" data-tab="customers">👤 客戶</button>
+</div>
+
 <main>
-  <div class="search-wrap">
-    <div class="search-box">
-      <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-      <input id="searchInput" type="text" placeholder="輸入商品名稱、條碼或商品編號…" autocomplete="off" autofocus>
-      <button class="clear-btn" id="clearBtn" title="清除">✕</button>
+
+  <section class="tab-panel active" id="tab-search">
+    <div class="search-wrap">
+      <div class="search-box">
+        <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <input id="searchInput" type="text" placeholder="輸入商品名稱、條碼或商品編號…" autocomplete="off">
+        <button class="clear-btn" id="clearBtn" title="清除">✕</button>
+      </div>
     </div>
-  </div>
+    <div class="status-row">
+      <span id="statusText">載入中…</span>
+      <span id="dataDate"></span>
+    </div>
+    <div class="results" id="results"></div>
+  </section>
 
-  <div class="status-row">
-    <span id="statusText">載入中…</span>
-    <span id="dataDate"></span>
-  </div>
+  <section class="tab-panel" id="tab-order">
+    <div class="cust-picker" id="custPickerWrap">
+      <div class="search-box">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+        <input id="custSearch" type="text" placeholder="搜尋客戶姓名或電話…" autocomplete="off">
+      </div>
+      <div class="cust-dropdown" id="custDropdown"></div>
+    </div>
 
-  <div class="results" id="results"></div>
+    <div class="cust-info-bar" id="custInfoBar" style="display:none;">
+      <div class="cust-info-main">
+        <span class="cust-name" id="custName"></span>
+        <span class="grade-badge" id="custGradeBadge"></span>
+        <button class="change-cust-btn" id="changeCustBtn">換客戶</button>
+      </div>
+      <div class="cust-info-sub">
+        <span id="custPhone"></span>
+        <span id="custAddress"></span>
+      </div>
+    </div>
+
+    <div class="search-box" style="margin-top:6px;">
+      <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><rect x="3" y="7" width="18" height="10" rx="1"/><line x1="7" y1="7" x2="7" y2="17"/><line x1="10" y1="7" x2="10" y2="17"/><line x1="14" y1="7" x2="14" y2="17"/><line x1="17" y1="7" x2="17" y2="17"/></svg>
+        <input id="orderSearchInput" type="text" placeholder="搜尋商品名稱／條碼，或用條碼槍掃描…" autocomplete="off">
+    </div>
+    <div class="status-row">
+      <span id="orderStatusText">請搜尋或掃描商品加入清單</span>
+    </div>
+    <div class="results" id="orderResults"></div>
+
+    <div class="cart-section">
+      <div class="cart-title-row">
+        <div class="cart-title">出貨清單</div>
+        <div class="cart-count" id="cartCount">0 項</div>
+      </div>
+      <div class="price-source-row">
+        <label>整份清單單價依據</label>
+        <select id="priceSourceSelect">
+          <option value="grade">依會員等級</option>
+          <option value="sell">定價 (SELLINGPRICE)</option>
+          <option value="A">賣價 A</option>
+          <option value="B">批價 B</option>
+          <option value="C">批價 C(3)</option>
+          <option value="D">批價 D(4)</option>
+          <option value="cost">本錢</option>
+        </select>
+      </div>
+      <div id="cartBody"></div>
+      <div class="cart-totals" id="cartTotals" style="display:none;">
+        <div class="tline">總數量 <b id="totalQty">0</b></div>
+        <div class="tline">總金額 <b id="totalAmt">0</b></div>
+      </div>
+      <div class="cart-actions">
+        <button class="btn-clear" id="clearCartBtn">清空清單</button>
+        <button class="btn-print" id="printBtn">列印出貨單</button>
+      </div>
+    </div>
+  </section>
+
+  <section class="tab-panel" id="tab-customers">
+    <div class="search-box" style="margin-bottom:14px;">
+      <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <input id="custListSearch" type="text" placeholder="搜尋客戶姓名或電話…" autocomplete="off">
+    </div>
+    <div class="status-row">
+      <span id="custListStatus">載入中…</span>
+    </div>
+    <div class="cust-table-wrap">
+      <table class="cust-list">
+        <thead><tr><th>姓名</th><th>電話</th><th>地址</th><th>等級</th><th>統編</th><th>備註</th></tr></thead>
+        <tbody id="custListBody"></tbody>
+      </table>
+    </div>
+  </section>
+
 </main>
 
 <footer>
   <span>資料來源：data.json（可於「更新資料」頁面重新產生）</span>
-  <span>本=AVERAGECOST(本錢) · 賣=priceA(售價) · 3=priceC · 4=priceD · 定價=SELLINGPRICE</span>
+  <span>本=AVERAGECOST(本錢) · 賣=priceA · 批B/3=priceC · 批D/4=priceD · 定價=SELLINGPRICE</span>
 </footer>
+
+<div id="printArea"></div>
 
 <script>
 let cats = [];
 let rows = [];
+let customers = [];
+let selectedCustomer = null;
+let cart = [];
 
-const resultsEl = document.getElementById('results');
-const statusEl = document.getElementById('statusText');
-const input = document.getElementById('searchInput');
-const clearBtn = document.getElementById('clearBtn');
-let debounceTimer = null;
+const PRICE_IDX = {cost:5, A:6, B:7, C:8, D:9, sell:10};
+const GRADE_TO_IDX = {A:6, B:7, C:8, D:9};
 
-async function init(){
-  try{
-    const res = await fetch('./data.json?_=' + Date.now());
-    if(!res.ok) throw new Error('HTTP ' + res.status);
-    const data = await res.json();
-    cats = data.cats || [];
-    rows = data.rows || [];
-    document.getElementById('headerStats').textContent =
-      rows.length.toLocaleString() + ' 筆商品 · ' + cats.length + ' 個分類';
-    statusEl.textContent = '請輸入關鍵字開始搜尋';
-  }catch(e){
-    statusEl.textContent = '⚠ 無法載入 data.json（' + e.message + '）';
-    document.getElementById('headerStats').textContent = '資料載入失敗';
+function getPriceValue(r, mode, grade){
+  if(mode==='grade'){
+    const idx = GRADE_TO_IDX[grade] || GRADE_TO_IDX.A;
+    return r[idx];
   }
-}
-
-function catLabel(c){
-  return (c && typeof c === 'object' && 'name' in c) ? c.name : c;
+  return r[PRICE_IDX[mode]];
 }
 
 function escapeHtml(s){
@@ -142,40 +285,106 @@ function fmt(n){
   if(isNaN(num)) return '—';
   return num.toLocaleString('en-US', {maximumFractionDigits:0});
 }
+function fmtNum(n){
+  const num = Number(n);
+  return isNaN(num) ? 0 : num;
+}
+function catLabel(c){
+  return (c && typeof c === 'object' && 'name' in c) ? c.name : c;
+}
+
+async function init(){
+  try{
+    const res = await fetch('./data.json?_=' + Date.now());
+    if(!res.ok) throw new Error('HTTP ' + res.status);
+    const data = await res.json();
+    cats = data.cats || [];
+    rows = data.rows || [];
+    document.getElementById('headerStats').textContent =
+      rows.length.toLocaleString() + ' 筆商品 · ' + cats.length + ' 個分類';
+    document.getElementById('statusText').textContent = '請輸入關鍵字開始搜尋';
+  }catch(e){
+    document.getElementById('statusText').textContent = '⚠ 無法載入 data.json（' + e.message + '）';
+    document.getElementById('headerStats').textContent = '資料載入失敗';
+  }
+
+  try{
+    const res2 = await fetch('./customers.json?_=' + Date.now());
+    if(res2.ok){
+      const d2 = await res2.json();
+      customers = d2.customers || [];
+    }
+  }catch(e){ customers = []; }
+  renderCustomerList();
+}
+
+document.querySelectorAll('.tab-btn').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+    document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('tab-' + btn.dataset.tab).classList.add('active');
+    const topLink = document.getElementById('topLink');
+    if(btn.dataset.tab === 'customers'){
+      topLink.href = './customers.html';
+      topLink.textContent = '⚙ 管理客戶';
+    }else{
+      topLink.href = './update.html';
+      topLink.textContent = '⚙ 更新資料';
+    }
+  });
+});
+
+const resultsEl = document.getElementById('results');
+const statusEl = document.getElementById('statusText');
+const input = document.getElementById('searchInput');
+const clearBtn = document.getElementById('clearBtn');
+let debounceTimer = null;
+
+function priceCellsHtml(r, q){
+  const name = r[4], cost = r[5], priceA = r[6], priceC = r[8], priceD = r[9];
+  return `
+    <div class="prices">
+      <div class="price-cell cost" data-name="${escapeHtml(name)}" data-value="${escapeHtml(fmt(cost))}"><div class="lbl">本</div><div class="val">${fmt(cost)}</div></div>
+      <div class="price-cell" data-name="${escapeHtml(name)}" data-value="${escapeHtml(fmt(priceD))}"><div class="lbl">4</div><div class="val">${fmt(priceD)}</div></div>
+      <div class="price-cell" data-name="${escapeHtml(name)}" data-value="${escapeHtml(fmt(priceC))}"><div class="lbl">3</div><div class="val">${fmt(priceC)}</div></div>
+      <div class="price-cell sell" data-name="${escapeHtml(name)}" data-value="${escapeHtml(fmt(priceA))}"><div class="lbl">賣</div><div class="val">${fmt(priceA)}</div></div>
+    </div>`;
+}
+
+function searchRows(q, limit){
+  const qLower = q.toLowerCase();
+  let matches = [];
+  for(let i=0;i<rows.length;i++){
+    const r = rows[i];
+    const name = r[4] || '', barcode = r[3] || '', code = r[2] || '', note = r[1] || '';
+    if(q){
+      if(!(name.toLowerCase().includes(qLower) || barcode.includes(q) || code.toLowerCase().includes(qLower) || note.toLowerCase().includes(qLower))) continue;
+    }
+    matches.push(r);
+    if(matches.length >= limit) break;
+  }
+  return matches;
+}
 
 function doSearch(){
   const q = input.value.trim();
   clearBtn.style.visibility = q ? 'visible' : 'hidden';
-
   if(!q){
     statusEl.textContent = '請輸入關鍵字開始搜尋';
     resultsEl.innerHTML = '';
     return;
   }
-
-  const qLower = q.toLowerCase();
-  let matches = [];
-  for(let i=0;i<rows.length;i++){
-    const r = rows[i];
-    if(q){
-      const name = r[4] || '', barcode = r[3] || '', code = r[2] || '', note = r[1] || '';
-      if(!(name.toLowerCase().includes(qLower) || barcode.includes(q) || code.toLowerCase().includes(qLower) || note.toLowerCase().includes(qLower))) continue;
-    }
-    matches.push(r);
-    if(matches.length >= 300) break;
-  }
-
+  const matches = searchRows(q, 300);
   const total = matches.length;
   statusEl.innerHTML = `找到 <b>${total}${total>=300?'+':''}</b> 筆結果`;
-
   if(total===0){
     resultsEl.innerHTML = `<div class="empty"><div class="big">NO MATCH</div><div class="msg">沒有找到符合「${escapeHtml(q)}」的商品，換個關鍵字試試？</div></div>`;
     return;
   }
-
   let html = '';
   for(const r of matches){
-    const [catIdx, note, code, barcode, name, cost, priceA, priceC, priceD, sellingPrice] = r;
+    const catIdx = r[0], note = r[1], code = r[2], barcode = r[3], name = r[4], sellingPrice = r[10];
     html += `
     <div class="card">
       <div class="card-top">
@@ -188,12 +397,7 @@ function doSearch(){
         <span>編號 ${highlight(code||'—', q)}</span>
         ${note ? `<span>備註 ${highlight(note, q)}</span>` : ''}
       </div>
-      <div class="prices">
-        <div class="price-cell cost" data-name="${escapeHtml(name)}" data-value="${escapeHtml(fmt(cost))}"><div class="lbl">本</div><div class="val">${fmt(cost)}</div></div>
-        <div class="price-cell" data-name="${escapeHtml(name)}" data-value="${escapeHtml(fmt(priceD))}"><div class="lbl">4</div><div class="val">${fmt(priceD)}</div></div>
-        <div class="price-cell" data-name="${escapeHtml(name)}" data-value="${escapeHtml(fmt(priceC))}"><div class="lbl">3</div><div class="val">${fmt(priceC)}</div></div>
-        <div class="price-cell sell" data-name="${escapeHtml(name)}" data-value="${escapeHtml(fmt(priceA))}"><div class="lbl">賣</div><div class="val">${fmt(priceA)}</div></div>
-      </div>
+      ${priceCellsHtml(r, q)}
     </div>`;
   }
   resultsEl.innerHTML = html;
@@ -210,15 +414,16 @@ resultsEl.addEventListener('click', (e)=>{
     valEl.textContent = '已複製';
     setTimeout(()=>{ cell.classList.remove('copied'); valEl.textContent = original; }, 900);
   };
-  if(navigator.clipboard && navigator.clipboard.writeText){
-    navigator.clipboard.writeText(text).then(showCopied).catch(()=>{
-      fallbackCopy(text); showCopied();
-    });
-  }else{
-    fallbackCopy(text); showCopied();
-  }
+  copyText(text, showCopied);
 });
 
+function copyText(text, cb){
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(text).then(cb).catch(()=>{ fallbackCopy(text); cb(); });
+  }else{
+    fallbackCopy(text); cb();
+  }
+}
 function fallbackCopy(text){
   const ta = document.createElement('textarea');
   ta.value = text;
@@ -236,6 +441,351 @@ input.addEventListener('input', ()=>{
 });
 clearBtn.addEventListener('click', ()=>{ input.value=''; doSearch(); input.focus(); });
 clearBtn.style.visibility = 'hidden';
+
+const custSearch = document.getElementById('custSearch');
+const custDropdown = document.getElementById('custDropdown');
+const custPickerWrap = document.getElementById('custPickerWrap');
+const custInfoBar = document.getElementById('custInfoBar');
+
+function renderCustDropdown(){
+  const q = custSearch.value.trim().toLowerCase();
+  if(!q){ custDropdown.classList.remove('open'); custDropdown.innerHTML=''; return; }
+  const matches = customers.filter(c =>
+    (c.name||'').toLowerCase().includes(q) || (c.phone||'').includes(q)
+  ).slice(0, 10);
+  if(!matches.length){
+    custDropdown.innerHTML = `<div class="cust-empty">找不到符合的客戶</div>`;
+  }else{
+    custDropdown.innerHTML = matches.map((c)=>`
+      <div class="cust-opt" data-idx="${customers.indexOf(c)}">
+        <div>
+          <div class="co-name">${escapeHtml(c.name||'')}</div>
+          <div class="co-sub">${escapeHtml(c.phone||'')}</div>
+        </div>
+        <span class="grade-badge grade-${escapeHtml(c.grade||'A')}">${escapeHtml(c.grade||'A')}</span>
+      </div>
+    `).join('');
+  }
+  custDropdown.classList.add('open');
+}
+
+custSearch.addEventListener('input', renderCustDropdown);
+custSearch.addEventListener('focus', renderCustDropdown);
+document.addEventListener('click', (e)=>{
+  if(!custPickerWrap.contains(e.target)) custDropdown.classList.remove('open');
+});
+
+custDropdown.addEventListener('click', (e)=>{
+  const opt = e.target.closest('.cust-opt');
+  if(!opt) return;
+  const idx = parseInt(opt.dataset.idx, 10);
+  selectCustomer(customers[idx]);
+});
+
+function selectCustomer(c){
+  selectedCustomer = c;
+  document.getElementById('custName').textContent = c.name || '';
+  const badge = document.getElementById('custGradeBadge');
+  badge.textContent = (c.grade||'A') + '級';
+  badge.className = 'grade-badge grade-' + (c.grade||'A');
+  document.getElementById('custPhone').textContent = c.phone ? ('電話 ' + c.phone) : '';
+  document.getElementById('custAddress').textContent = c.address ? ('地址 ' + c.address) : '';
+  custInfoBar.style.display = 'block';
+  custPickerWrap.style.display = 'none';
+  custSearch.value = '';
+  custDropdown.classList.remove('open');
+
+  const sel = document.getElementById('priceSourceSelect');
+  if(!cart.length){ sel.value = 'grade'; }
+  applyPriceSourceToCart();
+}
+
+document.getElementById('changeCustBtn').addEventListener('click', ()=>{
+  selectedCustomer = null;
+  custInfoBar.style.display = 'none';
+  custPickerWrap.style.display = 'block';
+  custSearch.focus();
+});
+
+const orderInput = document.getElementById('orderSearchInput');
+const orderResultsEl = document.getElementById('orderResults');
+const orderStatusEl = document.getElementById('orderStatusText');
+let orderDebounce = null;
+let pendingQty = {};
+
+function rowKey(r){ return (r[3] || r[4]); }
+
+function doOrderSearch(){
+  const q = orderInput.value.trim();
+  if(!q){
+    orderStatusEl.textContent = '請搜尋或掃描商品加入清單';
+    orderResultsEl.innerHTML = '';
+    return;
+  }
+  const matches = searchRows(q, 100);
+  orderStatusEl.innerHTML = `找到 <b>${matches.length}</b> 筆結果`;
+  if(!matches.length){
+    orderResultsEl.innerHTML = `<div class="empty"><div class="big">NO MATCH</div><div class="msg">沒有找到符合「${escapeHtml(q)}」的商品</div></div>`;
+    return;
+  }
+  let html = '';
+  for(const r of matches){
+    const key = rowKey(r);
+    const catIdx = r[0], code = r[2], barcode = r[3], name = r[4], sellingPrice = r[10];
+    const qty = pendingQty[key] || 1;
+    html += `
+    <div class="card order-card" data-key="${escapeHtml(key)}">
+      <div class="card-top">
+        <div class="name">${highlight(name, q)}</div>
+        <div class="listprice">
+          定價 ${fmt(sellingPrice)}
+          <div class="qty-stepper">
+            <button class="qty-minus" type="button">−</button>
+            <span class="qty-num">${qty}</span>
+            <button class="qty-plus" type="button">+</button>
+          </div>
+          <button class="add-btn" type="button">加入</button>
+        </div>
+        <div class="tag">${escapeHtml(catLabel(cats[catIdx]) ?? '')}</div>
+      </div>
+      <div class="meta-row">
+        <span>條碼 ${highlight(barcode||'—', q)}</span>
+        <span>編號 ${highlight(code||'—', q)}</span>
+      </div>
+      ${priceCellsHtml(r, q)}
+    </div>`;
+  }
+  orderResultsEl.innerHTML = html;
+  window._lastOrderMatches = matches;
+}
+
+orderInput.addEventListener('input', ()=>{
+  clearTimeout(orderDebounce);
+  orderDebounce = setTimeout(doOrderSearch, 90);
+});
+
+orderInput.addEventListener('keydown', (e)=>{
+  if(e.key !== 'Enter') return;
+  const q = orderInput.value.trim();
+  if(!q) return;
+  const exact = rows.find(r => (r[3]||'') === q);
+  if(exact){
+    addToCart(exact, 1);
+    orderInput.value = '';
+    orderResultsEl.innerHTML = '';
+    orderStatusEl.textContent = `已加入：${exact[4]}`;
+  }
+});
+
+orderResultsEl.addEventListener('click', (e)=>{
+  const card = e.target.closest('.order-card');
+  if(!card) return;
+  const key = card.dataset.key;
+  const r = (window._lastOrderMatches||[]).find(rr => rowKey(rr) === key);
+  if(!r) return;
+
+  if(e.target.closest('.qty-plus')){
+    pendingQty[key] = (pendingQty[key]||1) + 1;
+    card.querySelector('.qty-num').textContent = pendingQty[key];
+    return;
+  }
+  if(e.target.closest('.qty-minus')){
+    pendingQty[key] = Math.max(1, (pendingQty[key]||1) - 1);
+    card.querySelector('.qty-num').textContent = pendingQty[key];
+    return;
+  }
+  if(e.target.closest('.add-btn')){
+    const qty = pendingQty[key] || 1;
+    addToCart(r, qty);
+    const btn = card.querySelector('.add-btn');
+    const original = btn.textContent;
+    btn.textContent = '✓ 已加入';
+    btn.classList.add('added');
+    setTimeout(()=>{ btn.textContent = original; btn.classList.remove('added'); }, 900);
+    return;
+  }
+  const cell = e.target.closest('.price-cell');
+  if(cell){
+    const text = `${cell.dataset.name} ${cell.dataset.value}`;
+    const valEl = cell.querySelector('.val');
+    const original = valEl.textContent;
+    copyText(text, ()=>{
+      cell.classList.add('copied');
+      valEl.textContent = '已複製';
+      setTimeout(()=>{ cell.classList.remove('copied'); valEl.textContent = original; }, 900);
+    });
+  }
+});
+
+function addToCart(r, qty){
+  const key = rowKey(r);
+  const mode = document.getElementById('priceSourceSelect').value;
+  const price = getPriceValue(r, mode, selectedCustomer ? selectedCustomer.grade : 'A');
+  const existing = cart.find(it => it.key === key);
+  if(existing){
+    existing.qty += qty;
+  }else{
+    cart.push({
+      key, code:r[2], barcode:r[3], name:r[4], base:r,
+      qty, unitPrice: fmtNum(price), note:''
+    });
+  }
+  renderCart();
+}
+
+function applyPriceSourceToCart(){
+  const mode = document.getElementById('priceSourceSelect').value;
+  cart.forEach(it=>{
+    it.unitPrice = fmtNum(getPriceValue(it.base, mode, selectedCustomer ? selectedCustomer.grade : 'A'));
+  });
+  renderCart();
+}
+document.getElementById('priceSourceSelect').addEventListener('change', applyPriceSourceToCart);
+
+const cartBody = document.getElementById('cartBody');
+const cartTotalsEl = document.getElementById('cartTotals');
+
+function renderCart(){
+  document.getElementById('cartCount').textContent = cart.length + ' 項';
+  if(!cart.length){
+    cartBody.innerHTML = `<div class="cart-empty">清單是空的，搜尋商品後點「加入」開始建立出貨單</div>`;
+    cartTotalsEl.style.display = 'none';
+    return;
+  }
+  let html = `<table class="cart-table"><thead><tr>
+    <th>品名</th><th style="width:70px;">單價</th><th style="width:56px;">數量</th><th style="width:70px;">小計</th><th>備註</th><th style="width:26px;"></th>
+  </tr></thead><tbody>`;
+  cart.forEach((it,i)=>{
+    html += `<tr data-idx="${i}">
+      <td>${escapeHtml(it.name)}</td>
+      <td><input type="number" class="cart-price" data-idx="${i}" value="${it.unitPrice}"></td>
+      <td><input type="number" class="cart-qty" data-idx="${i}" value="${it.qty}" min="1"></td>
+      <td class="cart-subtotal" id="subtotal-${i}">${fmt(it.unitPrice*it.qty)}</td>
+      <td><input type="text" class="cart-note" data-idx="${i}" value="${escapeHtml(it.note)}" placeholder="備註…"></td>
+      <td><button class="cart-del" data-idx="${i}">✕</button></td>
+    </tr>`;
+  });
+  html += `</tbody></table>`;
+  cartBody.innerHTML = html;
+  cartTotalsEl.style.display = 'flex';
+  updateCartTotals();
+}
+
+function updateCartTotals(){
+  const totalQty = cart.reduce((s,it)=>s+fmtNum(it.qty),0);
+  const totalAmt = cart.reduce((s,it)=>s+fmtNum(it.unitPrice)*fmtNum(it.qty),0);
+  document.getElementById('totalQty').textContent = fmt(totalQty);
+  document.getElementById('totalAmt').textContent = fmt(totalAmt);
+}
+
+cartBody.addEventListener('input', (e)=>{
+  const idx = e.target.dataset.idx;
+  if(idx===undefined) return;
+  const i = parseInt(idx,10);
+  if(e.target.classList.contains('cart-price')){
+    cart[i].unitPrice = fmtNum(e.target.value);
+  }else if(e.target.classList.contains('cart-qty')){
+    cart[i].qty = Math.max(1, fmtNum(e.target.value)||1);
+  }else if(e.target.classList.contains('cart-note')){
+    cart[i].note = e.target.value;
+  }
+  const subEl = document.getElementById('subtotal-' + i);
+  if(subEl) subEl.textContent = fmt(cart[i].unitPrice * cart[i].qty);
+  updateCartTotals();
+});
+
+cartBody.addEventListener('click', (e)=>{
+  const delBtn = e.target.closest('.cart-del');
+  if(!delBtn) return;
+  const i = parseInt(delBtn.dataset.idx,10);
+  cart.splice(i,1);
+  renderCart();
+});
+
+document.getElementById('clearCartBtn').addEventListener('click', ()=>{
+  if(cart.length && !confirm('確定要清空整張出貨單嗎？')) return;
+  cart = [];
+  renderCart();
+});
+
+document.getElementById('printBtn').addEventListener('click', ()=>{
+  if(!cart.length){ alert('清單是空的，先加入商品再列印'); return; }
+  buildPrintArea();
+  window.print();
+});
+
+function buildPrintArea(){
+  const c = selectedCustomer;
+  const rowsHtml = cart.map(it => `
+    <tr>
+      <td style="padding:6px 4px; border-bottom:1px solid #ddd;">${escapeHtml(it.code || it.barcode || '')}</td>
+      <td style="padding:6px 4px; border-bottom:1px solid #ddd;">${escapeHtml(it.name)}</td>
+      <td style="padding:6px 4px; border-bottom:1px solid #ddd; text-align:right;">${fmt(it.unitPrice)}</td>
+      <td style="padding:6px 4px; border-bottom:1px solid #ddd; text-align:center;">${it.qty}</td>
+      <td style="padding:6px 4px; border-bottom:1px solid #ddd; text-align:right;">${fmt(it.unitPrice*it.qty)}</td>
+      <td style="padding:6px 4px; border-bottom:1px solid #ddd;">${escapeHtml(it.note||'')}</td>
+    </tr>`).join('');
+  const totalQty = cart.reduce((s,it)=>s+fmtNum(it.qty),0);
+  const totalAmt = cart.reduce((s,it)=>s+fmtNum(it.unitPrice)*fmtNum(it.qty),0);
+
+  document.getElementById('printArea').innerHTML = `
+    <div style="font-family:-apple-system,'PingFang TC',sans-serif; padding:24px; color:#000;">
+      <h2 style="margin:0 0 4px;">出貨單</h2>
+      <div style="font-size:12px; color:#555; margin-bottom:16px;">${new Date().toLocaleString('zh-TW')}</div>
+      ${c ? `<div style="margin-bottom:16px; font-size:14px; line-height:1.8;">
+        <div><b>客戶：</b>${escapeHtml(c.name||'')}　<b>等級：</b>${escapeHtml(c.grade||'')}</div>
+        <div><b>電話：</b>${escapeHtml(c.phone||'—')}</div>
+        <div><b>地址：</b>${escapeHtml(c.address||'—')}</div>
+      </div>` : ''}
+      <table style="width:100%; border-collapse:collapse; font-size:13px;">
+        <thead><tr style="border-bottom:2px solid #000;">
+          <th style="text-align:left; padding:6px 4px;">商品(服務)代碼</th>
+          <th style="text-align:left; padding:6px 4px;">服務(產品)名稱</th>
+          <th style="text-align:right; padding:6px 4px;">單價</th>
+          <th style="text-align:center; padding:6px 4px;">數量</th>
+          <th style="text-align:right; padding:6px 4px;">小計</th>
+          <th style="text-align:left; padding:6px 4px;">備註</th>
+        </tr></thead>
+        <tbody>${rowsHtml}</tbody>
+        <tfoot><tr style="border-top:2px solid #000; font-weight:700;">
+          <td colspan="3"></td>
+          <td style="text-align:center; padding:8px 4px;">${totalQty}</td>
+          <td style="text-align:right; padding:8px 4px;">${fmt(totalAmt)}</td>
+          <td></td>
+        </tr></tfoot>
+      </table>
+    </div>
+  `;
+}
+
+const custListSearch = document.getElementById('custListSearch');
+const custListBody = document.getElementById('custListBody');
+const custListStatus = document.getElementById('custListStatus');
+
+function renderCustomerList(){
+  const q = custListSearch.value.trim().toLowerCase();
+  const list = customers.filter(c =>
+    !q || (c.name||'').toLowerCase().includes(q) || (c.phone||'').includes(q)
+  );
+  custListStatus.textContent = customers.length
+    ? `共 ${customers.length} 位客戶，顯示 ${list.length} 位`
+    : '目前沒有客戶資料，請到「⚙ 管理客戶」新增或匯入';
+  if(!list.length){
+    custListBody.innerHTML = `<tr><td colspan="6" style="text-align:center; color:#8E8E93; padding:20px;">沒有符合的客戶</td></tr>`;
+    return;
+  }
+  custListBody.innerHTML = list.map(c => `
+    <tr>
+      <td>${escapeHtml(c.name||'')}</td>
+      <td>${escapeHtml(c.phone||'')}</td>
+      <td>${escapeHtml(c.address||'')}</td>
+      <td><span class="grade-badge grade-${escapeHtml(c.grade||'A')}">${escapeHtml(c.grade||'')}</span></td>
+      <td>${escapeHtml(c.taxId||'—')}</td>
+      <td>${escapeHtml(c.note||'—')}</td>
+    </tr>
+  `).join('');
+}
+custListSearch.addEventListener('input', renderCustomerList);
 
 init();
 </script>
