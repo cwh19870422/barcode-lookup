@@ -211,7 +211,8 @@ async function handleFiles(fileList){
       const col = (name) => lowerHeaders.indexOf(name.toLowerCase());
       const cNote = col('note'), cCode = col('customcode'), cBarcode = col('barcode'),
             cDesc = col('description'), cCost = col('averagecost'),
-            cA = lowerHeaders.indexOf('pricea'), cC = lowerHeaders.indexOf('pricec'), cD = lowerHeaders.indexOf('priced');
+            cA = lowerHeaders.indexOf('pricea'), cC = lowerHeaders.indexOf('pricec'), cD = lowerHeaders.indexOf('priced'),
+            cSell = lowerHeaders.indexOf('sellingprice');
 
       if(cDesc === -1) throw new Error('找不到 DESCRIPTION 欄位，跳過此檔');
 
@@ -247,6 +248,7 @@ async function handleFiles(fileList){
           cA>-1 ? r[cA] : null,
           cC>-1 ? r[cC] : null,
           cD>-1 ? r[cD] : null,
+          cSell>-1 ? r[cSell] : null,
         ]);
         rowCount++;
       }
