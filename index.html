@@ -27,7 +27,9 @@
   .top-link:hover{background:#DFDFE4;}
   main{max-width:920px; margin:0 auto; padding:14px 24px 80px;}
 
-  .tabs{max-width:920px; margin:0 auto; padding:0 24px; display:flex; gap:0; background:var(--gray-fill); border-radius:12px; padding-top:3px; padding-bottom:3px; margin-top:14px;}
+  .tabs-sticky-wrap{position:sticky; top:0; z-index:50; background:var(--paper); padding:10px 0 8px; box-shadow:0 1px 0 var(--line);}
+  .tabs{max-width:920px; margin:0 auto; padding:0 24px; display:flex; gap:0; background:var(--gray-fill); border-radius:12px; padding-top:3px; padding-bottom:3px;}
+  .sticky-controls{position:sticky; top:var(--tabs-h, 62px); z-index:40; background:var(--paper); padding-top:8px; padding-bottom:8px; margin-bottom:-8px;}
   .tab-btn{flex:1; text-align:center; padding:10px 6px; border-radius:9px; font-size:14px; font-weight:600; color:var(--secondary); background:none; border:none; cursor:pointer; font-family:var(--sysfont); display:flex; align-items:center; justify-content:center; gap:5px;}
   .tab-btn.active{background:#fff; color:var(--ink); box-shadow:0 1px 2px rgba(0,0,0,0.08);}
   .tab-panel{display:none;}
@@ -142,16 +144,18 @@
 </header>
 <div class="barcode-strip"></div>
 
-<div class="tabs">
-  <button class="tab-btn active" data-tab="search">🔍 搜尋</button>
-  <button class="tab-btn" data-tab="order">🧾 打單</button>
-  <button class="tab-btn" data-tab="customers">👤 客戶</button>
+<div class="tabs-sticky-wrap" id="tabsStickyWrap">
+  <div class="tabs">
+    <button class="tab-btn active" data-tab="search">🔍 搜尋</button>
+    <button class="tab-btn" data-tab="order">🧾 打單</button>
+    <button class="tab-btn" data-tab="customers">👤 客戶</button>
+  </div>
 </div>
 
 <main>
 
   <section class="tab-panel active" id="tab-search">
-    <div class="search-wrap">
+    <div class="search-wrap sticky-controls">
       <div class="search-box">
         <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
         <input id="searchInput" type="text" placeholder="輸入商品名稱、條碼或商品編號…" autocomplete="off">
@@ -166,29 +170,31 @@
   </section>
 
   <section class="tab-panel" id="tab-order">
-    <div class="cust-picker" id="custPickerWrap">
-      <div class="search-box">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-        <input id="custSearch" type="text" placeholder="搜尋客戶姓名或電話…" autocomplete="off">
+    <div class="sticky-controls" id="orderStickyControls">
+      <div class="cust-picker" id="custPickerWrap">
+        <div class="search-box">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+          <input id="custSearch" type="text" placeholder="搜尋客戶姓名或電話…" autocomplete="off">
+        </div>
+        <div class="cust-dropdown" id="custDropdown"></div>
       </div>
-      <div class="cust-dropdown" id="custDropdown"></div>
-    </div>
 
-    <div class="cust-info-bar" id="custInfoBar" style="display:none;">
-      <div class="cust-info-main">
-        <span class="cust-name" id="custName"></span>
-        <span class="grade-badge" id="custGradeBadge"></span>
-        <button class="change-cust-btn" id="changeCustBtn">換客戶</button>
+      <div class="cust-info-bar" id="custInfoBar" style="display:none;">
+        <div class="cust-info-main">
+          <span class="cust-name" id="custName"></span>
+          <span class="grade-badge" id="custGradeBadge"></span>
+          <button class="change-cust-btn" id="changeCustBtn">換客戶</button>
+        </div>
+        <div class="cust-info-sub">
+          <span id="custPhone"></span>
+          <span id="custAddress"></span>
+        </div>
       </div>
-      <div class="cust-info-sub">
-        <span id="custPhone"></span>
-        <span id="custAddress"></span>
-      </div>
-    </div>
 
-    <div class="search-box" style="margin-top:6px;">
-      <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><rect x="3" y="7" width="18" height="10" rx="1"/><line x1="7" y1="7" x2="7" y2="17"/><line x1="10" y1="7" x2="10" y2="17"/><line x1="14" y1="7" x2="14" y2="17"/><line x1="17" y1="7" x2="17" y2="17"/></svg>
-        <input id="orderSearchInput" type="text" placeholder="搜尋商品名稱／條碼，或用條碼槍掃描…" autocomplete="off">
+      <div class="search-box" style="margin-top:6px;">
+        <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><rect x="3" y="7" width="18" height="10" rx="1"/><line x1="7" y1="7" x2="7" y2="17"/><line x1="10" y1="7" x2="10" y2="17"/><line x1="14" y1="7" x2="14" y2="17"/><line x1="17" y1="7" x2="17" y2="17"/></svg>
+          <input id="orderSearchInput" type="text" placeholder="搜尋商品名稱／條碼，或用條碼槍掃描…" autocomplete="off">
+      </div>
     </div>
     <div class="status-row">
       <span id="orderStatusText">請搜尋或掃描商品加入清單</span>
@@ -225,7 +231,7 @@
   </section>
 
   <section class="tab-panel" id="tab-customers">
-    <div class="search-box" style="margin-bottom:14px;">
+    <div class="search-box sticky-controls" style="margin-bottom:14px;">
       <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
       <input id="custListSearch" type="text" placeholder="搜尋客戶姓名或電話…" autocomplete="off">
     </div>
@@ -786,6 +792,13 @@ function renderCustomerList(){
   `).join('');
 }
 custListSearch.addEventListener('input', renderCustomerList);
+
+function updateStickyOffset(){
+  const h = document.getElementById('tabsStickyWrap').offsetHeight;
+  document.documentElement.style.setProperty('--tabs-h', h + 'px');
+}
+window.addEventListener('resize', updateStickyOffset);
+updateStickyOffset();
 
 init();
 </script>
