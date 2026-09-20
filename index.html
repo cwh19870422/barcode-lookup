@@ -933,13 +933,16 @@ function buildPrintArea(){
 
   document.getElementById('printArea').innerHTML = `
     <div style="font-family:-apple-system,'PingFang TC',sans-serif; padding:24px; color:#000;">
-      <h2 style="margin:0 0 4px;">${c ? escapeHtml(c.name||'') : '出貨單'}</h2>
-      <div style="font-size:12px; color:#555; margin-bottom:16px;">${new Date().toLocaleString('zh-TW')}</div>
-      ${c ? `<div style="margin-bottom:16px; font-size:14px; line-height:1.8;">
-        <div><b>等級：</b>${escapeHtml(c.grade||'')}</div>
-        <div><b>電話：</b>${escapeHtml(c.phone||'—')}</div>
-        <div><b>地址：</b>${escapeHtml(c.address||'—')}</div>
-      </div>` : ''}
+      <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:16px;">
+        <div>
+          <h2 style="margin:0 0 4px;">${c ? escapeHtml(c.name||'') : ''}</h2>
+          <div style="font-size:12px; color:#555;">${new Date().toLocaleString('zh-TW')}</div>
+        </div>
+        ${c ? `<div style="font-size:13px; line-height:1.8; text-align:right;">
+          <div>${escapeHtml(c.phone||'—')}</div>
+          <div>${escapeHtml(c.address||'—')}</div>
+        </div>` : ''}
+      </div>
       <table style="width:100%; border-collapse:collapse; font-size:13px;">
         <thead><tr style="border-bottom:2px solid #000;">
           <th style="text-align:left; padding:6px 4px;">商品(服務)代碼</th>
