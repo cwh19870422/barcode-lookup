@@ -690,10 +690,9 @@ function doOrderSearch(){
   }
 
   // exact barcode match (typical of a barcode scanner) -> add directly, skip the browsable list
-  if(/^[0-9]{6,}$/.test(q)){
-    const exact = rows.find(r => (r[3]||'') === q);
-    if(exact){ scanAddDirect(exact); return; }
-  }
+  // matches ANY barcode format (numeric EAN/UPC or alphanumeric internal codes like "S010777")
+  const exactMatch = rows.find(r => (r[3]||'') !== '' && (r[3]||'') === q);
+  if(exactMatch){ scanAddDirect(exactMatch); return; }
 
   const matches = searchRows(q, 100);
   orderStatusEl.innerHTML = `找到 <b>${matches.length}</b> 筆結果`;
@@ -935,7 +934,7 @@ function buildPrintArea(){
       <h2 style="margin:0 0 4px;">出貨單</h2>
       <div style="font-size:12px; color:#555; margin-bottom:16px;">${new Date().toLocaleString('zh-TW')}</div>
       ${c ? `<div style="margin-bottom:16px; font-size:14px; line-height:1.8;">
-        <div><b>客戶：</b>${escapeHtml(c.name||'')}　<b>等級：</b>${escapeHtml(c.grade||'')}</div>
+        <div><b>客戶：</b>${escapeHtml(c.name||'')}${c.temp ? ' <span style="color:#B5651D;">(臨時客戶)</span>' : ''}　<b>等級：</b>${escapeHtml(c.grade||'')}</div>
         <div><b>電話：</b>${escapeHtml(c.phone||'—')}</div>
         <div><b>地址：</b>${escapeHtml(c.address||'—')}</div>
       </div>` : ''}
