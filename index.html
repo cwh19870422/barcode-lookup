@@ -52,6 +52,13 @@
   .tag{font-family:var(--sysfont); font-weight:600; font-size:11.5px; color:var(--blue); background:rgba(0,122,255,0.1); padding:3px 10px; border-radius:999px; white-space:nowrap; flex-shrink:0; margin-left:auto;}
   .meta-row{display:flex; gap:14px; flex-wrap:wrap; align-items:center; font-family:var(--sysfont); font-size:12.5px; color:var(--secondary); margin-bottom:12px;}
   .meta-row mark{background:rgba(0,122,255,0.16); color:var(--ink); border-radius:2px;}
+  .history-btn{margin-left:auto; background:var(--gray-fill); color:var(--blue); border:none; font-weight:600; font-size:11.5px; padding:5px 11px; border-radius:999px; cursor:pointer; font-family:var(--sysfont); flex-shrink:0;}
+  .history-btn:hover{background:#DFDFE4;}
+  .history-panel{background:var(--paper-alt); border-radius:10px; padding:10px 12px; margin-bottom:12px; font-size:12.5px;}
+  .history-panel table{width:100%; border-collapse:collapse;}
+  .history-panel th{text-align:left; font-size:11px; color:var(--secondary); font-weight:600; padding:4px 6px;}
+  .history-panel td{padding:5px 6px; border-top:1px solid var(--line); color:var(--ink);}
+  .history-panel .hist-empty{color:var(--secondary); text-align:center; padding:8px;}
   .prices{display:grid; grid-template-columns:repeat(4,1fr); gap:8px;}
   .price-cell{display:flex; align-items:stretch; border-radius:12px; overflow:hidden; cursor:pointer; user-select:none; -webkit-tap-highlight-color:transparent; transition:transform .1s;}
   .price-cell:active{transform:scale(0.96);}
@@ -68,6 +75,7 @@
   @media (max-width:520px){.prices{grid-template-columns:repeat(2,1fr);} header{padding:20px 16px 12px;} main{padding:12px 16px 60px;} .tabs{padding-left:16px; padding-right:16px;} .price-cell .val{font-size:17px;}}
   ::selection{background:rgba(0,122,255,0.25);}
 
+  #scanQtyInput{width:56px; text-align:center; border:none; background:var(--gray-fill); border-radius:12px; padding:11px 4px; font-family:var(--sysfont); font-size:16px; font-weight:700; color:var(--ink);}
   .qty-stepper{display:flex; align-items:center; background:var(--paper-alt); border-radius:8px; overflow:hidden; height:28px;}
   .qty-stepper button{width:26px; height:28px; border:none; background:transparent; color:var(--ink); font-size:16px; font-weight:600; display:flex; align-items:center; justify-content:center; line-height:1; padding:0; cursor:pointer;}
   .qty-stepper button:hover{background:var(--line);}
@@ -85,6 +93,15 @@
   .cust-opt .co-name{font-size:14px; font-weight:600; color:var(--ink);}
   .cust-opt .co-sub{font-size:12px; color:var(--secondary);}
   .cust-empty{padding:14px; font-size:13px; color:var(--secondary); text-align:center;}
+  .temp-cust-row{margin-top:8px;}
+  .temp-cust-row button{background:none; border:none; color:var(--blue); font-family:var(--sysfont); font-weight:600; font-size:12.5px; cursor:pointer; padding:2px 0;}
+  .temp-cust-form{display:flex; gap:8px; margin-top:8px; flex-wrap:wrap; align-items:center;}
+  .temp-cust-form input[type="text"]{flex:1; min-width:140px; border:none; background:var(--gray-fill); border-radius:9px; padding:9px 12px; font-family:var(--sysfont); font-size:13.5px; color:var(--ink);}
+  .temp-cust-form select{border:none; background:var(--gray-fill); border-radius:9px; padding:9px 8px; font-family:var(--sysfont); font-size:13px; font-weight:600; color:var(--ink);}
+  .temp-cust-form button{border:none; font-weight:600; font-size:13px; padding:9px 14px; border-radius:9px; cursor:pointer; font-family:var(--sysfont);}
+  #tempCustConfirmBtn{background:var(--blue); color:#fff;}
+  #tempCustCancelBtn{background:var(--gray-fill); color:var(--secondary);}
+  .temp-badge{font-size:11px; font-weight:700; color:var(--orange); background:rgba(255,149,0,0.12); padding:2px 9px; border-radius:999px; flex-shrink:0;}
   .grade-badge{font-size:11px; font-weight:700; color:#fff; padding:2px 9px; border-radius:999px; flex-shrink:0;}
   .grade-A{background:var(--orange);} .grade-B{background:var(--green);} .grade-C{background:var(--blue);} .grade-D{background:var(--secondary);}
 
@@ -177,12 +194,28 @@
           <input id="custSearch" type="text" placeholder="搜尋客戶姓名或電話…" autocomplete="off">
         </div>
         <div class="cust-dropdown" id="custDropdown"></div>
+
+        <div class="temp-cust-row" id="tempCustRow">
+          <button type="button" id="tempCustOpenBtn">＋ 找不到客戶？輸入臨時客戶名稱</button>
+        </div>
+        <div class="temp-cust-form" id="tempCustForm" style="display:none;">
+          <input type="text" id="tempCustName" placeholder="臨時客戶姓名">
+          <select id="tempCustGrade">
+            <option value="A">A 級</option>
+            <option value="B">B 級</option>
+            <option value="C">C 級</option>
+            <option value="D">D 級</option>
+          </select>
+          <button type="button" id="tempCustConfirmBtn">使用</button>
+          <button type="button" id="tempCustCancelBtn">取消</button>
+        </div>
       </div>
 
       <div class="cust-info-bar" id="custInfoBar" style="display:none;">
         <div class="cust-info-main">
           <span class="cust-name" id="custName"></span>
           <span class="grade-badge" id="custGradeBadge"></span>
+          <span class="temp-badge" id="tempBadge" style="display:none;">臨時</span>
           <button class="change-cust-btn" id="changeCustBtn">換客戶</button>
         </div>
         <div class="cust-info-sub">
@@ -191,9 +224,12 @@
         </div>
       </div>
 
-      <div class="search-box" style="margin-top:6px;">
-        <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><rect x="3" y="7" width="18" height="10" rx="1"/><line x1="7" y1="7" x2="7" y2="17"/><line x1="10" y1="7" x2="10" y2="17"/><line x1="14" y1="7" x2="14" y2="17"/><line x1="17" y1="7" x2="17" y2="17"/></svg>
+      <div style="display:flex; gap:8px; align-items:center; margin-top:6px;">
+        <div class="search-box" style="flex:1;">
+          <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><rect x="3" y="7" width="18" height="10" rx="1"/><line x1="7" y1="7" x2="7" y2="17"/><line x1="10" y1="7" x2="10" y2="17"/><line x1="14" y1="7" x2="14" y2="17"/><line x1="17" y1="7" x2="17" y2="17"/></svg>
           <input id="orderSearchInput" type="text" placeholder="搜尋商品名稱／條碼，或用條碼槍掃描…" autocomplete="off">
+        </div>
+        <input id="scanQtyInput" type="number" value="1" min="1" title="掃描條碼時要加入的數量">
       </div>
     </div>
     <div class="status-row">
@@ -226,6 +262,10 @@
       <div class="cart-actions">
         <button class="btn-clear" id="clearCartBtn">清空清單</button>
         <button class="btn-print" id="printBtn">列印出貨單</button>
+      </div>
+      <div id="histDownloadRow" style="display:none; margin-top:10px; background:var(--paper-alt); border-radius:10px; padding:10px 12px; font-size:12.5px; color:#4A4A4C; display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+        <span>這筆交易已記錄，記得下載並上傳 <code style="font-family:var(--monofont); background:var(--gray-fill); padding:1px 6px; border-radius:4px;">history.json</code> 才會保存到網站上</span>
+        <button id="downloadHistBtn" style="margin-left:auto; background:var(--blue); color:#fff; border:none; font-weight:600; font-size:12.5px; padding:7px 13px; border-radius:8px; cursor:pointer;">⬇ 下載 history.json</button>
       </div>
     </div>
   </section>
@@ -261,6 +301,7 @@ let rows = [];
 let customers = [];
 let selectedCustomer = null;
 let cart = [];
+let history = []; // {date, customer, name, barcode, code, qty, unitPrice, amount, cost}
 
 const PRICE_IDX = {cost:5, A:6, B:7, C:8, D:9, sell:10};
 const GRADE_TO_IDX = {A:6, B:7, C:8, D:9};
@@ -322,6 +363,14 @@ async function init(){
     }
   }catch(e){ customers = []; }
   renderCustomerList();
+
+  try{
+    const res3 = await fetch('./history.json?_=' + Date.now());
+    if(res3.ok){
+      const d3 = await res3.json();
+      history = d3.history || [];
+    }
+  }catch(e){ history = []; }
 }
 
 document.querySelectorAll('.tab-btn').forEach(btn=>{
@@ -391,6 +440,7 @@ function doSearch(){
   let html = '';
   for(const r of matches){
     const catIdx = r[0], note = r[1], code = r[2], barcode = r[3], name = r[4], sellingPrice = r[10];
+    const cardKey = 'srch-' + (barcode || name).replace(/[^a-zA-Z0-9\u4e00-\u9fff]/g,'');
     html += `
     <div class="card">
       <div class="card-top">
@@ -402,7 +452,9 @@ function doSearch(){
         <span>條碼 ${highlight(barcode||'—', q)}</span>
         <span>編號 ${highlight(code||'—', q)}</span>
         ${note ? `<span>備註 ${highlight(note, q)}</span>` : ''}
+        <button class="history-btn" data-barcode="${escapeHtml(barcode||'')}" data-target="${cardKey}">歷史價錢</button>
       </div>
+      <div class="history-panel" id="${cardKey}" style="display:none;"></div>
       ${priceCellsHtml(r, q)}
     </div>`;
   }
@@ -410,6 +462,8 @@ function doSearch(){
 }
 
 resultsEl.addEventListener('click', (e)=>{
+  const histBtn = e.target.closest('.history-btn');
+  if(histBtn){ toggleHistoryPanel(histBtn); return; }
   const cell = e.target.closest('.price-cell');
   if(!cell) return;
   const text = `${cell.dataset.name} ${cell.dataset.value}`;
@@ -422,6 +476,73 @@ resultsEl.addEventListener('click', (e)=>{
   };
   copyText(text, showCopied);
 });
+
+function toggleHistoryPanel(btn){
+  const targetId = btn.dataset.target;
+  const panel = document.getElementById(targetId);
+  if(!panel) return;
+  const isOpen = panel.style.display !== 'none';
+  if(isOpen){
+    panel.style.display = 'none';
+    return;
+  }
+  const barcode = btn.dataset.barcode;
+  const isOrderTab = !!btn.closest('#tab-order');
+
+  if(isOrderTab){
+    if(!selectedCustomer){
+      panel.innerHTML = `<div class="hist-empty">請先在上方選擇客戶，才能查看該客戶的歷史紀錄</div>`;
+      panel.style.display = 'block';
+      return;
+    }
+    const entries = history
+      .filter(h => h.barcode && barcode && h.barcode === barcode && h.customer === selectedCustomer.name)
+      .sort((a,b) => new Date(b.date) - new Date(a.date));
+    if(!entries.length){
+      panel.innerHTML = `<div class="hist-empty">${escapeHtml(selectedCustomer.name)} 沒有這項商品的歷史交易紀錄</div>`;
+    }else{
+      let html = `<table><thead><tr><th>日期</th><th>數量</th><th>金額</th><th>當時本錢</th></tr></thead><tbody>`;
+      entries.forEach(h=>{
+        const d = new Date(h.date);
+        const dateStr = isNaN(d) ? escapeHtml(h.date) : d.toLocaleDateString('zh-TW', {year:'numeric', month:'numeric', day:'numeric'});
+        html += `<tr>
+          <td>${dateStr}</td>
+          <td>${fmt(h.qty)}</td>
+          <td>${fmt(h.amount)}</td>
+          <td>${fmt(h.cost)}</td>
+        </tr>`;
+      });
+      html += `</tbody></table>`;
+      panel.innerHTML = html;
+    }
+    panel.style.display = 'block';
+    return;
+  }
+
+  // 搜尋 tab: no single customer context, show all customers who bought this product
+  const entries = history
+    .filter(h => h.barcode && barcode && h.barcode === barcode)
+    .sort((a,b) => new Date(b.date) - new Date(a.date));
+  if(!entries.length){
+    panel.innerHTML = `<div class="hist-empty">尚無歷史交易紀錄</div>`;
+  }else{
+    let html = `<table><thead><tr><th>客人</th><th>日期</th><th>數量</th><th>金額</th><th>當時本錢</th></tr></thead><tbody>`;
+    entries.forEach(h=>{
+      const d = new Date(h.date);
+      const dateStr = isNaN(d) ? escapeHtml(h.date) : d.toLocaleDateString('zh-TW', {year:'numeric', month:'numeric', day:'numeric'});
+      html += `<tr>
+        <td>${escapeHtml(h.customer||'—')}</td>
+        <td>${dateStr}</td>
+        <td>${fmt(h.qty)}</td>
+        <td>${fmt(h.amount)}</td>
+        <td>${fmt(h.cost)}</td>
+      </tr>`;
+    });
+    html += `</tbody></table>`;
+    panel.innerHTML = html;
+  }
+  panel.style.display = 'block';
+}
 
 function copyText(text, cb){
   if(navigator.clipboard && navigator.clipboard.writeText){
@@ -494,6 +615,7 @@ function selectCustomer(c){
   const badge = document.getElementById('custGradeBadge');
   badge.textContent = (c.grade||'A') + '級';
   badge.className = 'grade-badge grade-' + (c.grade||'A');
+  document.getElementById('tempBadge').style.display = c.temp ? 'inline-block' : 'none';
   document.getElementById('custPhone').textContent = c.phone ? ('電話 ' + c.phone) : '';
   document.getElementById('custAddress').textContent = c.address ? ('地址 ' + c.address) : '';
   custInfoBar.style.display = 'block';
@@ -513,6 +635,29 @@ document.getElementById('changeCustBtn').addEventListener('click', ()=>{
   custSearch.focus();
 });
 
+const tempCustRow = document.getElementById('tempCustRow');
+const tempCustForm = document.getElementById('tempCustForm');
+
+document.getElementById('tempCustOpenBtn').addEventListener('click', ()=>{
+  tempCustRow.style.display = 'none';
+  tempCustForm.style.display = 'flex';
+  document.getElementById('tempCustName').focus();
+});
+document.getElementById('tempCustCancelBtn').addEventListener('click', ()=>{
+  tempCustForm.style.display = 'none';
+  tempCustRow.style.display = 'block';
+  document.getElementById('tempCustName').value = '';
+});
+document.getElementById('tempCustConfirmBtn').addEventListener('click', ()=>{
+  const name = document.getElementById('tempCustName').value.trim();
+  if(!name){ alert('請輸入臨時客戶姓名'); return; }
+  const grade = document.getElementById('tempCustGrade').value;
+  selectCustomer({name, phone:'', address:'', grade, temp:true});
+  document.getElementById('tempCustName').value = '';
+  tempCustForm.style.display = 'none';
+  tempCustRow.style.display = 'block';
+});
+
 const orderInput = document.getElementById('orderSearchInput');
 const orderResultsEl = document.getElementById('orderResults');
 const orderStatusEl = document.getElementById('orderStatusText');
@@ -521,6 +666,21 @@ let pendingQty = {};
 
 function rowKey(r){ return (r[3] || r[4]); }
 
+function getScanQty(){
+  const v = Math.max(1, Math.round(fmtNum(document.getElementById('scanQtyInput').value)) || 1);
+  return v;
+}
+
+function scanAddDirect(r){
+  clearTimeout(orderDebounce);
+  const qty = getScanQty();
+  addToCart(r, qty);
+  orderInput.value = '';
+  orderResultsEl.innerHTML = '';
+  orderStatusEl.textContent = `已加入：${r[4]} × ${qty}`;
+  orderInput.focus();
+}
+
 function doOrderSearch(){
   const q = orderInput.value.trim();
   if(!q){
@@ -528,6 +688,13 @@ function doOrderSearch(){
     orderResultsEl.innerHTML = '';
     return;
   }
+
+  // exact barcode match (typical of a barcode scanner) -> add directly, skip the browsable list
+  if(/^[0-9]{6,}$/.test(q)){
+    const exact = rows.find(r => (r[3]||'') === q);
+    if(exact){ scanAddDirect(exact); return; }
+  }
+
   const matches = searchRows(q, 100);
   orderStatusEl.innerHTML = `找到 <b>${matches.length}</b> 筆結果`;
   if(!matches.length){
@@ -557,7 +724,9 @@ function doOrderSearch(){
       <div class="meta-row">
         <span>條碼 ${highlight(barcode||'—', q)}</span>
         <span>編號 ${highlight(code||'—', q)}</span>
+        <button class="history-btn" data-barcode="${escapeHtml(barcode||'')}" data-target="hist-order-${escapeHtml(key)}">歷史價錢</button>
       </div>
+      <div class="history-panel" id="hist-order-${escapeHtml(key)}" style="display:none;"></div>
       ${priceCellsHtml(r, q)}
     </div>`;
   }
@@ -575,15 +744,13 @@ orderInput.addEventListener('keydown', (e)=>{
   const q = orderInput.value.trim();
   if(!q) return;
   const exact = rows.find(r => (r[3]||'') === q);
-  if(exact){
-    addToCart(exact, 1);
-    orderInput.value = '';
-    orderResultsEl.innerHTML = '';
-    orderStatusEl.textContent = `已加入：${exact[4]}`;
-  }
+  if(exact){ scanAddDirect(exact); }
 });
 
 orderResultsEl.addEventListener('click', (e)=>{
+  const histBtn = e.target.closest('.history-btn');
+  if(histBtn){ toggleHistoryPanel(histBtn); return; }
+
   const card = e.target.closest('.order-card');
   if(!card) return;
   const key = card.dataset.key;
@@ -716,8 +883,37 @@ document.getElementById('clearCartBtn').addEventListener('click', ()=>{
 
 document.getElementById('printBtn').addEventListener('click', ()=>{
   if(!cart.length){ alert('清單是空的，先加入商品再列印'); return; }
+  logCartToHistory();
   buildPrintArea();
   window.print();
+  document.getElementById('histDownloadRow').style.display = 'flex';
+});
+
+function logCartToHistory(){
+  const now = new Date().toISOString();
+  const customerName = selectedCustomer ? selectedCustomer.name : '';
+  cart.forEach(it=>{
+    history.push({
+      date: now,
+      customer: customerName,
+      name: it.name,
+      barcode: it.barcode,
+      code: it.code,
+      qty: it.qty,
+      unitPrice: it.unitPrice,
+      amount: it.unitPrice * it.qty,
+      cost: fmtNum(it.base[5]) // AVERAGECOST at the time of this transaction
+    });
+  });
+}
+
+document.getElementById('downloadHistBtn').addEventListener('click', ()=>{
+  const blob = new Blob([JSON.stringify({history})], {type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = 'history.json';
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
 });
 
 function buildPrintArea(){
