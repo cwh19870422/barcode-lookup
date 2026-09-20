@@ -133,8 +133,18 @@
   .cart-totals .tline b{color:var(--ink); font-size:16px; margin-left:4px;}
   .cart-actions{display:flex; gap:10px; margin-top:14px;}
   .cart-actions button{flex:1; border:none; font-weight:600; font-size:14px; padding:12px; border-radius:12px; cursor:pointer; font-family:var(--sysfont);}
+  .btn-hold{background:rgba(255,149,0,0.12); color:var(--orange);}
   .btn-clear{background:var(--gray-fill); color:var(--red);}
   .btn-print{background:var(--blue); color:#fff;}
+
+  .held-orders-title{font-size:12px; font-weight:600; color:var(--secondary); margin:0 0 8px;}
+  .held-order-card{background:#fff; border-radius:12px; padding:12px 14px; box-shadow:var(--shadow); display:flex; align-items:center; gap:10px; margin-bottom:8px;}
+  .held-order-card .hoc-main{flex:1; min-width:0;}
+  .held-order-card .hoc-name{font-size:14px; font-weight:700; color:var(--ink); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+  .held-order-card .hoc-sub{font-size:11.5px; color:var(--secondary); margin-top:2px;}
+  .held-order-card button{border:none; font-weight:600; font-size:12.5px; padding:8px 13px; border-radius:9px; cursor:pointer; font-family:var(--sysfont); flex-shrink:0;}
+  .hoc-resume{background:var(--blue); color:#fff;}
+  .hoc-del{background:var(--gray-fill); color:var(--red);}
 
   .cust-table-wrap{background:#fff; border-radius:14px; overflow:hidden; box-shadow:var(--shadow);}
   table.cust-list{width:100%; border-collapse:collapse;}
@@ -232,6 +242,9 @@
         <input id="scanQtyInput" type="number" value="1" min="1" title="掃描條碼時要加入的數量">
       </div>
     </div>
+
+    <div id="heldOrdersPanel" style="display:none; margin-top:4px;"></div>
+
     <div class="status-row">
       <span id="orderStatusText">請搜尋或掃描商品加入清單</span>
     </div>
@@ -260,6 +273,7 @@
         <div class="tline">總金額 <b id="totalAmt">0</b></div>
       </div>
       <div class="cart-actions">
+        <button class="btn-hold" id="holdCartBtn">暫存訂單</button>
         <button class="btn-clear" id="clearCartBtn">清空清單</button>
         <button class="btn-print" id="printBtn">列印出貨單</button>
       </div>
@@ -302,6 +316,19 @@ let customers = [];
 let selectedCustomer = null;
 let cart = [];
 let history = []; // {date, customer, name, barcode, code, qty, unitPrice, amount, cost}
+let heldOrders = []; // {id, customer, cart, priceMode, savedAt}
+const HELD_ORDERS_KEY = 'joeda_pos_held_orders_v1';
+
+function loadHeldOrdersFromStorage(){
+  try{
+    const raw = localStorage.getItem(HELD_ORDERS_KEY);
+    heldOrders = raw ? (JSON.parse(raw) || []) : [];
+  }catch(e){ heldOrders = []; }
+}
+function saveHeldOrdersToStorage(){
+  try{ localStorage.setItem(HELD_ORDERS_KEY, JSON.stringify(heldOrders)); }
+  catch(e){ /* storage full or disabled — held orders still work for this session */ }
+}
 
 const PRICE_IDX = {cost:5, A:6, B:7, C:8, D:9, sell:10};
 const GRADE_TO_IDX = {A:6, B:7, C:8, D:9};
@@ -876,6 +903,94 @@ cartBody.addEventListener('click', (e)=>{
   renderCart();
 });
 
+document.getElementById('holdCartBtn').addEventListener('click', ()=>{
+  holdCurrentOrder();
+});
+
+function holdCurrentOrder(){
+  if(!cart.length && !selectedCustomer){
+    alert('目前沒有客戶或商品可以暫存');
+    return false;
+  }
+  heldOrders.push({
+    id: Date.now() + '-' + Math.random().toString(36).slice(2,7),
+    customer: selectedCustomer ? {...selectedCustomer} : null,
+    cart: cart.map(it => ({...it})),
+    priceMode: document.getElementById('priceSourceSelect').value,
+    savedAt: new Date().toISOString()
+  });
+  saveHeldOrdersToStorage();
+  cart = [];
+  selectedCustomer = null;
+  custInfoBar.style.display = 'none';
+  custPickerWrap.style.display = 'block';
+  renderCart();
+  renderHeldOrders();
+  return true;
+}
+
+function resumeHeldOrder(id){
+  const idx = heldOrders.findIndex(h => h.id === id);
+  if(idx === -1) return;
+  if(cart.length || selectedCustomer){
+    if(!confirm('目前畫面上還有訂單內容，要先把它暫存起來嗎？（取消的話這次取回會中止）')) return;
+    if(!holdCurrentOrder()) return;
+  }
+  const target = heldOrders[idx];
+  heldOrders.splice(idx, 1);
+  saveHeldOrdersToStorage();
+  cart = target.cart.map(it => ({...it}));
+  if(target.customer){
+    selectCustomer(target.customer);
+  }else{
+    selectedCustomer = null;
+    custInfoBar.style.display = 'none';
+    custPickerWrap.style.display = 'block';
+  }
+  document.getElementById('priceSourceSelect').value = target.priceMode || 'grade';
+  renderCart();
+  renderHeldOrders();
+}
+
+function deleteHeldOrder(id){
+  if(!confirm('確定要刪除這筆暫存的訂單嗎？刪除後無法復原。')) return;
+  heldOrders = heldOrders.filter(h => h.id !== id);
+  saveHeldOrdersToStorage();
+  renderHeldOrders();
+}
+
+function renderHeldOrders(){
+  const panel = document.getElementById('heldOrdersPanel');
+  if(!heldOrders.length){
+    panel.style.display = 'none';
+    panel.innerHTML = '';
+    return;
+  }
+  let html = `<div class="held-orders-title">暫存的訂單（${heldOrders.length}）</div>`;
+  heldOrders.forEach(h=>{
+    const totalQty = h.cart.reduce((s,it)=>s+fmtNum(it.qty),0);
+    const totalAmt = h.cart.reduce((s,it)=>s+fmtNum(it.unitPrice)*fmtNum(it.qty),0);
+    const name = h.customer ? h.customer.name : '未指定客戶';
+    html += `<div class="held-order-card">
+      <div class="hoc-main">
+        <div class="hoc-name">${escapeHtml(name)}</div>
+        <div class="hoc-sub">${h.cart.length} 項商品 · 共 ${fmt(totalQty)} 件 · $${fmt(totalAmt)}</div>
+      </div>
+      <button class="hoc-resume" data-id="${h.id}">取回</button>
+      <button class="hoc-del" data-id="${h.id}">刪除</button>
+    </div>`;
+  });
+  panel.innerHTML = html;
+  panel.style.display = 'block';
+}
+
+document.getElementById('heldOrdersPanel').addEventListener('click', (e)=>{
+  const resumeBtn = e.target.closest('.hoc-resume');
+  if(resumeBtn){ resumeHeldOrder(resumeBtn.dataset.id); return; }
+  const delBtn = e.target.closest('.hoc-del');
+  if(delBtn){ deleteHeldOrder(delBtn.dataset.id); return; }
+});
+
 document.getElementById('clearCartBtn').addEventListener('click', ()=>{
   if(cart.length && !confirm('確定要清空整張出貨單嗎？')) return;
   cart = [];
@@ -999,6 +1114,9 @@ function updateStickyOffset(){
 }
 window.addEventListener('resize', updateStickyOffset);
 updateStickyOffset();
+
+loadHeldOrdersFromStorage();
+renderHeldOrders();
 
 init();
 </script>
