@@ -238,6 +238,7 @@
         <div class="search-box" style="flex:1;">
           <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><rect x="3" y="7" width="18" height="10" rx="1"/><line x1="7" y1="7" x2="7" y2="17"/><line x1="10" y1="7" x2="10" y2="17"/><line x1="14" y1="7" x2="14" y2="17"/><line x1="17" y1="7" x2="17" y2="17"/></svg>
           <input id="orderSearchInput" type="text" placeholder="搜尋商品名稱／條碼，或用條碼槍掃描…" autocomplete="off">
+          <button class="clear-btn" id="orderClearBtn" title="清除">✕</button>
         </div>
         <input id="scanQtyInput" type="number" value="1" min="1" title="掃描條碼時要加入的數量">
       </div>
@@ -688,6 +689,7 @@ document.getElementById('tempCustConfirmBtn').addEventListener('click', ()=>{
 const orderInput = document.getElementById('orderSearchInput');
 const orderResultsEl = document.getElementById('orderResults');
 const orderStatusEl = document.getElementById('orderStatusText');
+const orderClearBtn = document.getElementById('orderClearBtn');
 let orderDebounce = null;
 let pendingQty = {};
 
@@ -702,14 +704,17 @@ function scanAddDirect(r){
   clearTimeout(orderDebounce);
   const qty = getScanQty();
   addToCart(r, qty);
+  document.getElementById('scanQtyInput').value = 1;
   orderInput.value = '';
   orderResultsEl.innerHTML = '';
   orderStatusEl.textContent = `已加入：${r[4]} × ${qty}`;
+  orderClearBtn.style.visibility = 'hidden';
   orderInput.focus();
 }
 
 function doOrderSearch(){
   const q = orderInput.value.trim();
+  orderClearBtn.style.visibility = q ? 'visible' : 'hidden';
   if(!q){
     orderStatusEl.textContent = '請搜尋或掃描商品加入清單';
     orderResultsEl.innerHTML = '';
@@ -774,6 +779,13 @@ orderInput.addEventListener('keydown', (e)=>{
   const exact = rows.find(r => ((r[3]||'') === q) || ((r[2]||'') === q));
   if(exact){ scanAddDirect(exact); }
 });
+
+orderClearBtn.addEventListener('click', ()=>{
+  orderInput.value = '';
+  doOrderSearch();
+  orderInput.focus();
+});
+orderClearBtn.style.visibility = 'hidden';
 
 orderResultsEl.addEventListener('click', (e)=>{
   const histBtn = e.target.closest('.history-btn');
