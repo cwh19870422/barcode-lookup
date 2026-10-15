@@ -131,6 +131,13 @@
   .cart-totals{display:flex; justify-content:flex-end; gap:26px; padding:14px 4px; border-top:1.5px solid var(--ink); margin-top:4px;}
   .cart-totals .tline{font-size:13px; color:var(--secondary);}
   .cart-totals .tline b{color:var(--ink); font-size:16px; margin-left:4px;}
+  .quick-fee-row{display:flex; align-items:center; gap:8px; margin-top:12px; flex-wrap:wrap;}
+  .quick-fee-label{font-size:12px; color:var(--secondary); font-weight:600; margin-right:2px;}
+  .quick-fee-btn{border:none; background:var(--gray-fill); color:var(--blue); font-weight:600; font-size:13.5px; padding:9px 16px; border-radius:999px; cursor:pointer; font-family:var(--sysfont);}
+  .quick-fee-btn.refund{color:var(--red);}
+  .quick-fee-btn:active{opacity:.6;}
+  tr.fee-row td{background:rgba(0,122,255,0.04);}
+  tr.fee-row.refund td{background:rgba(255,59,48,0.05);}
   .cart-actions{display:flex; gap:10px; margin-top:14px;}
   .cart-actions button{flex:1; border:none; font-weight:600; font-size:14px; padding:12px; border-radius:12px; cursor:pointer; font-family:var(--sysfont);}
   .btn-hold{background:rgba(255,149,0,0.12); color:var(--orange);}
@@ -272,6 +279,12 @@
       <div class="cart-totals" id="cartTotals" style="display:none;">
         <div class="tline">總數量 <b id="totalQty">0</b></div>
         <div class="tline">總金額 <b id="totalAmt">0</b></div>
+      </div>
+      <div class="quick-fee-row">
+        <span class="quick-fee-label">快捷</span>
+        <button type="button" class="quick-fee-btn" data-fee="運費">＋ 運費</button>
+        <button type="button" class="quick-fee-btn" data-fee="前帳">＋ 前帳</button>
+        <button type="button" class="quick-fee-btn refund" data-fee="退費">－ 退費</button>
       </div>
       <div class="cart-actions">
         <button class="btn-hold" id="holdCartBtn">暫存訂單</button>
@@ -849,10 +862,31 @@ function addToCart(r, qty){
 function applyPriceSourceToCart(){
   const mode = document.getElementById('priceSourceSelect').value;
   cart.forEach(it=>{
+    if(it.special) return; // 運費/前帳/退費 不受單價依據影響
     it.unitPrice = fmtNum(getPriceValue(it.base, mode, selectedCustomer ? selectedCustomer.grade : 'A'));
   });
   renderCart();
 }
+
+// 快捷項目：運費 / 前帳 / 退費（退費以負數計入總金額）
+function addFeeLine(kind){
+  cart.push({
+    key: 'fee-' + Date.now() + '-' + Math.random().toString(36).slice(2,6),
+    code:'', barcode:'', name:kind, base:null,
+    qty:1, unitPrice:0, note:'', special:kind
+  });
+  const idx = cart.length - 1;
+  renderCart();
+  const input = cartBody.querySelector(`.cart-price[data-idx="${idx}"]`);
+  if(input){
+    input.scrollIntoView({block:'center', behavior:'smooth'});
+    input.focus(); input.select();
+  }
+}
+document.querySelectorAll('.quick-fee-btn').forEach(btn=>{
+  btn.addEventListener('click', ()=> addFeeLine(btn.dataset.fee));
+});
+const realItems = list => list.filter(it => !it.special);
 document.getElementById('priceSourceSelect').addEventListener('change', applyPriceSourceToCart);
 
 const cartBody = document.getElementById('cartBody');
@@ -869,10 +903,12 @@ function renderCart(){
     <th>品名</th><th style="width:70px;">單價</th><th style="width:56px;">數量</th><th style="width:70px;">小計</th><th>備註</th><th style="width:26px;"></th>
   </tr></thead><tbody>`;
   cart.forEach((it,i)=>{
-    html += `<tr data-idx="${i}">
+    const isFee = !!it.special;
+    const shownPrice = it.special === '退費' ? Math.abs(it.unitPrice) : it.unitPrice;
+    html += `<tr data-idx="${i}" class="${isFee ? 'fee-row' + (it.special==='退費' ? ' refund' : '') : ''}">
       <td>${escapeHtml(it.name)}</td>
-      <td><input type="number" class="cart-price" data-idx="${i}" value="${it.unitPrice}"></td>
-      <td><input type="number" class="cart-qty" data-idx="${i}" value="${it.qty}" min="1"></td>
+      <td><input type="number" inputmode="decimal" class="cart-price" data-idx="${i}" value="${shownPrice === 0 && isFee ? '' : shownPrice}" ${isFee ? 'placeholder="金額"' : ''}></td>
+      <td>${isFee ? '<span style="display:block;text-align:center;color:var(--secondary);">—</span>' : `<input type="number" class="cart-qty" data-idx="${i}" value="${it.qty}" min="1">`}</td>
       <td class="cart-subtotal" id="subtotal-${i}">${fmt(it.unitPrice*it.qty)}</td>
       <td><input type="text" class="cart-note" data-idx="${i}" value="${escapeHtml(it.note)}" placeholder="備註…"></td>
       <td><button class="cart-del" data-idx="${i}">✕</button></td>
@@ -885,7 +921,7 @@ function renderCart(){
 }
 
 function updateCartTotals(){
-  const totalQty = cart.reduce((s,it)=>s+fmtNum(it.qty),0);
+  const totalQty = realItems(cart).reduce((s,it)=>s+fmtNum(it.qty),0);
   const totalAmt = cart.reduce((s,it)=>s+fmtNum(it.unitPrice)*fmtNum(it.qty),0);
   document.getElementById('totalQty').textContent = fmt(totalQty);
   document.getElementById('totalAmt').textContent = fmt(totalAmt);
@@ -896,7 +932,9 @@ cartBody.addEventListener('input', (e)=>{
   if(idx===undefined) return;
   const i = parseInt(idx,10);
   if(e.target.classList.contains('cart-price')){
-    cart[i].unitPrice = fmtNum(e.target.value);
+    const v = fmtNum(e.target.value);
+    // 退費：輸入正數即可，系統自動以負數計入
+    cart[i].unitPrice = cart[i].special === '退費' ? -Math.abs(v) : v;
   }else if(e.target.classList.contains('cart-qty')){
     cart[i].qty = Math.max(1, fmtNum(e.target.value)||1);
   }else if(e.target.classList.contains('cart-note')){
@@ -980,7 +1018,7 @@ function renderHeldOrders(){
   }
   let html = `<div class="held-orders-title">暫存的訂單（${heldOrders.length}）</div>`;
   heldOrders.forEach(h=>{
-    const totalQty = h.cart.reduce((s,it)=>s+fmtNum(it.qty),0);
+    const totalQty = realItems(h.cart).reduce((s,it)=>s+fmtNum(it.qty),0);
     const totalAmt = h.cart.reduce((s,it)=>s+fmtNum(it.unitPrice)*fmtNum(it.qty),0);
     const name = h.customer ? h.customer.name : '未指定客戶';
     html += `<div class="held-order-card">
@@ -1021,6 +1059,7 @@ function logCartToHistory(){
   const now = new Date().toISOString();
   const customerName = selectedCustomer ? selectedCustomer.name : '';
   cart.forEach(it=>{
+    if(it.special) return; // 運費/前帳/退費 不計入商品銷售歷史
     history.push({
       date: now,
       customer: customerName,
@@ -1051,11 +1090,11 @@ function buildPrintArea(){
       <td style="padding:6px 4px; border-bottom:1px solid #ddd;">${escapeHtml(it.code || it.barcode || '')}</td>
       <td style="padding:6px 4px; border-bottom:1px solid #ddd;">${escapeHtml(it.name)}</td>
       <td style="padding:6px 4px; border-bottom:1px solid #ddd; text-align:right;">${fmt(it.unitPrice)}</td>
-      <td style="padding:6px 4px; border-bottom:1px solid #ddd; text-align:center;">${it.qty}</td>
+      <td style="padding:6px 4px; border-bottom:1px solid #ddd; text-align:center;">${it.special ? '' : it.qty}</td>
       <td style="padding:6px 4px; border-bottom:1px solid #ddd; text-align:right;">${fmt(it.unitPrice*it.qty)}</td>
       <td style="padding:6px 4px; border-bottom:1px solid #ddd;">${escapeHtml(it.note||'')}</td>
     </tr>`).join('');
-  const totalQty = cart.reduce((s,it)=>s+fmtNum(it.qty),0);
+  const totalQty = realItems(cart).reduce((s,it)=>s+fmtNum(it.qty),0);
   const totalAmt = cart.reduce((s,it)=>s+fmtNum(it.unitPrice)*fmtNum(it.qty),0);
 
   document.getElementById('printArea').innerHTML = `
