@@ -282,7 +282,8 @@
       <div id="cartBody"></div>
       <div class="cart-totals" id="cartTotals" style="display:none;">
         <div class="tline">總數量 <b id="totalQty">0</b></div>
-        <div class="tline">總金額 <b id="totalAmt">0</b></div>
+        <div class="tline" id="untaxedLine" style="display:none;">未稅總額 <b id="untaxedAmt">0</b></div>
+        <div class="tline"><span id="totalAmtLabel">總金額</span> <b id="totalAmt">0</b></div>
       </div>
       <div class="quick-fee-row">
         <span class="quick-fee-label">快捷</span>
@@ -969,7 +970,13 @@ function renderCart(){
 function updateCartTotals(){
   const totalQty = realItems(cart).reduce((s,it)=>s+fmtNum(it.qty),0);
   const totalAmt = cart.reduce((s,it)=>s+fmtNum(it.unitPrice)*fmtNum(it.qty),0);
+  // 有按稅金時：分成「未稅總額」與「含稅總額」；沒有稅金行就維持原本的「總金額」
+  const taxAmt = cart.filter(it => it.special === '稅金').reduce((s,it)=>s+fmtNum(it.unitPrice)*fmtNum(it.qty),0);
+  const hasTax = cart.some(it => it.special === '稅金');
   document.getElementById('totalQty').textContent = fmt(totalQty);
+  document.getElementById('untaxedLine').style.display = hasTax ? '' : 'none';
+  document.getElementById('untaxedAmt').textContent = fmt(totalAmt - taxAmt);
+  document.getElementById('totalAmtLabel').textContent = hasTax ? '含稅總額' : '總金額';
   document.getElementById('totalAmt').textContent = fmt(totalAmt);
 }
 
@@ -1149,6 +1156,8 @@ function buildPrintArea(){
     </tr>`).join('');
   const totalQty = realItems(cart).reduce((s,it)=>s+fmtNum(it.qty),0);
   const totalAmt = cart.reduce((s,it)=>s+fmtNum(it.unitPrice)*fmtNum(it.qty),0);
+  const hasTax = cart.some(it => it.special === '稅金');
+  const taxAmt = cart.filter(it => it.special === '稅金').reduce((s,it)=>s+fmtNum(it.unitPrice)*fmtNum(it.qty),0);
 
   document.getElementById('printArea').innerHTML = `
     <div style="font-family:-apple-system,'PingFang TC',sans-serif; padding:24px; color:#000;">
@@ -1172,12 +1181,25 @@ function buildPrintArea(){
           <th style="text-align:left; padding:6px 4px;">備註</th>
         </tr></thead>
         <tbody>${rowsHtml}</tbody>
-        <tfoot><tr style="border-top:2px solid #000; font-weight:700;">
-          <td colspan="3"></td>
-          <td style="text-align:center; padding:8px 4px;">${totalQty}</td>
-          <td style="text-align:right; padding:8px 4px;">${fmt(totalAmt)}</td>
-          <td></td>
-        </tr></tfoot>
+        <tfoot>${hasTax ? `
+          <tr style="border-top:2px solid #000; font-weight:700;">
+            <td colspan="3" style="text-align:right; padding:8px 4px;">未稅總額</td>
+            <td style="text-align:center; padding:8px 4px;">${totalQty}</td>
+            <td style="text-align:right; padding:8px 4px;">${fmt(totalAmt - taxAmt)}</td>
+            <td></td>
+          </tr>
+          <tr style="font-weight:700;">
+            <td colspan="3" style="text-align:right; padding:8px 4px;">含稅總額</td>
+            <td></td>
+            <td style="text-align:right; padding:8px 4px;">${fmt(totalAmt)}</td>
+            <td></td>
+          </tr>` : `
+          <tr style="border-top:2px solid #000; font-weight:700;">
+            <td colspan="3"></td>
+            <td style="text-align:center; padding:8px 4px;">${totalQty}</td>
+            <td style="text-align:right; padding:8px 4px;">${fmt(totalAmt)}</td>
+            <td></td>
+          </tr>`}</tfoot>
       </table>
     </div>
   `;
