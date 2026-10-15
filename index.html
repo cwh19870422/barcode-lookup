@@ -287,6 +287,7 @@
         <button type="button" class="quick-fee-btn" data-fee="運費">＋ 運費</button>
         <button type="button" class="quick-fee-btn" data-fee="前帳">＋ 前帳</button>
         <button type="button" class="quick-fee-btn refund" data-fee="退費">－ 退費</button>
+        <button type="button" class="quick-fee-btn" id="taxBtn">＋ 稅金 5%</button>
       </div>
       <div class="quick-fee-row" id="discountRow">
         <span class="quick-fee-label">定價折數</span>
@@ -939,6 +940,19 @@ document.querySelectorAll('.quick-fee-btn[data-fee]').forEach(btn=>{
   btn.addEventListener('click', ()=> addFeeLine(btn.dataset.fee));
 });
 const realItems = list => list.filter(it => !it.special);
+
+// 稅金：以目前「商品合計」（不含運費／前帳／退費／既有稅金）的 5% 加一行；再按一次會重新計算同一行
+document.getElementById('taxBtn').addEventListener('click', ()=>{
+  const base = realItems(cart).reduce((s,it)=>s+fmtNum(it.unitPrice)*fmtNum(it.qty),0);
+  if(base <= 0){ alert('請先加入商品，才能計算稅金'); return; }
+  const tax = Math.round(base * 0.05);
+  let line = cart.find(it => it.special === '稅金');
+  if(line){ line.unitPrice = tax; }
+  else{
+    cart.push({key:'fee-tax-'+Date.now(), code:'', barcode:'', name:'稅金 (5%)', base:null, qty:1, unitPrice:tax, note:'', special:'稅金'});
+  }
+  renderCart();
+});
 document.getElementById('priceSourceSelect').addEventListener('change', ()=>{
   discountRate = null; updateDiscountButtons();
   applyPriceSourceToCart();
