@@ -144,6 +144,52 @@
   .quick-fee-btn:active{opacity:.6;}
   tr.fee-row td{background:rgba(0,122,255,0.04);}
   tr.fee-row.refund td{background:rgba(255,59,48,0.05);}
+
+  .btn-save{background:#1f8a3d; color:#fff;}
+  .edit-banner{background:rgba(255,149,0,0.14); color:#8a5200; border-radius:10px; padding:10px 12px; margin-bottom:12px; font-size:13px; display:none; align-items:center; gap:10px; flex-wrap:wrap;}
+  .edit-banner button{margin-left:auto; border:none; background:#fff; color:var(--red); font-weight:600; font-size:12.5px; padding:6px 12px; border-radius:8px; cursor:pointer;}
+  .txn-order-wrap{background:#fff; border-radius:10px; overflow-x:auto; margin-bottom:6px;}
+  .cloud-status{margin-top:10px; font-size:12.5px; color:var(--secondary); min-height:0;}
+  .cloud-status.ok{color:#1f8a3d;} .cloud-status.warn{color:var(--orange);} .cloud-status.err{color:var(--red);}
+  .txn-card{background:#fff; border-radius:14px; padding:14px 16px; box-shadow:var(--shadow); margin-bottom:14px;}
+  .txn-head{display:flex; align-items:center; gap:10px;}
+  .txn-head b{font-size:15px;}
+  .cloud-badge{font-size:11px; font-weight:700; padding:2px 9px; border-radius:999px; background:var(--gray-fill); color:var(--secondary);}
+  .cloud-badge.on{background:rgba(52,199,89,0.14); color:#1f8a3d;}
+  .txn-head .txn-small-btn{margin-left:auto;}
+  .txn-hint{font-size:12px; color:var(--secondary); line-height:1.6; margin-top:6px;}
+  .txn-hint code, .txn-steps code{font-family:var(--monofont); background:var(--gray-fill); padding:1px 5px; border-radius:4px;}
+  .txn-steps{font-size:12.5px; color:#4A4A4C; line-height:1.7; padding-left:18px; margin:0 0 10px;}
+  .txn-small-btn{border:none; background:var(--gray-fill); color:var(--blue); font-weight:600; font-size:12.5px; padding:7px 13px; border-radius:9px; cursor:pointer; font-family:var(--sysfont);}
+  .txn-small-btn.primary{background:var(--blue); color:#fff;}
+  .txn-small-btn.danger{color:var(--red);}
+  .txn-btn-row{display:flex; gap:8px; margin-top:8px; flex-wrap:wrap;}
+  #ghTokenInput, #txnCust, .txn-dates input{border:none; background:var(--gray-fill); border-radius:10px; padding:11px 12px; font-family:var(--sysfont); font-size:14px; color:var(--ink); width:100%; box-sizing:border-box;}
+  .txn-filters{background:#fff; border-radius:14px; padding:14px 16px; box-shadow:var(--shadow); margin-bottom:14px; display:flex; flex-direction:column; gap:10px;}
+  .txn-dates{display:flex; align-items:center; gap:8px;} .txn-dates span{color:var(--secondary);}
+  .txn-chips{display:flex; gap:8px; flex-wrap:wrap;}
+  .txn-chip{border:none; background:var(--gray-fill); color:var(--ink); font-weight:600; font-size:12.5px; padding:7px 14px; border-radius:999px; cursor:pointer; font-family:var(--sysfont);}
+  .txn-chip.active{background:var(--blue); color:#fff;}
+  .txn-sum{background:#fff; border-radius:14px; padding:16px 18px; box-shadow:var(--shadow); margin-bottom:14px;}
+  .txn-sum .big{font-size:28px; font-weight:800; letter-spacing:-0.5px;}
+  .txn-sum .lbl{font-size:12.5px; color:var(--secondary); margin-top:2px;}
+  .txn-sum .break{font-size:12.5px; color:#4A4A4C; margin-top:10px; line-height:1.8;}
+  table.txn-cust-table{width:100%; border-collapse:collapse; margin-top:12px; font-size:13px;}
+  table.txn-cust-table th{text-align:left; font-size:11px; color:var(--secondary); font-weight:600; padding:6px 4px; border-bottom:1px solid var(--line);}
+  table.txn-cust-table td{padding:8px 4px; border-bottom:1px solid var(--line);}
+  table.txn-cust-table td.num, table.txn-cust-table th.num{text-align:right;}
+  .txn-item{background:#fff; border-radius:12px; padding:12px 14px; box-shadow:var(--shadow); margin-bottom:8px;}
+  .txn-item-top{display:flex; align-items:center; gap:10px;}
+  .txn-item-main{flex:1; min-width:0;}
+  .txn-item-name{font-size:14px; font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+  .txn-item-sub{font-size:11.5px; color:var(--secondary); margin-top:2px;}
+  .txn-item-amt{font-size:15px; font-weight:800; white-space:nowrap;}
+  .txn-detail{margin-top:10px; background:var(--paper-alt); border-radius:10px; padding:8px 10px; display:none;}
+  .txn-detail table{width:100%; border-collapse:collapse; font-size:12.5px;}
+  .txn-detail th{text-align:left; font-size:11px; color:var(--secondary); font-weight:600; padding:4px 4px;}
+  .txn-detail td{padding:5px 4px; border-top:1px solid var(--line);}
+  .txn-detail td.num, .txn-detail th.num{text-align:right;}
+  .txn-detail .txn-actions{margin-top:8px; display:flex; justify-content:flex-end;}
   .cart-actions{display:flex; gap:10px; margin-top:14px;}
   .cart-actions button{flex:1; border:none; font-weight:600; font-size:14px; padding:12px; border-radius:12px; cursor:pointer; font-family:var(--sysfont);}
   .btn-hold{background:rgba(255,149,0,0.12); color:var(--orange);}
@@ -189,6 +235,7 @@
     <button class="tab-btn active" data-tab="search">🔍 搜尋</button>
     <button class="tab-btn" data-tab="order">🧾 打單</button>
     <button class="tab-btn" data-tab="customers">👤 客戶</button>
+    <button class="tab-btn" data-tab="txns">📊 交易紀錄</button>
   </div>
 </div>
 
@@ -239,7 +286,8 @@
           <span class="cust-name" id="custName"></span>
           <span class="grade-badge" id="custGradeBadge"></span>
           <span class="temp-badge" id="tempBadge" style="display:none;">臨時</span>
-          <button class="change-cust-btn" id="changeCustBtn">換客戶</button>
+          <button class="change-cust-btn" id="viewCustTxnsBtn" style="margin-left:auto;">查看紀錄</button>
+          <button class="change-cust-btn" id="changeCustBtn" style="margin-left:8px;">換客戶</button>
         </div>
         <div class="cust-info-sub">
           <span id="custPhone"></span>
@@ -269,6 +317,7 @@
         <div class="cart-title">出貨清單</div>
         <div class="cart-count" id="cartCount">0 項</div>
       </div>
+      <div class="edit-banner" id="editBanner"><span id="editBannerText"></span><button type="button" id="cancelEditBtn">取消編輯</button></div>
       <div class="price-source-row">
         <label>整份清單單價依據</label>
         <select id="priceSourceSelect">
@@ -300,11 +349,9 @@
         <button class="btn-hold" id="holdCartBtn">暫存訂單</button>
         <button class="btn-clear" id="clearCartBtn">清空清單</button>
         <button class="btn-print" id="printBtn">列印出貨單</button>
+        <button class="btn-save" id="checkoutBtn">結帳</button>
       </div>
-      <div id="histDownloadRow" style="display:none; margin-top:10px; background:var(--paper-alt); border-radius:10px; padding:10px 12px; font-size:12.5px; color:#4A4A4C; display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
-        <span>這筆交易已記錄，記得下載並上傳 <code style="font-family:var(--monofont); background:var(--gray-fill); padding:1px 6px; border-radius:4px;">history.json</code> 才會保存到網站上</span>
-        <button id="downloadHistBtn" style="margin-left:auto; background:var(--blue); color:#fff; border:none; font-weight:600; font-size:12.5px; padding:7px 13px; border-radius:8px; cursor:pointer;">⬇ 下載 history.json</button>
-      </div>
+      <div id="cloudStatus" class="cloud-status"></div>
     </div>
   </section>
 
@@ -324,6 +371,50 @@
     </div>
   </section>
 
+  <section class="tab-panel" id="tab-txns">
+    <div class="txn-card">
+      <div class="txn-head">
+        <b>☁ 雲端存檔</b>
+        <span id="cloudBadge" class="cloud-badge"></span>
+        <button type="button" class="txn-small-btn" id="cloudSettingsBtn">設定</button>
+      </div>
+      <div class="txn-hint">每筆交易按「列印出貨單」或「儲存交易」時，會自動存進 GitHub 倉庫的 <code>transactions/</code> 資料夾（每月一個檔案，並有完整版本備份），開啟網站時自動讀取。</div>
+      <div id="cloudSettings" style="display:none; margin-top:12px;">
+        <ol class="txn-steps">
+          <li>到 GitHub 右上角頭像 → <b>Settings</b> → 最下面 <b>Developer settings</b> → <b>Personal access tokens</b> → <b>Fine-grained tokens</b> → <b>Generate new token</b></li>
+          <li><b>Repository access</b> 選 <b>Only select repositories</b>，只勾 <b>barcode-lookup</b></li>
+          <li><b>Repository permissions</b> 找到 <b>Contents</b>，改成 <b>Read and write</b>（其他都不要開）</li>
+          <li>有效期限選最長，按 <b>Generate token</b>，複製以 <code>github_pat_</code> 開頭的那串，貼到下面</li>
+        </ol>
+        <input type="password" id="ghTokenInput" placeholder="貼上 github_pat_…（只存在這台裝置的瀏覽器）" autocomplete="off">
+        <div class="txn-btn-row">
+          <button type="button" class="txn-small-btn primary" id="ghTokenSaveBtn">儲存並測試</button>
+          <button type="button" class="txn-small-btn" id="ghTokenClearBtn">清除這台的設定</button>
+        </div>
+        <div id="ghTokenMsg" class="txn-hint" style="margin-top:8px;"></div>
+        <div class="txn-hint" style="margin-top:8px;">這組金鑰只能操作 barcode-lookup 這個倉庫，只存在你按儲存的這台裝置，不會寫進網站程式碼。每台要用的裝置（電腦、手機）都要各貼一次。</div>
+      </div>
+    </div>
+
+    <div class="txn-filters">
+      <input id="txnCust" type="text" list="txnCustList" placeholder="客人（留空 = 全部客人）" autocomplete="off">
+      <datalist id="txnCustList"></datalist>
+      <div class="txn-dates">
+        <input id="txnFrom" type="date"> <span>～</span> <input id="txnTo" type="date">
+      </div>
+      <div class="txn-chips">
+        <button type="button" class="txn-chip" data-range="today">今天</button>
+        <button type="button" class="txn-chip" data-range="month">本月</button>
+        <button type="button" class="txn-chip" data-range="lastmonth">上月</button>
+        <button type="button" class="txn-chip" data-range="year">今年</button>
+        <button type="button" class="txn-chip" data-range="all">全部</button>
+        <button type="button" class="txn-small-btn" id="txnReloadBtn" style="margin-left:auto;">⟳ 重新讀取</button>
+      </div>
+    </div>
+    <div id="txnSummary"></div>
+    <div id="txnList"></div>
+  </section>
+
 </main>
 
 <footer>
@@ -340,7 +431,8 @@ let customers = [];
 let selectedCustomer = null;
 let cart = [];
 let selectedCartKey = null; // 目前點選、準備打折的商品
-let history = []; // {date, customer, name, barcode, code, qty, unitPrice, amount, cost}
+let history = []; // {date, customer, name, barcode, code, qty, unitPrice, amount, cost}（由 legacyHistory + 雲端交易紀錄合併而成）
+let legacyHistory = []; // 舊版 history.json 內容（若有）
 let heldOrders = []; // {id, customer, cart, priceMode, savedAt}
 const HELD_ORDERS_KEY = 'joeda_pos_held_orders_v1';
 
@@ -421,6 +513,7 @@ async function init(){
     if(res3.ok){
       const d3 = await res3.json();
       history = d3.history || [];
+      legacyHistory = history.slice();
     }
   }catch(e){ history = []; }
 }
@@ -886,7 +979,7 @@ function addToCart(r, qty){
 function applyPriceSourceToCart(){
   const mode = document.getElementById('priceSourceSelect').value;
   cart.forEach(it=>{
-    if(it.special || !it.base) return; // 運費/前帳/退費/臨時商品 不受單價依據影響
+    if(it.special || !it.base || it.frozen) return; // 運費/前帳/退費/臨時商品/已不在商品檔的舊訂單商品 不受單價依據影響
     it.unitPrice = fmtNum(getPriceValue(it.base, mode, selectedCustomer ? selectedCustomer.grade : 'A'));
     it.disc = null;
   });
@@ -968,6 +1061,7 @@ const cartBody = document.getElementById('cartBody');
 const cartTotalsEl = document.getElementById('cartTotals');
 
 function renderCart(){
+  updateEditBanner();
   document.getElementById('cartCount').textContent = cart.length + ' 項';
   if(!cart.length){
     cartBody.innerHTML = `<div class="cart-empty">清單是空的，搜尋商品後點「加入」開始建立出貨單</div>`;
@@ -1062,10 +1156,12 @@ function holdCurrentOrder(){
     customer: selectedCustomer ? {...selectedCustomer} : null,
     cart: cart.map(it => ({...it})),
     priceMode: document.getElementById('priceSourceSelect').value,
+    txn: currentTxn,
     savedAt: new Date().toISOString()
   });
   saveHeldOrdersToStorage();
   cart = [];
+  currentTxn = null;
   selectedCustomer = null;
   custInfoBar.style.display = 'none';
   custPickerWrap.style.display = 'block';
@@ -1093,6 +1189,7 @@ function resumeHeldOrder(id){
     custPickerWrap.style.display = 'block';
   }
   document.getElementById('priceSourceSelect').value = target.priceMode || 'grade';
+  currentTxn = target.txn || null;
   renderCart();
   renderHeldOrders();
 }
@@ -1139,67 +1236,136 @@ document.getElementById('heldOrdersPanel').addEventListener('click', (e)=>{
 document.getElementById('clearCartBtn').addEventListener('click', ()=>{
   if(cart.length && !confirm('確定要清空整張出貨單嗎？')) return;
   cart = [];
+  currentTxn = null;
   renderCart();
 });
 
 document.getElementById('printBtn').addEventListener('click', ()=>{
   if(!cart.length){ alert('清單是空的，先加入商品再列印'); return; }
-  logCartToHistory();
-  buildPrintArea();
+  buildPrintArea();   // 列印不會儲存；要存進客人紀錄請按「結帳」
   window.print();
-  document.getElementById('histDownloadRow').style.display = 'flex';
 });
 
-function logCartToHistory(){
-  const now = new Date().toISOString();
-  const customerName = selectedCustomer ? selectedCustomer.name : '';
-  cart.forEach(it=>{
-    if(it.special || !it.base) return; // 運費/前帳/退費/臨時商品 不計入商品銷售歷史
-    history.push({
-      date: now,
-      customer: customerName,
-      name: it.name,
-      barcode: it.barcode,
-      code: it.code,
-      qty: it.qty,
-      unitPrice: it.unitPrice,
-      amount: it.unitPrice * it.qty,
-      cost: fmtNum(it.base[5]) // AVERAGECOST at the time of this transaction
-    });
-  });
+// 結帳：存進該客人的交易紀錄（編輯舊訂單時則覆蓋原訂單），存完清空準備下一張單
+document.getElementById('checkoutBtn').addEventListener('click', ()=>{
+  if(!cart.length){ alert('清單是空的，沒有可結帳的內容'); return; }
+  const editing = !!currentTxn;
+  const snap = snapshotCart();
+  const who = snap.customer ? snap.customer.name : '未指定客戶';
+  if(!confirm(`${editing ? '確定儲存修改？（會覆蓋原訂單）' : '確定結帳？'}\n${who}　合計 $${fmt(snap.total)}`)) return;
+  if(editing) currentTxn.editedAt = new Date().toISOString();
+  saveTransaction();
+  cart = []; currentTxn = null; selectedCartKey = null;
+  resetOrderCustomerUI();
+  renderCart(); updateEditBanner();
+});
+
+function resetOrderCustomerUI(){
+  selectedCustomer = null;
+  custInfoBar.style.display = 'none';
+  custPickerWrap.style.display = 'block';
 }
 
-document.getElementById('downloadHistBtn').addEventListener('click', ()=>{
-  const blob = new Blob([JSON.stringify({history})], {type:'application/json'});
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url; a.download = 'history.json';
-  document.body.appendChild(a); a.click(); document.body.removeChild(a);
-  URL.revokeObjectURL(url);
+function switchTab(name){
+  const btn = document.querySelector(`.tab-btn[data-tab="${name}"]`);
+  if(btn) btn.click();
+}
+
+function updateEditBanner(){
+  const el = document.getElementById('editBanner');
+  const btn = document.getElementById('checkoutBtn');
+  if(currentTxn){
+    const d = new Date(currentTxn.date);
+    document.getElementById('editBannerText').textContent = `✏ 編輯已儲存的訂單（${d.toLocaleDateString('zh-TW')} ${pad2(d.getHours())}:${pad2(d.getMinutes())}）— 按「儲存修改」會覆蓋原訂單`;
+    el.style.display = 'flex';
+    btn.textContent = '儲存修改';
+  }else{
+    el.style.display = 'none';
+    btn.textContent = '結帳';
+  }
+}
+document.getElementById('cancelEditBtn').addEventListener('click', ()=>{
+  if(!confirm('取消編輯？目前畫面上的修改不會儲存，原訂單維持不變。')) return;
+  cart = []; currentTxn = null; selectedCartKey = null;
+  resetOrderCustomerUI();
+  renderCart(); updateEditBanner();
 });
 
-function buildPrintArea(){
-  const c = selectedCustomer;
-  const rowsHtml = cart.map(it => `
-    <tr>
-      <td style="padding:6px 4px; border-bottom:1px solid #ddd;">${escapeHtml(it.code || it.barcode || '')}</td>
-      <td style="padding:6px 4px; border-bottom:1px solid #ddd;">${escapeHtml(it.name)}</td>
-      <td style="padding:6px 4px; border-bottom:1px solid #ddd; text-align:right;">${fmt(it.unitPrice)}</td>
-      <td style="padding:6px 4px; border-bottom:1px solid #ddd; text-align:center;">${it.special ? '' : it.qty}</td>
-      <td style="padding:6px 4px; border-bottom:1px solid #ddd; text-align:right;">${fmt(it.unitPrice*it.qty)}</td>
-      <td style="padding:6px 4px; border-bottom:1px solid #ddd;">${escapeHtml(it.note||'')}</td>
-    </tr>`).join('');
-  const totalQty = realItems(cart).reduce((s,it)=>s+fmtNum(it.qty),0);
-  const totalAmt = cart.reduce((s,it)=>s+fmtNum(it.unitPrice)*fmtNum(it.qty),0);
-  const hasTax = cart.some(it => it.special === '稅金');
-  const taxAmt = cart.filter(it => it.special === '稅金').reduce((s,it)=>s+fmtNum(it.unitPrice)*fmtNum(it.qty),0);
+// 把已儲存的訂單原樣叫回打單畫面編輯
+function lineToCartItem(l){
+  const uid = Math.random().toString(36).slice(2,6);
+  if(l.type === 'fee'){
+    return {key:'fee-' + Date.now() + '-' + uid, code:'', barcode:'', name:l.name || l.kind, base:null, qty:1, unitPrice:l.unitPrice, note:'', special:l.kind};
+  }
+  if(l.type === 'temp'){
+    return {key:'temp-' + Date.now() + '-' + uid, code:'', barcode:'', name:l.name, base:null, qty:l.qty, unitPrice:l.unitPrice, note:l.note || '', temp:true};
+  }
+  const found = rows.find(r => (l.barcode && r[3] === l.barcode) || (l.code && r[2] === l.code));
+  const base = found || [0, '', l.code || '', l.barcode || '', l.name, l.cost ?? null, null, null, null, null, null];
+  const it = {key: rowKey(base) || ('item-' + uid), code:l.code || '', barcode:l.barcode || '', name:l.name, base,
+              qty:l.qty, unitPrice:l.unitPrice, note:l.note || '', costSnap:l.cost, frozen:!found};
+  if(l.disc) it.disc = l.disc;
+  return it;
+}
 
-  document.getElementById('printArea').innerHTML = `
-    <div style="font-family:-apple-system,'PingFang TC',sans-serif; padding:24px; color:#000;">
+function startEditTxn(id){
+  const t = allTxns.find(x => x.id === id);
+  if(!t) return;
+  if(cart.length || selectedCustomer){
+    if(!confirm('打單畫面目前還有內容，要先把它暫存起來，再編輯這筆訂單嗎？（取消的話會中止）')) return;
+    if(!holdCurrentOrder()) return;
+  }
+  cart = [];
+  if(t.customer){ selectCustomer({...t.customer}); } else { resetOrderCustomerUI(); }
+  document.getElementById('priceSourceSelect').value = t.priceMode || 'grade';
+  cart = (t.lines || []).map(lineToCartItem);
+  currentTxn = {id:t.id, date:t.date};
+  selectedCartKey = null;
+  renderCart(); updateEditBanner();
+  switchTab('order');
+  window.scrollTo({top:0, behavior:'smooth'});
+}
+
+// 出貨單／已儲存訂單共用同一個畫法：畫面上看到的就是當時列印出來的樣子
+function renderOrderHtml(o){
+  const c = o.customer;
+  const cell = 'padding:6px 4px; border-bottom:1px solid #ddd;';
+  const rowsHtml = (o.lines || []).map(l => `
+    <tr>
+      <td style="${cell}">${escapeHtml(l.type === 'item' ? (l.code || l.barcode || '') : '')}</td>
+      <td style="${cell}">${escapeHtml(l.name || '')}${l.disc ? ` <span style="font-size:11px;">(${l.disc}折)</span>` : ''}</td>
+      <td style="${cell} text-align:right;">${fmt(l.unitPrice)}</td>
+      <td style="${cell} text-align:center;">${l.type === 'fee' ? '' : l.qty}</td>
+      <td style="${cell} text-align:right;">${fmt(l.amount)}</td>
+      <td style="${cell}">${escapeHtml(l.note || '')}</td>
+    </tr>`).join('');
+  const totalQty = (o.lines || []).filter(l => l.type !== 'fee').reduce((s,l)=>s+fmtNum(l.qty),0);
+  const f = 'padding:8px 4px;';
+  const tfoot = o.hasTax ? `
+      <tr style="border-top:2px solid #000; font-weight:700;">
+        <td colspan="3" style="${f} text-align:right;">未稅總額</td>
+        <td style="${f} text-align:center;">${totalQty}</td>
+        <td style="${f} text-align:right;">${fmt(o.untaxed)}</td>
+        <td></td>
+      </tr>
+      <tr style="font-weight:700;">
+        <td colspan="3" style="${f} text-align:right;">含稅總額</td>
+        <td></td>
+        <td style="${f} text-align:right;">${fmt(o.total)}</td>
+        <td></td>
+      </tr>` : `
+      <tr style="border-top:2px solid #000; font-weight:700;">
+        <td colspan="3"></td>
+        <td style="${f} text-align:center;">${totalQty}</td>
+        <td style="${f} text-align:right;">${fmt(o.total)}</td>
+        <td></td>
+      </tr>`;
+  return `
+    <div style="font-family:-apple-system,'PingFang TC',sans-serif; padding:24px; color:#000; min-width:520px;">
       <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:16px;">
         <div>
           <h2 style="margin:0 0 4px;">${c ? escapeHtml(c.name||'') : ''}</h2>
-          <div style="font-size:12px; color:#555;">${new Date().toLocaleString('zh-TW')}</div>
+          <div style="font-size:12px; color:#555;">${new Date(o.date).toLocaleString('zh-TW')}</div>
         </div>
         ${c ? `<div style="font-size:13px; line-height:1.8; text-align:right;">
           <div>${escapeHtml(c.phone||'—')}</div>
@@ -1216,28 +1382,14 @@ function buildPrintArea(){
           <th style="text-align:left; padding:6px 4px;">備註</th>
         </tr></thead>
         <tbody>${rowsHtml}</tbody>
-        <tfoot>${hasTax ? `
-          <tr style="border-top:2px solid #000; font-weight:700;">
-            <td colspan="3" style="text-align:right; padding:8px 4px;">未稅總額</td>
-            <td style="text-align:center; padding:8px 4px;">${totalQty}</td>
-            <td style="text-align:right; padding:8px 4px;">${fmt(totalAmt - taxAmt)}</td>
-            <td></td>
-          </tr>
-          <tr style="font-weight:700;">
-            <td colspan="3" style="text-align:right; padding:8px 4px;">含稅總額</td>
-            <td></td>
-            <td style="text-align:right; padding:8px 4px;">${fmt(totalAmt)}</td>
-            <td></td>
-          </tr>` : `
-          <tr style="border-top:2px solid #000; font-weight:700;">
-            <td colspan="3"></td>
-            <td style="text-align:center; padding:8px 4px;">${totalQty}</td>
-            <td style="text-align:right; padding:8px 4px;">${fmt(totalAmt)}</td>
-            <td></td>
-          </tr>`}</tfoot>
+        <tfoot>${tfoot}</tfoot>
       </table>
-    </div>
-  `;
+    </div>`;
+}
+
+function buildPrintArea(){
+  document.getElementById('printArea').innerHTML =
+    renderOrderHtml({...snapshotCart(), date: (currentTxn && currentTxn.date) || new Date().toISOString()});
 }
 
 const custListSearch = document.getElementById('custListSearch');
@@ -1276,10 +1428,411 @@ function updateStickyOffset(){
 window.addEventListener('resize', updateStickyOffset);
 updateStickyOffset();
 
+
+// =====================================================================
+// 雲端交易紀錄：每月一個檔 transactions/YYYY-MM.json，透過 GitHub API 自動存取
+// =====================================================================
+const GH = {owner:'cwh19870422', repo:'barcode-lookup', branch:'main'};
+const GH_TOKEN_KEY = 'joeda_pos_gh_token_v1';
+const PENDING_KEY = 'joeda_pos_pending_txns_v1';
+let allTxns = [];
+let currentTxn = null;      // 目前這張單的 {id, date}，同一張單重印/重存會覆蓋同一筆
+let saveChain = Promise.resolve();
+
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+const pad2 = n => String(n).padStart(2,'0');
+function ghToken(){ try{ return localStorage.getItem(GH_TOKEN_KEY) || ''; }catch(e){ return ''; } }
+function setGhToken(t){ try{ t ? localStorage.setItem(GH_TOKEN_KEY, t) : localStorage.removeItem(GH_TOKEN_KEY); }catch(e){} }
+function loadPending(){ try{ return JSON.parse(localStorage.getItem(PENDING_KEY) || '[]') || []; }catch(e){ return []; } }
+function savePending(list){ try{ localStorage.setItem(PENDING_KEY, JSON.stringify(list)); }catch(e){} }
+function monthOf(iso){ const d = new Date(iso); return d.getFullYear() + '-' + pad2(d.getMonth()+1); }
+function localDateStr(iso){ const d = new Date(iso); return d.getFullYear() + '-' + pad2(d.getMonth()+1) + '-' + pad2(d.getDate()); }
+function b64enc(str){ const bytes = new TextEncoder().encode(str); let bin = ''; bytes.forEach(b => bin += String.fromCharCode(b)); return btoa(bin); }
+function b64dec(b64){ const bin = atob(b64.replace(/\s/g,'')); return new TextDecoder().decode(Uint8Array.from(bin, c => c.charCodeAt(0))); }
+
+function ghApi(path, opts={}){
+  const headers = {'Accept': opts.accept || 'application/vnd.github+json'};
+  const t = ghToken();
+  if(t) headers['Authorization'] = 'Bearer ' + t;
+  if(opts.body) headers['Content-Type'] = 'application/json';
+  return fetch(`https://api.github.com/repos/${GH.owner}/${GH.repo}${path}`, {method: opts.method || 'GET', headers, body: opts.body, cache:'no-store'});
+}
+
+async function ghReadMonth(month){
+  const path = `/contents/transactions/${month}.json?ref=${GH.branch}&_=${Date.now()}`;
+  const r = await ghApi(path);
+  if(r.status === 404) return {list:[], sha:null};
+  if(!r.ok) throw new Error('讀取失敗（HTTP ' + r.status + '）');
+  const j = await r.json();
+  let text;
+  if(j.content){ text = b64dec(j.content); }
+  else{ const raw = await ghApi(path, {accept:'application/vnd.github.raw+json'}); text = await raw.text(); }
+  return {list: (JSON.parse(text).transactions || []), sha: j.sha};
+}
+
+function serializeMonth(list){
+  return '{"transactions":[\n' + list.map(t => JSON.stringify(t)).join(',\n') + '\n]}\n';
+}
+
+// 讀 → 修改 → 寫；遇到同時有人寫入（409/422）就重讀重試
+async function ghWriteMonth(month, mutator, message){
+  let lastErr = null;
+  for(let attempt = 0; attempt < 4; attempt++){
+    const {list, sha} = await ghReadMonth(month);
+    const next = mutator(list);
+    const body = {message, content: b64enc(serializeMonth(next)), branch: GH.branch};
+    if(sha) body.sha = sha;
+    const r = await ghApi(`/contents/transactions/${month}.json`, {method:'PUT', body: JSON.stringify(body)});
+    if(r.ok) return next;
+    if(r.status === 409 || r.status === 422){ lastErr = new Error('同時有其他寫入，重試中'); await sleep(500 * (attempt+1)); continue; }
+    if(r.status === 401) throw new Error('金鑰無效或已過期，請到「交易紀錄」重新設定');
+    if(r.status === 403 || r.status === 404) throw new Error('金鑰沒有寫入權限（Contents 要設成 Read and write，且要選到 barcode-lookup）');
+    throw new Error('寫入失敗（HTTP ' + r.status + '）');
+  }
+  throw lastErr || new Error('寫入失敗');
+}
+
+function upsertTxn(list, txn){
+  const i = list.findIndex(t => t.id === txn.id);
+  if(i >= 0){ const copy = list.slice(); copy[i] = txn; return copy; }
+  return list.concat([txn]);
+}
+
+// 把目前清單原樣記下來（當時的客人資料、單價、數量、折數、備註、總額），之後不會用新價格重算
+function snapshotCart(){
+  const lines = cart.map(it=>{
+    const qty = fmtNum(it.qty), unit = fmtNum(it.unitPrice);
+    const base = {name: it.name || '', qty, unitPrice: unit, amount: unit*qty};
+    if(it.special) return {...base, type:'fee', kind: it.special};
+    if(it.temp || !it.base) return {...base, type:'temp', note: it.note || ''};
+    const cost = (it.costSnap !== undefined && it.costSnap !== null) ? fmtNum(it.costSnap) : fmtNum(it.base[5]);
+    const l = {...base, type:'item', code: it.code, barcode: it.barcode, cost, note: it.note || ''};
+    if(it.disc) l.disc = it.disc;
+    return l;
+  });
+  const sumKind = k => lines.filter(l => l.type==='fee' && l.kind===k).reduce((s,l)=>s+l.amount,0);
+  const total = lines.reduce((s,l)=>s+l.amount,0);
+  const tax = sumKind('稅金');
+  return {
+    customer: selectedCustomer ? {...selectedCustomer} : null,
+    priceMode: document.getElementById('priceSourceSelect').value,
+    lines,
+    goods: lines.filter(l => l.type !== 'fee').reduce((s,l)=>s+l.amount,0),
+    shipping: sumKind('運費'), prevBalance: sumKind('前帳'), refund: sumKind('退費'),
+    tax, hasTax: lines.some(l => l.type==='fee' && l.kind==='稅金'),
+    untaxed: total - tax, total
+  };
+}
+
+function buildTxn(){
+  if(!currentTxn){
+    currentTxn = {id: 'T' + Date.now().toString(36) + Math.random().toString(36).slice(2,5), date: new Date().toISOString()};
+  }
+  const t = {id: currentTxn.id, date: currentTxn.date, ...snapshotCart()};
+  if(currentTxn.editedAt) t.editedAt = currentTxn.editedAt;
+  return t;
+}
+
+function rebuildHistory(){
+  const fromTxns = [];
+  allTxns.forEach(t => (t.lines || []).forEach(l => {
+    if(l.type !== 'item') return;
+    fromTxns.push({date:t.date, customer:(t.customer && t.customer.name) || '', name:l.name, barcode:l.barcode, code:l.code, qty:l.qty, unitPrice:l.unitPrice, amount:l.amount, cost:l.cost});
+  }));
+  history = legacyHistory.concat(fromTxns);
+}
+
+function setCloudStatus(kind, msg){
+  const el = document.getElementById('cloudStatus');
+  el.className = 'cloud-status ' + (kind || '');
+  el.textContent = msg || '';
+}
+function updateCloudBadge(){
+  const b = document.getElementById('cloudBadge');
+  const on = !!ghToken();
+  b.textContent = on ? '已啟用' : '未設定';
+  b.className = 'cloud-badge' + (on ? ' on' : '');
+}
+
+function saveTransaction(){
+  if(!cart.length) return Promise.resolve(false);
+  const txn = buildTxn();
+  allTxns = upsertTxn(allTxns, txn);
+  rebuildHistory();
+  renderTxns();
+  saveChain = saveChain.then(()=> pushTxn(txn));
+  return saveChain;
+}
+
+async function pushTxn(txn){
+  if(!ghToken()){
+    savePending(upsertTxn(loadPending(), txn));
+    setCloudStatus('warn', '⚠ 還沒設定雲端存檔，這筆先暫存在這台裝置。請到「📊 交易紀錄」貼上金鑰，之後會自動補存。');
+    return false;
+  }
+  setCloudStatus('', '☁ 儲存中…');
+  try{
+    const who = (txn.customer && txn.customer.name) || '散客';
+    await ghWriteMonth(monthOf(txn.date), list => upsertTxn(list, txn), `POS: ${who} $${txn.total} (${txn.id})`);
+    savePending(loadPending().filter(t => t.id !== txn.id));
+    const d = new Date();
+    setCloudStatus('ok', `✓ 已儲存到雲端 ${pad2(d.getHours())}:${pad2(d.getMinutes())}`);
+    flushPending();
+    return true;
+  }catch(e){
+    savePending(upsertTxn(loadPending(), txn));
+    setCloudStatus('err', '⚠ 雲端儲存失敗：' + e.message + '（已暫存在這台裝置，之後會自動重試）');
+    return false;
+  }
+}
+
+let flushing = false;
+async function flushPending(){
+  if(flushing || !ghToken()) return;
+  const pend = loadPending();
+  if(!pend.length) return;
+  flushing = true;
+  try{
+    const byMonth = {};
+    pend.forEach(t => (byMonth[monthOf(t.date)] = byMonth[monthOf(t.date)] || []).push(t));
+    for(const m of Object.keys(byMonth)){
+      await ghWriteMonth(m, list => byMonth[m].reduce(upsertTxn, list), `POS: 補存 ${byMonth[m].length} 筆交易`);
+      const ids = new Set(byMonth[m].map(t => t.id));
+      savePending(loadPending().filter(t => !ids.has(t.id)));
+    }
+    setCloudStatus('ok', `✓ 已補存 ${pend.length} 筆暫存的交易`);
+  }catch(e){ /* 下次再試 */ }
+  flushing = false;
+}
+window.addEventListener('online', flushPending);
+
+async function listTxnMonths(){
+  try{
+    const r = await ghApi(`/contents/transactions?ref=${GH.branch}&_=${Date.now()}`);
+    if(r.status === 404) return [];
+    if(r.ok){
+      const j = await r.json();
+      return j.map(f => /^(\d{4}-\d{2})\.json$/.exec(f.name)).filter(Boolean).map(m => m[1]).sort();
+    }
+  }catch(e){}
+  // 目錄清單失敗時（例如沒有金鑰又被限流），退回去試最近 24 個月
+  const months = []; const now = new Date();
+  for(let i = 0; i < 24; i++){ const d = new Date(now.getFullYear(), now.getMonth()-i, 1); months.push(d.getFullYear() + '-' + pad2(d.getMonth()+1)); }
+  return months.reverse();
+}
+
+async function readMonthAny(month){
+  if(ghToken()){
+    try{ return (await ghReadMonth(month)).list; }catch(e){ /* 退回公開網址 */ }
+  }
+  try{
+    const r = await fetch(`./transactions/${month}.json?_=${Date.now()}`);
+    if(r.ok) return (await r.json()).transactions || [];
+  }catch(e){}
+  return [];
+}
+
+async function loadTransactions(){
+  const box = document.getElementById('txnList');
+  if(box) box.innerHTML = '<div class="status-row"><span>載入交易紀錄中…</span></div>';
+  let loaded = [];
+  try{
+    const months = await listTxnMonths();
+    const lists = await Promise.all(months.map(readMonthAny));
+    lists.forEach(l => loaded = loaded.concat(l));
+  }catch(e){}
+  // 合併：雲端 + 還沒存上去的暫存；以 id 為準（同 id 取暫存/本機較新的版本）
+  const byId = new Map();
+  loaded.forEach(t => byId.set(t.id, t));
+  loadPending().forEach(t => byId.set(t.id, t));
+  allTxns.forEach(t => byId.set(t.id, t));
+  allTxns = Array.from(byId.values());
+  rebuildHistory();
+  renderTxns();
+  flushPending();
+}
+
+// ---------------- 交易紀錄頁面 ----------------
+const txnCustEl = document.getElementById('txnCust');
+const txnFromEl = document.getElementById('txnFrom');
+const txnToEl = document.getElementById('txnTo');
+
+function setTxnRange(kind){
+  const now = new Date();
+  const ymd = d => d.getFullYear() + '-' + pad2(d.getMonth()+1) + '-' + pad2(d.getDate());
+  let from = '', to = '';
+  if(kind === 'today'){ from = to = ymd(now); }
+  else if(kind === 'month'){ from = ymd(new Date(now.getFullYear(), now.getMonth(), 1)); to = ymd(now); }
+  else if(kind === 'lastmonth'){ from = ymd(new Date(now.getFullYear(), now.getMonth()-1, 1)); to = ymd(new Date(now.getFullYear(), now.getMonth(), 0)); }
+  else if(kind === 'year'){ from = ymd(new Date(now.getFullYear(), 0, 1)); to = ymd(now); }
+  txnFromEl.value = from; txnToEl.value = to;
+  document.querySelectorAll('.txn-chip').forEach(c => c.classList.toggle('active', c.dataset.range === kind));
+  renderTxns();
+}
+document.querySelectorAll('.txn-chip').forEach(c => c.addEventListener('click', ()=> setTxnRange(c.dataset.range)));
+[txnCustEl, txnFromEl, txnToEl].forEach(el => el.addEventListener('input', ()=>{
+  if(el !== txnCustEl) document.querySelectorAll('.txn-chip').forEach(c => c.classList.remove('active'));
+  renderTxns();
+}));
+
+function txnCustName(t){ return (t.customer && t.customer.name) || '（未指定客戶）'; }
+
+function renderTxns(){
+  const sumEl = document.getElementById('txnSummary');
+  const listEl = document.getElementById('txnList');
+  if(!sumEl || !listEl) return;
+
+  // 客人建議清單
+  const names = new Set(customers.map(c => c.name).filter(Boolean));
+  allTxns.forEach(t => { if(t.customer && t.customer.name) names.add(t.customer.name); });
+  document.getElementById('txnCustList').innerHTML = Array.from(names).map(n => `<option value="${escapeHtml(n)}">`).join('');
+
+  const q = txnCustEl.value.trim().toLowerCase();
+  const from = txnFromEl.value, to = txnToEl.value;
+  const list = allTxns.filter(t => {
+    const ds = localDateStr(t.date);
+    if(from && ds < from) return false;
+    if(to && ds > to) return false;
+    if(q && !txnCustName(t).toLowerCase().includes(q)) return false;
+    return true;
+  }).sort((a,b) => new Date(b.date) - new Date(a.date));
+
+  if(!list.length){
+    sumEl.innerHTML = '';
+    listEl.innerHTML = `<div class="empty"><div class="big">NO RECORD</div><div class="msg">這個條件下沒有交易紀錄</div></div>`;
+    return;
+  }
+
+  const S = k => list.reduce((s,t)=>s + fmtNum(t[k]), 0);
+  const consume = S('total'); // 消費總額＝每一筆結帳當時顯示的最終金額直接相加（含稅就是含稅、有前帳就照當時算進去）
+  const custs = {};
+  list.forEach(t => {
+    const n = txnCustName(t);
+    (custs[n] = custs[n] || {n:0, amt:0}).n++;
+    custs[n].amt += fmtNum(t.total);
+  });
+  const custNames = Object.keys(custs);
+  let sum = `<div class="txn-sum">
+    <div class="big">$${fmt(consume)}</div>
+    <div class="lbl">消費總額（照每筆結帳當時的金額相加）· 共 ${list.length} 筆</div>
+    <div class="break">參考拆分：商品 ${fmt(S('goods'))} · 運費 ${fmt(S('shipping'))} · 前帳 ${fmt(S('prevBalance'))} · 退費 ${fmt(S('refund'))} · 稅金 ${fmt(S('tax'))}</div>`;
+  if(custNames.length > 1){
+    sum += `<table class="txn-cust-table"><thead><tr><th>客人</th><th class="num">筆數</th><th class="num">消費總額</th></tr></thead><tbody>` +
+      custNames.sort((a,b)=>custs[b].amt - custs[a].amt).map(n => `<tr><td>${escapeHtml(n)}</td><td class="num">${custs[n].n}</td><td class="num">${fmt(custs[n].amt)}</td></tr>`).join('') +
+      `</tbody></table>`;
+  }
+  sum += `</div>`;
+  sumEl.innerHTML = sum;
+
+  listEl.innerHTML = list.map(t => {
+    const d = new Date(t.date);
+    const when = d.toLocaleDateString('zh-TW') + ' ' + pad2(d.getHours()) + ':' + pad2(d.getMinutes());
+    return `<div class="txn-item" data-id="${escapeHtml(t.id)}">
+      <div class="txn-item-top">
+        <div class="txn-item-main"><div class="txn-item-name">${escapeHtml(txnCustName(t))}</div><div class="txn-item-sub">${when} · ${(t.lines||[]).length} 項${t.hasTax ? ' · 含稅' : ''}${t.editedAt ? ' · 已編輯' : ''}</div></div>
+        <div class="txn-item-amt">$${fmt(t.total)}</div>
+        <button type="button" class="txn-small-btn txn-toggle">看訂單</button>
+      </div>
+      <div class="txn-detail">
+        <div class="txn-order-wrap">${renderOrderHtml(t)}</div>
+        <div class="txn-actions" style="gap:8px;">
+          <button type="button" class="txn-small-btn txn-edit">編輯</button>
+          <button type="button" class="txn-small-btn txn-reprint">重新列印</button>
+          <button type="button" class="txn-small-btn danger txn-del">刪除</button>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+document.getElementById('txnList').addEventListener('click', async (e)=>{
+  const item = e.target.closest('.txn-item');
+  if(!item) return;
+  if(e.target.closest('.txn-toggle')){
+    const d = item.querySelector('.txn-detail');
+    d.style.display = d.style.display === 'block' ? 'none' : 'block';
+    return;
+  }
+  if(e.target.closest('.txn-edit')){ startEditTxn(item.dataset.id); return; }
+  if(e.target.closest('.txn-reprint')){
+    const t = allTxns.find(x => x.id === item.dataset.id);
+    if(t){ document.getElementById('printArea').innerHTML = renderOrderHtml(t); window.print(); }
+    return;
+  }
+  if(e.target.closest('.txn-del')){
+    const id = item.dataset.id;
+    const t = allTxns.find(x => x.id === id);
+    if(!t) return;
+    if(!confirm(`確定要刪除這筆交易嗎？\n${txnCustName(t)}  $${fmt(t.total)}\n刪除後無法在網站上復原（GitHub 版本紀錄仍可找回）。`)) return;
+    if(!ghToken()){
+      // 還沒存上雲端的暫存交易可以直接刪
+      savePending(loadPending().filter(x => x.id !== id));
+    }else{
+      try{ await ghWriteMonth(monthOf(t.date), list => list.filter(x => x.id !== id), `POS: 刪除交易 ${id}`); }
+      catch(err){ alert('刪除失敗：' + err.message); return; }
+      savePending(loadPending().filter(x => x.id !== id));
+    }
+    allTxns = allTxns.filter(x => x.id !== id);
+    if(currentTxn && currentTxn.id === id){ currentTxn = null; updateEditBanner(); }
+    rebuildHistory();
+    renderTxns();
+  }
+});
+
+// 雲端存檔設定
+document.getElementById('txnReloadBtn').addEventListener('click', ()=> loadTransactions());
+document.getElementById('viewCustTxnsBtn').addEventListener('click', ()=>{
+  if(!selectedCustomer) return;
+  switchTab('txns');
+  txnCustEl.value = selectedCustomer.name || '';
+  setTxnRange('all');
+});
+document.getElementById('cloudSettingsBtn').addEventListener('click', ()=>{
+  const box = document.getElementById('cloudSettings');
+  box.style.display = box.style.display === 'none' ? 'block' : 'none';
+});
+document.getElementById('ghTokenSaveBtn').addEventListener('click', async ()=>{
+  const msg = document.getElementById('ghTokenMsg');
+  const t = document.getElementById('ghTokenInput').value.trim();
+  if(!t){ msg.textContent = '請先貼上金鑰'; return; }
+  setGhToken(t);
+  msg.textContent = '測試中…';
+  try{
+    // 實際寫一個說明檔來確認「有寫入權限」
+    const path = '/contents/transactions/README.txt';
+    const check = await ghApi(path + `?ref=${GH.branch}&_=${Date.now()}`);
+    if(check.status === 401) throw new Error('金鑰無效或已過期');
+    const body = {message:'POS: 啟用雲端交易紀錄', branch: GH.branch,
+      content: b64enc('這個資料夾由「喬大百貨 POS」自動寫入，每月一個 YYYY-MM.json，請勿手動修改。\n')};
+    if(check.ok){ body.sha = (await check.json()).sha; }
+    const w = await ghApi(path, {method:'PUT', body: JSON.stringify(body)});
+    if(!w.ok){
+      if(w.status === 403 || w.status === 404) throw new Error('金鑰沒有寫入權限：Contents 要設成 Read and write，且 Repository access 要選到 barcode-lookup');
+      throw new Error('測試寫入失敗（HTTP ' + w.status + '）');
+    }
+    msg.textContent = '✓ 連線成功，可以寫入。之後的交易會自動存檔。';
+    document.getElementById('ghTokenInput').value = '';
+    updateCloudBadge();
+    await loadTransactions();
+  }catch(e){
+    setGhToken('');
+    updateCloudBadge();
+    msg.textContent = '✗ ' + e.message;
+  }
+});
+document.getElementById('ghTokenClearBtn').addEventListener('click', ()=>{
+  if(!confirm('清除這台裝置上的雲端存檔金鑰？（已存的交易不受影響）')) return;
+  setGhToken(''); updateCloudBadge();
+  document.getElementById('ghTokenMsg').textContent = '已清除這台裝置的設定';
+});
+
 loadHeldOrdersFromStorage();
 renderHeldOrders();
+updateCloudBadge();
+updateEditBanner();
+setTxnRange('month');
 
-init();
+init().then(loadTransactions);
 </script>
 </body>
 </html>
