@@ -136,6 +136,8 @@
   .quick-fee-btn{border:none; background:var(--gray-fill); color:var(--blue); font-weight:600; font-size:13.5px; padding:9px 16px; border-radius:999px; cursor:pointer; font-family:var(--sysfont);}
   .quick-fee-btn.refund{color:var(--red);}
   .quick-fee-btn.disc-btn{color:var(--orange);}
+  tr.temp-row td{background:rgba(52,199,89,0.07);}
+  table.cart-table input.cart-name-input{font-weight:600; min-width:90px;}
   tr.cart-sel td{background:rgba(255,149,0,0.16) !important;}
   table.cart-table td.cart-name{cursor:pointer;}
   .disc-tag{display:inline-block; margin-left:6px; font-size:11px; font-weight:700; color:var(--orange);}
@@ -290,6 +292,7 @@
         <button type="button" class="quick-fee-btn" data-fee="運費">＋ 運費</button>
         <button type="button" class="quick-fee-btn" data-fee="前帳">＋ 前帳</button>
         <button type="button" class="quick-fee-btn refund" data-fee="退費">－ 退費</button>
+        <button type="button" class="quick-fee-btn" id="tempItemBtn">＋ 臨時商品</button>
         <button type="button" class="quick-fee-btn" id="taxBtn">＋ 稅金 5%</button>
         <button type="button" class="quick-fee-btn disc-btn" id="discBtn">％ 折數</button>
       </div>
@@ -870,7 +873,7 @@ function addToCart(r, qty){
 function applyPriceSourceToCart(){
   const mode = document.getElementById('priceSourceSelect').value;
   cart.forEach(it=>{
-    if(it.special) return; // 運費/前帳/退費 不受單價依據影響
+    if(it.special || !it.base) return; // 運費/前帳/退費/臨時商品 不受單價依據影響
     it.unitPrice = fmtNum(getPriceValue(it.base, mode, selectedCustomer ? selectedCustomer.grade : 'A'));
     it.disc = null;
   });
@@ -880,7 +883,7 @@ function applyPriceSourceToCart(){
 // 單品折數：先在清單點選一個商品（變橘色），再按「％ 折數」輸入折數
 // 單價 = 定價(SELLINGPRICE) × 折數，四捨五入；輸入 0 = 取消折扣（恢復單價依據）
 document.getElementById('discBtn').addEventListener('click', ()=>{
-  const it = cart.find(c => c.key === selectedCartKey && !c.special);
+  const it = cart.find(c => c.key === selectedCartKey && !c.special && c.base);
   if(!it){ alert('請先在出貨清單點一下要打折的商品（品名那格），再按「折數」'); return; }
   const sell = fmtNum(getPriceValue(it.base, 'sell', 'A'));
   const v = prompt(`「${it.name}」（定價 ${fmt(sell)}）\n輸入折數：85 = 85折、8.8 = 8.8折\n輸入 0 = 取消折扣`, '');
@@ -921,6 +924,19 @@ document.querySelectorAll('.quick-fee-btn[data-fee]').forEach(btn=>{
 });
 const realItems = list => list.filter(it => !it.special);
 
+// 臨時商品：未建檔商品，可直接輸入品名、單價、數量（不寫入銷售歷史）
+document.getElementById('tempItemBtn').addEventListener('click', ()=>{
+  cart.push({
+    key:'temp-' + Date.now() + '-' + Math.random().toString(36).slice(2,6),
+    code:'', barcode:'', name:'', base:null,
+    qty:1, unitPrice:0, note:'', temp:true
+  });
+  const idx = cart.length - 1;
+  renderCart();
+  const input = cartBody.querySelector(`.cart-name-input[data-idx="${idx}"]`);
+  if(input){ input.scrollIntoView({block:'center', behavior:'smooth'}); input.focus(); }
+});
+
 // 稅金：以目前「商品合計」（不含運費／前帳／退費／既有稅金）的 5% 加一行；再按一次會重新計算同一行
 document.getElementById('taxBtn').addEventListener('click', ()=>{
   const base = realItems(cart).reduce((s,it)=>s+fmtNum(it.unitPrice)*fmtNum(it.qty),0);
@@ -951,9 +967,11 @@ function renderCart(){
   cart.forEach((it,i)=>{
     const isFee = !!it.special;
     const shownPrice = it.special === '退費' ? Math.abs(it.unitPrice) : it.unitPrice;
-    const rowCls = (isFee ? 'fee-row' + (it.special==='退費' ? ' refund' : '') : '') + (it.key===selectedCartKey ? ' cart-sel' : '');
+    const rowCls = (isFee ? 'fee-row' + (it.special==='退費' ? ' refund' : '') : '') + (it.temp ? ' temp-row' : '') + (it.key===selectedCartKey ? ' cart-sel' : '');
     html += `<tr data-idx="${i}" class="${rowCls}">
-      <td class="${isFee ? '' : 'cart-name'}">${escapeHtml(it.name)}${it.disc ? `<span class="disc-tag">${it.disc}折</span>` : ''}</td>
+      <td class="${isFee || it.temp ? '' : 'cart-name'}">${it.temp
+        ? `<input type="text" class="cart-name-input" data-idx="${i}" value="${escapeHtml(it.name)}" placeholder="臨時商品名稱">`
+        : escapeHtml(it.name) + (it.disc ? `<span class="disc-tag">${it.disc}折</span>` : '')}</td>
       <td><input type="number" inputmode="decimal" class="cart-price" data-idx="${i}" value="${shownPrice === 0 && isFee ? '' : shownPrice}" ${isFee ? 'placeholder="金額"' : ''}></td>
       <td>${isFee ? '<span style="display:block;text-align:center;color:var(--secondary);">—</span>' : `<input type="number" class="cart-qty" data-idx="${i}" value="${it.qty}" min="1">`}</td>
       <td class="cart-subtotal" id="subtotal-${i}">${fmt(it.unitPrice*it.qty)}</td>
@@ -984,6 +1002,10 @@ cartBody.addEventListener('input', (e)=>{
   const idx = e.target.dataset.idx;
   if(idx===undefined) return;
   const i = parseInt(idx,10);
+  if(e.target.classList.contains('cart-name-input')){
+    cart[i].name = e.target.value;
+    return;
+  }
   if(e.target.classList.contains('cart-price')){
     const v = fmtNum(e.target.value);
     // 退費：輸入正數即可，系統自動以負數計入
@@ -1119,7 +1141,7 @@ function logCartToHistory(){
   const now = new Date().toISOString();
   const customerName = selectedCustomer ? selectedCustomer.name : '';
   cart.forEach(it=>{
-    if(it.special) return; // 運費/前帳/退費 不計入商品銷售歷史
+    if(it.special || !it.base) return; // 運費/前帳/退費/臨時商品 不計入商品銷售歷史
     history.push({
       date: now,
       customer: customerName,
