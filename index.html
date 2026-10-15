@@ -135,6 +135,8 @@
   .quick-fee-label{font-size:12px; color:var(--secondary); font-weight:600; margin-right:2px;}
   .quick-fee-btn{border:none; background:var(--gray-fill); color:var(--blue); font-weight:600; font-size:13.5px; padding:9px 16px; border-radius:999px; cursor:pointer; font-family:var(--sysfont);}
   .quick-fee-btn.refund{color:var(--red);}
+  .quick-fee-btn.disc-btn{color:var(--orange);}
+  .quick-fee-btn.disc-btn.active{background:var(--orange); color:#fff;}
   .quick-fee-btn:active{opacity:.6;}
   tr.fee-row td{background:rgba(0,122,255,0.04);}
   tr.fee-row.refund td{background:rgba(255,59,48,0.05);}
@@ -286,6 +288,15 @@
         <button type="button" class="quick-fee-btn" data-fee="前帳">＋ 前帳</button>
         <button type="button" class="quick-fee-btn refund" data-fee="退費">－ 退費</button>
       </div>
+      <div class="quick-fee-row" id="discountRow">
+        <span class="quick-fee-label">定價折數</span>
+        <button type="button" class="quick-fee-btn disc-btn" data-rate="0.9">9折</button>
+        <button type="button" class="quick-fee-btn disc-btn" data-rate="0.85">85折</button>
+        <button type="button" class="quick-fee-btn disc-btn" data-rate="0.8">8折</button>
+        <button type="button" class="quick-fee-btn disc-btn" data-rate="0.75">75折</button>
+        <button type="button" class="quick-fee-btn disc-btn" data-rate="0.7">7折</button>
+        <button type="button" class="quick-fee-btn disc-btn" id="discCustomBtn">自訂</button>
+      </div>
       <div class="cart-actions">
         <button class="btn-hold" id="holdCartBtn">暫存訂單</button>
         <button class="btn-clear" id="clearCartBtn">清空清單</button>
@@ -329,6 +340,7 @@ let rows = [];
 let customers = [];
 let selectedCustomer = null;
 let cart = [];
+let discountRate = null; // 定價折扣（例如 0.85）；null 表示不套用
 let history = []; // {date, customer, name, barcode, code, qty, unitPrice, amount, cost}
 let heldOrders = []; // {id, customer, cart, priceMode, savedAt}
 const HELD_ORDERS_KEY = 'joeda_pos_held_orders_v1';
@@ -846,7 +858,7 @@ orderResultsEl.addEventListener('click', (e)=>{
 function addToCart(r, qty){
   const key = rowKey(r);
   const mode = document.getElementById('priceSourceSelect').value;
-  const price = getPriceValue(r, mode, selectedCustomer ? selectedCustomer.grade : 'A');
+  const price = cartUnitPrice(r, mode);
   const existing = cart.find(it => it.key === key);
   if(existing){
     existing.qty += qty;
@@ -863,10 +875,50 @@ function applyPriceSourceToCart(){
   const mode = document.getElementById('priceSourceSelect').value;
   cart.forEach(it=>{
     if(it.special) return; // 運費/前帳/退費 不受單價依據影響
-    it.unitPrice = fmtNum(getPriceValue(it.base, mode, selectedCustomer ? selectedCustomer.grade : 'A'));
+    it.unitPrice = fmtNum(cartUnitPrice(it.base, mode));
   });
   renderCart();
 }
+
+// 單價：有套用折數時 = 定價(SELLINGPRICE) × 折數（四捨五入）；沒有定價的商品維持原本單價依據
+function cartUnitPrice(r, mode){
+  if(discountRate){
+    const sell = fmtNum(getPriceValue(r, 'sell', 'A'));
+    if(sell > 0) return Math.round(sell * discountRate);
+  }
+  return getPriceValue(r, mode, selectedCustomer ? selectedCustomer.grade : 'A');
+}
+
+function updateDiscountButtons(){
+  document.querySelectorAll('.disc-btn[data-rate]').forEach(b=>{
+    b.classList.toggle('active', discountRate !== null && Math.abs(parseFloat(b.dataset.rate) - discountRate) < 1e-9);
+  });
+  const custBtn = document.getElementById('discCustomBtn');
+  const presetActive = !!document.querySelector('.disc-btn[data-rate].active');
+  const customActive = discountRate !== null && !presetActive;
+  custBtn.classList.toggle('active', customActive);
+  custBtn.textContent = customActive ? (Math.round(discountRate*1000)/10 + '折') : '自訂';
+}
+
+// 同一個折數再按一次＝取消折扣，回到「整份清單單價依據」
+function setDiscount(rate){
+  discountRate = (rate !== null && discountRate !== null && Math.abs(rate - discountRate) < 1e-9) ? null : rate;
+  updateDiscountButtons();
+  applyPriceSourceToCart();
+}
+document.querySelectorAll('.disc-btn[data-rate]').forEach(b=>{
+  b.addEventListener('click', ()=> setDiscount(parseFloat(b.dataset.rate)));
+});
+document.getElementById('discCustomBtn').addEventListener('click', ()=>{
+  const v = prompt('輸入折數（例如 85 = 85折、8.8 = 8.8折；輸入 0 取消折扣）', '');
+  if(v === null) return;
+  let n = parseFloat(v);
+  if(isNaN(n) || n < 0 || n > 100){ alert('折數格式不正確'); return; }
+  if(n === 0){ discountRate = null; updateDiscountButtons(); applyPriceSourceToCart(); return; }
+  const rate = n >= 10 ? n/100 : n/10; // 85 → 0.85；8.8 → 0.88
+  discountRate = null; // 自訂一律視為新套用，不做「再按取消」
+  setDiscount(rate);
+});
 
 // 快捷項目：運費 / 前帳 / 退費（退費以負數計入總金額）
 function addFeeLine(kind){
@@ -883,11 +935,14 @@ function addFeeLine(kind){
     input.focus(); input.select();
   }
 }
-document.querySelectorAll('.quick-fee-btn').forEach(btn=>{
+document.querySelectorAll('.quick-fee-btn[data-fee]').forEach(btn=>{
   btn.addEventListener('click', ()=> addFeeLine(btn.dataset.fee));
 });
 const realItems = list => list.filter(it => !it.special);
-document.getElementById('priceSourceSelect').addEventListener('change', applyPriceSourceToCart);
+document.getElementById('priceSourceSelect').addEventListener('change', ()=>{
+  discountRate = null; updateDiscountButtons();
+  applyPriceSourceToCart();
+});
 
 const cartBody = document.getElementById('cartBody');
 const cartTotalsEl = document.getElementById('cartTotals');
@@ -967,10 +1022,12 @@ function holdCurrentOrder(){
     customer: selectedCustomer ? {...selectedCustomer} : null,
     cart: cart.map(it => ({...it})),
     priceMode: document.getElementById('priceSourceSelect').value,
+    discountRate,
     savedAt: new Date().toISOString()
   });
   saveHeldOrdersToStorage();
   cart = [];
+  discountRate = null; updateDiscountButtons();
   selectedCustomer = null;
   custInfoBar.style.display = 'none';
   custPickerWrap.style.display = 'block';
@@ -998,6 +1055,7 @@ function resumeHeldOrder(id){
     custPickerWrap.style.display = 'block';
   }
   document.getElementById('priceSourceSelect').value = target.priceMode || 'grade';
+  discountRate = target.discountRate || null; updateDiscountButtons();
   renderCart();
   renderHeldOrders();
 }
@@ -1044,6 +1102,7 @@ document.getElementById('heldOrdersPanel').addEventListener('click', (e)=>{
 document.getElementById('clearCartBtn').addEventListener('click', ()=>{
   if(cart.length && !confirm('確定要清空整張出貨單嗎？')) return;
   cart = [];
+  discountRate = null; updateDiscountButtons();
   renderCart();
 });
 
