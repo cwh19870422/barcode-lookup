@@ -143,7 +143,10 @@
   .hp-head{display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:6px; font-size:12.5px;}
   .hp-head label{margin-left:auto; font-size:12px; color:var(--secondary); display:flex; align-items:center; gap:4px; cursor:pointer;}
   .hp-sum{font-size:12.5px; margin-bottom:8px; color:#4A4A4C;}
-  table.hp-table{width:100%; border-collapse:collapse; font-size:12.5px;}
+  table.hp-table{width:100%; border-collapse:collapse; font-size:12.5px; table-layout:fixed;}
+  table.hp-table .ctr{text-align:center;}
+  table.hp-table td, table.hp-table th{overflow-wrap:anywhere;}
+  @media (max-width:600px){ table.hp-table{font-size:11px;} table.hp-table th, table.hp-table td{padding-left:2px; padding-right:2px;} }
   table.hp-table th{text-align:left; font-size:11px; color:var(--secondary); font-weight:600; padding:4px 5px;}
   table.hp-table td{padding:5px; border-top:1px solid var(--line);}
   table.hp-table td.num, table.hp-table th.num{text-align:right;}
@@ -1126,8 +1129,8 @@ function histPanelHtml(it){
   if(!list.length){
     body = `<div class="hist-empty">${histOnlyCust && nowCust ? escapeHtml(nowCust) + ' 還沒有買過這項商品' : '還沒有這項商品的購買紀錄（要按「結帳」才會記錄）'}</div>`;
   }else{
-    body = `<table class="hp-table"><thead><tr><th>客人</th><th>購買時間</th><th class="num">數量</th><th class="num">單價</th><th>本錢漲跌</th><th>本錢變動日</th></tr></thead><tbody>` +
-      list.map(h => `<tr class="${nowCust && h.customer === nowCust ? 'hp-me' : ''}"><td>${escapeHtml(h.customer || '（未指定客戶）')}</td><td>${fmtWhen(h.date)}</td><td class="num">${fmt(h.qty)}</td><td class="num">${fmt(h.unitPrice)}</td><td>${costChangeHtml(h._chg)}</td><td>${h._chgDate || '—'}</td></tr>`).join('') +
+    body = `<table class="hp-table"><colgroup><col style="width:17%"><col style="width:25%"><col style="width:14.5%"><col style="width:14.5%"><col style="width:14.5%"><col style="width:14.5%"></colgroup><thead><tr><th>客人</th><th>購買時間</th><th class="ctr">數量</th><th class="ctr">單價</th><th class="ctr">本錢漲跌</th><th class="ctr">本錢變動日</th></tr></thead><tbody>` +
+      list.map(h => `<tr class="${nowCust && h.customer === nowCust ? 'hp-me' : ''}"><td>${escapeHtml(h.customer || '（未指定客戶）')}</td><td>${fmtWhen(h.date)}</td><td class="ctr">${fmt(h.qty)}</td><td class="ctr">${fmt(h.unitPrice)}</td><td class="ctr">${costChangeHtml(h._chg)}</td><td class="ctr">${h._chgDate || '—'}</td></tr>`).join('') +
       `</tbody></table>`;
   }
   return `<div class="hp-head"><b>${escapeHtml(it.name)}</b> 歷史價錢
