@@ -76,6 +76,21 @@
   .empty .big{font-family:var(--monofont); font-size:12.5px; letter-spacing:0.08em; text-transform:uppercase; margin-bottom:8px; color:var(--secondary);}
   .empty .msg{font-size:15px; font-family:var(--sysfont);}
   footer{max-width:920px; margin:30px auto 0; padding:14px 24px 0; border-top:1px solid var(--line); font-family:var(--sysfont); font-size:11.5px; color:var(--secondary); display:flex; justify-content:space-between; flex-wrap:wrap; gap:6px;}
+  .top-link .ico{font-size:14px;} .tab-btn .tic{margin-right:5px;}
+  @media (max-width:640px){
+    header{padding:16px 16px 10px;} header .inner{padding-right:96px;}
+    .top-actions{top:14px; right:14px; gap:6px;}
+    .top-link{padding:0; width:38px; height:38px; justify-content:center; border-radius:50%;} .top-link .lbl{display:none;} .top-link .ico{font-size:18px;}
+    h1{font-size:26px;}
+    body{padding-bottom:calc(74px + env(safe-area-inset-bottom));}
+    .tabs-sticky-wrap{position:fixed; top:auto; bottom:0; left:0; right:0; padding:6px 0 calc(6px + env(safe-area-inset-bottom)); box-shadow:0 -1px 0 var(--line);}
+    .tabs{padding:3px 10px; background:none; border-radius:0;}
+    .tab-btn .tic{margin:0; font-size:20px; line-height:1;}
+    .tab-btn{flex-direction:column; gap:2px; padding:6px 2px; font-size:11px; border-radius:10px;}
+    .tab-btn.active{background:var(--gray-fill); box-shadow:none; color:var(--blue);}
+    .search-box{min-width:0;} .search-box input{min-width:0;} #scanQtyInput{flex:none;}
+    body .cart-actions{flex-wrap:wrap; gap:8px;} body .cart-actions button{flex:1 1 calc(50% - 4px); white-space:nowrap; padding:13px 6px;}
+  }
   .sticky-controls{position:sticky !important; top:var(--tabs-h, 62px); z-index:40 !important; background:var(--paper); padding-top:8px; padding-bottom:18px;}
   @media (max-width:520px){.prices{grid-template-columns:repeat(2,1fr);} header{padding:20px 16px 12px;} main{padding:12px 16px 60px;} .tabs{padding-left:16px; padding-right:16px;} .price-cell .val{font-size:17px;}}
   ::selection{background:rgba(0,122,255,0.25);}
@@ -248,16 +263,16 @@
     <h1>喬大百貨 POS</h1>
     <p class="sub" id="headerStats">載入中…</p>
   </div>
-  <div class="top-actions"><a class="top-link" id="topLink" href="./update.html">⚙ 更新資料</a><button class="top-link" id="lockBtn" type="button">🔒 老闆登入</button></div>
+  <div class="top-actions"><a class="top-link" id="topLink" href="./update.html"><span class="ico">⚙</span><span class="lbl">更新資料</span></a><button class="top-link" id="lockBtn" type="button"><span class="ico">🔒</span><span class="lbl">老闆登入</span></button></div>
 </header>
 <div class="barcode-strip"></div>
 
 <div class="tabs-sticky-wrap" id="tabsStickyWrap">
   <div class="tabs">
-    <button class="tab-btn active" data-tab="search">🔍 搜尋</button>
-    <button class="tab-btn" data-tab="order">🧾 打單</button>
-    <button class="tab-btn" data-tab="txns">📊 交易紀錄</button>
-    <button class="tab-btn" data-tab="customers">👤 客戶</button>
+    <button class="tab-btn active" data-tab="search"><span class="tic">🔍</span>搜尋</button>
+    <button class="tab-btn" data-tab="order"><span class="tic">🧾</span>打單</button>
+    <button class="tab-btn" data-tab="txns"><span class="tic">📊</span>交易紀錄</button>
+    <button class="tab-btn" data-tab="customers"><span class="tic">👤</span>客戶</button>
   </div>
 </div>
 
@@ -549,10 +564,10 @@ document.querySelectorAll('.tab-btn').forEach(btn=>{
     const topLink = document.getElementById('topLink');
     if(btn.dataset.tab === 'customers'){
       topLink.href = './customers.html';
-      topLink.textContent = '⚙ 管理客戶';
+      topLink.innerHTML = '<span class="ico">⚙</span><span class="lbl">管理客戶</span>';
     }else{
       topLink.href = './update.html';
-      topLink.textContent = '⚙ 更新資料';
+      topLink.innerHTML = '<span class="ico">⚙</span><span class="lbl">更新資料</span>';
     }
   });
 });
@@ -1520,11 +1535,12 @@ function renderCustomerList(){
 custListSearch.addEventListener('input', renderCustomerList);
 
 function updateStickyOffset(){
-  const h = document.getElementById('tabsStickyWrap').offsetHeight;
+  const h = window.matchMedia('(max-width:640px)').matches ? 0 : document.getElementById('tabsStickyWrap').offsetHeight;
   document.documentElement.style.setProperty('--tabs-h', h + 'px');
 }
 window.addEventListener('resize', updateStickyOffset);
 updateStickyOffset();
+if(window.matchMedia('(max-width:640px)').matches){ const oi = document.getElementById('orderSearchInput'); if(oi) oi.placeholder = '搜尋商品／條碼／掃描'; }
 
 
 // =====================================================================
@@ -1931,7 +1947,7 @@ function applyMode(){
   const boss = isBoss();
   document.body.classList.toggle('staff', !boss);
   const lb = document.getElementById('lockBtn');
-  lb.textContent = boss ? '🔓 老闆模式（按此登出）' : '🔒 老闆登入';
+  lb.innerHTML = boss ? '<span class="ico">🔓</span><span class="lbl">老闆模式（按此登出）</span>' : '<span class="ico">🔒</span><span class="lbl">老闆登入</span>';
   const sel = document.getElementById('priceSourceSelect');
   const costOpt = sel && sel.querySelector('option[value="cost"]');
   if(!boss){
