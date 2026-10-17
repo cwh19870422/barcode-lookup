@@ -1518,10 +1518,11 @@ function renderReceiptHtml(o){
     </tr>`).join('');
   const totalQty = (o.lines || []).filter(l => l.type !== 'fee').reduce((s,l)=>s+fmtNum(l.qty),0);
   const line = 'border-top:1px dashed #000; margin:6px 0;';
+  const rt = 'display:flex; justify-content:flex-end; gap:14px;';
   const totals = o.hasTax
-    ? `<div style="display:flex; justify-content:space-between;"><span>共 ${totalQty} 件　未稅總額</span><span>${fmt(o.untaxed)}</span></div>
-       <div style="display:flex; justify-content:space-between; font-weight:700; font-size:15px;"><span>含稅總額</span><span>${fmt(o.total)}</span></div>`
-    : `<div style="display:flex; justify-content:space-between; font-weight:700; font-size:15px;"><span>共 ${totalQty} 件　總額</span><span>${fmt(o.total)}</span></div>`;
+    ? `<div style="${rt}"><span>共 ${totalQty} 件　未稅總額</span><span>${fmt(o.untaxed)}</span></div>
+       <div style="${rt} font-weight:700; font-size:15px;"><span>含稅總額</span><span>${fmt(o.total)}</span></div>`
+    : `<div style="${rt} font-weight:700; font-size:15px;"><span>共 ${totalQty} 件　總額</span><span>${fmt(o.total)}</span></div>`;
   return `
     <div class="receipt-80" style="width:72mm; padding:2mm 1mm; color:#000; font-family:-apple-system,'PingFang TC','Microsoft JhengHei',sans-serif; font-size:12px; line-height:1.4;">
       <div style="text-align:center; font-weight:700; font-size:15px;">${c ? escapeHtml(c.name || '') : ''}</div>
@@ -1531,7 +1532,7 @@ function renderReceiptHtml(o){
         <thead><tr style="border-bottom:1px solid #000;">
           <th style="text-align:left; padding:2px 0;">品名</th>
           <th style="text-align:right; padding:2px 0;">單價</th>
-          <th style="text-align:center; padding:2px 4px;">數</th>
+          <th style="text-align:center; padding:2px 4px; white-space:nowrap;">數量</th>
           <th style="text-align:right; padding:2px 0;">小計</th>
         </tr></thead>
         <tbody>${rowsHtml}</tbody>
