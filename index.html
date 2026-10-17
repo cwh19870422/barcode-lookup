@@ -136,6 +136,17 @@
   .quick-fee-btn{border:none; background:var(--gray-fill); color:var(--blue); font-weight:600; font-size:13.5px; padding:9px 16px; border-radius:999px; cursor:pointer; font-family:var(--sysfont);}
   .quick-fee-btn.refund{color:var(--red);}
   .quick-fee-btn.disc-btn{color:var(--orange);}
+  .cart-hist-btn{border:none; background:var(--gray-fill); color:var(--blue); font-weight:600; font-size:11px; padding:5px 8px; border-radius:8px; cursor:pointer; font-family:var(--sysfont); white-space:nowrap;}
+  tr.cart-hist-row > td{background:var(--paper-alt); padding:10px 12px !important;}
+  .hp-head{display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:6px; font-size:12.5px;}
+  .hp-head label{margin-left:auto; font-size:12px; color:var(--secondary); display:flex; align-items:center; gap:4px; cursor:pointer;}
+  .hp-sum{font-size:12.5px; margin-bottom:8px; color:#4A4A4C;}
+  table.hp-table{width:100%; border-collapse:collapse; font-size:12.5px;}
+  table.hp-table th{text-align:left; font-size:11px; color:var(--secondary); font-weight:600; padding:4px 5px;}
+  table.hp-table td{padding:5px; border-top:1px solid var(--line);}
+  table.hp-table td.num, table.hp-table th.num{text-align:right;}
+  table.hp-table tr.hp-me td{background:rgba(255,149,0,0.12);}
+  .hp-tag{font-weight:700; font-size:12px;} .hp-tag.up{color:var(--red);} .hp-tag.down{color:#1f8a3d;} .hp-tag.same{color:var(--secondary); font-weight:500;}
   tr.temp-row td{background:rgba(52,199,89,0.07);}
   table.cart-table input.cart-name-input{font-weight:600; min-width:90px;}
   tr.cart-sel td{background:rgba(255,149,0,0.16) !important;}
@@ -1060,6 +1071,48 @@ document.getElementById('priceSourceSelect').addEventListener('change', applyPri
 const cartBody = document.getElementById('cartBody');
 const cartTotalsEl = document.getElementById('cartTotals');
 
+const openHist = new Set(); // 展開「歷史價錢」的商品
+let histOnlyCust = false;
+
+// 本錢變動：與「上一次購買該商品時」的本錢比較，只顯示漲價/降價，不顯示實際成本
+function costTag(cur, prev){
+  if(cur === null || cur === undefined || prev === null || prev === undefined) return '';
+  const a = Number(cur), b = Number(prev);
+  if(isNaN(a) || isNaN(b)) return '';
+  if(Math.abs(a - b) < 0.005) return '<span class="hp-tag same">持平</span>';
+  return a > b ? '<span class="hp-tag up">漲價</span>' : '<span class="hp-tag down">降價</span>';
+}
+
+function histPanelHtml(it){
+  const k = x => x.barcode || x.code || x.name;
+  const key = k(it);
+  const nowCust = selectedCustomer ? selectedCustomer.name : '';
+  // 此商品的所有購買紀錄（編輯舊訂單時，排除這張單自己），由舊到新
+  const all = history.filter(h => k(h) === key && !(currentTxn && h.txnId && h.txnId === currentTxn.id))
+                     .sort((a,b) => new Date(a.date) - new Date(b.date));
+  all.forEach((h, i) => { h._tag = i > 0 ? costTag(h.cost, all[i-1].cost) : ''; });
+  let list = all.slice().reverse();
+  if(histOnlyCust && nowCust) list = list.filter(h => h.customer === nowCust);
+
+  const fmtWhen = iso => { const d = new Date(iso); return isNaN(d) ? '' : d.toLocaleDateString('zh-TW') + ' ' + pad2(d.getHours()) + ':' + pad2(d.getMinutes()); };
+  let summary = '';
+  if(all.length && it.base && !it.frozen){
+    const last = all[all.length - 1];
+    const t = costTag(it.base[5], last.cost);
+    if(t) summary = `<div class="hp-sum">目前本錢與上次購買（${fmtWhen(last.date)}）相比：${t}</div>`;
+  }
+  let body;
+  if(!list.length){
+    body = `<div class="hist-empty">${histOnlyCust && nowCust ? escapeHtml(nowCust) + ' 還沒有買過這項商品' : '還沒有這項商品的購買紀錄（要按「結帳」才會記錄）'}</div>`;
+  }else{
+    body = `<table class="hp-table"><thead><tr><th>客人</th><th>購買時間</th><th class="num">單價</th><th class="num">數量</th><th class="num">金額</th><th>本錢</th></tr></thead><tbody>` +
+      list.map(h => `<tr class="${nowCust && h.customer === nowCust ? 'hp-me' : ''}"><td>${escapeHtml(h.customer || '（未指定客戶）')}</td><td>${fmtWhen(h.date)}</td><td class="num">${fmt(h.unitPrice)}</td><td class="num">${fmt(h.qty)}</td><td class="num">${fmt(h.amount)}</td><td>${h._tag || '—'}</td></tr>`).join('') +
+      `</tbody></table>`;
+  }
+  return `<div class="hp-head"><b>${escapeHtml(it.name)}</b> 歷史價錢
+      ${nowCust ? `<label><input type="checkbox" class="hp-only" ${histOnlyCust ? 'checked' : ''}> 只看 ${escapeHtml(nowCust)}</label>` : ''}</div>${summary}${body}`;
+}
+
 function renderCart(){
   updateEditBanner();
   document.getElementById('cartCount').textContent = cart.length + ' 項';
@@ -1069,7 +1122,7 @@ function renderCart(){
     return;
   }
   let html = `<table class="cart-table"><thead><tr>
-    <th>品名</th><th style="width:70px;">單價</th><th style="width:56px;">數量</th><th style="width:70px;">小計</th><th>備註</th><th style="width:26px;"></th>
+    <th>品名</th><th style="width:70px;">單價</th><th style="width:56px;">數量</th><th style="width:70px;">小計</th><th>備註</th><th style="width:26px;"></th><th style="width:64px;">歷史</th>
   </tr></thead><tbody>`;
   cart.forEach((it,i)=>{
     const isFee = !!it.special;
@@ -1084,7 +1137,11 @@ function renderCart(){
       <td class="cart-subtotal" id="subtotal-${i}">${fmt(it.unitPrice*it.qty)}</td>
       <td><input type="text" class="cart-note" data-idx="${i}" value="${escapeHtml(it.note)}" placeholder="備註…"></td>
       <td><button class="cart-del" data-idx="${i}">✕</button></td>
+      <td>${(!isFee && !it.temp && it.base) ? `<button type="button" class="cart-hist-btn" data-idx="${i}">歷史價錢</button>` : ''}</td>
     </tr>`;
+    if(openHist.has(it.key) && !isFee && !it.temp && it.base){
+      html += `<tr class="cart-hist-row"><td colspan="7">${histPanelHtml(it)}</td></tr>`;
+    }
   });
   html += `</tbody></table>`;
   cartBody.innerHTML = html;
@@ -1127,7 +1184,17 @@ cartBody.addEventListener('input', (e)=>{
   updateCartTotals();
 });
 
+cartBody.addEventListener('change', (e)=>{
+  if(e.target.classList.contains('hp-only')){ histOnlyCust = e.target.checked; renderCart(); }
+});
+
 cartBody.addEventListener('click', (e)=>{
+  const histBtn = e.target.closest('.cart-hist-btn');
+  if(histBtn){
+    const it = cart[parseInt(histBtn.dataset.idx,10)];
+    if(it){ openHist.has(it.key) ? openHist.delete(it.key) : openHist.add(it.key); renderCart(); }
+    return;
+  }
   const nameCell = e.target.closest('td.cart-name');
   if(nameCell){
     const it = cart[parseInt(nameCell.parentElement.dataset.idx,10)];
@@ -1537,7 +1604,7 @@ function rebuildHistory(){
   const fromTxns = [];
   allTxns.forEach(t => (t.lines || []).forEach(l => {
     if(l.type !== 'item') return;
-    fromTxns.push({date:t.date, customer:(t.customer && t.customer.name) || '', name:l.name, barcode:l.barcode, code:l.code, qty:l.qty, unitPrice:l.unitPrice, amount:l.amount, cost:l.cost});
+    fromTxns.push({txnId:t.id, date:t.date, customer:(t.customer && t.customer.name) || '', name:l.name, barcode:l.barcode, code:l.code, qty:l.qty, unitPrice:l.unitPrice, amount:l.amount, cost:l.cost});
   }));
   history = legacyHistory.concat(fromTxns);
 }
