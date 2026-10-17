@@ -1506,6 +1506,11 @@ function renderOrderHtml(o){
 }
 
 // 80mm 感熱收據（精簡版）：只印客戶名、日期、品名／單價／數量／小計、總額
+function fmtDateTime24(iso){
+  const d = new Date(iso);
+  if(isNaN(d)) return '';
+  return d.getFullYear() + '/' + pad2(d.getMonth()+1) + '/' + pad2(d.getDate()) + ' ' + pad2(d.getHours()) + ':' + pad2(d.getMinutes()) + ':' + pad2(d.getSeconds());
+}
 function renderReceiptHtml(o){
   const c = o.customer;
   const td = 'padding:2px 0; vertical-align:top;';
@@ -1525,8 +1530,10 @@ function renderReceiptHtml(o){
     : `<div style="${rt} font-weight:700; font-size:15px;"><span>共 ${totalQty} 件　總額</span><span>${fmt(o.total)}</span></div>`;
   return `
     <div class="receipt-80" style="width:72mm; padding:2mm 1mm; color:#000; font-family:-apple-system,'PingFang TC','Microsoft JhengHei',sans-serif; font-size:12px; line-height:1.4;">
-      <div style="text-align:center; font-weight:700; font-size:15px;">${c ? escapeHtml(c.name || '') : ''}</div>
-      <div style="text-align:center; font-size:11px;">${new Date(o.date).toLocaleString('zh-TW')}</div>
+      <div style="display:flex; justify-content:space-between; align-items:baseline; gap:6px;">
+        <span style="font-weight:700; font-size:15px;">${c ? escapeHtml(c.name || '') : ''}</span>
+        <span style="font-size:11px; white-space:nowrap;">${fmtDateTime24(o.date)}</span>
+      </div>
       <div style="${line}"></div>
       <table style="width:100%; border-collapse:collapse; font-size:12px;">
         <thead><tr style="border-bottom:1px solid #000;">
