@@ -1,3 +1,3 @@
 {"transactions":[
-
+{"id":"Tmvc68tlu0b5","date":"2026-10-17T09:05:45.954Z","customer":null,"priceMode":"grade","lines":[{"name":"萊雅 雪紛飛慕斯 250ml","qty":1,"unitPrice":320,"amount":320,"type":"item","code":"3474636629077","barcode":"30160262","cost":240,"note":""},{"name":"萊雅 鏈鍵分子欣生髮油 90ml","qty":1,"unitPrice":850,"amount":850,"type":"item","code":"3474637292454","barcode":"3474637292454","cost":600,"note":""},{"name":"萊雅 黃捲風雙效凝乳 150ml","qty":1,"unitPrice":399,"amount":399,"type":"item","code":"30157729","barcode":"30157729","cost":320,"note":""}],"goods":1569,"shipping":0,"prevBalance":0,"refund":0,"tax":0,"hasTax":false,"untaxed":1569,"total":1569}
 ]}
