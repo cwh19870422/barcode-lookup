@@ -23,7 +23,9 @@
   .eyebrow .dot{width:6px;height:6px;background:var(--blue);border-radius:50%;display:inline-block;}
   h1{font-family:var(--sysfont); font-weight:700; font-size:clamp(28px,4.2vw,36px); margin:0 0 4px; letter-spacing:-0.02em; color:var(--ink);}
   .sub{font-size:14px; color:var(--secondary); margin:0; font-family:var(--sysfont);}
-  .top-link{position:absolute; top:22px; right:24px; z-index:3; background:var(--gray-fill); border:none; color:var(--blue); font-family:var(--sysfont); font-weight:600; font-size:13px; padding:8px 14px; border-radius:999px; text-decoration:none; display:flex; align-items:center; gap:6px;}
+  .top-actions{position:absolute; top:22px; right:24px; z-index:3; display:flex; gap:8px;}
+  .top-link{ background:var(--gray-fill); border:none; color:var(--blue); font-family:var(--sysfont); font-weight:600; font-size:13px; padding:8px 14px; border-radius:999px; text-decoration:none; display:flex; align-items:center; gap:6px;}
+  .top-link{cursor:pointer;}
   .top-link:hover{background:#DFDFE4;}
   main{max-width:920px; margin:0 auto; padding:14px 24px 80px;}
 
@@ -66,6 +68,9 @@
   .price-cell .lbl{background:var(--paper-alt); color:#6B6B6F; font-family:var(--sysfont); font-weight:600; font-size:13px; display:flex; align-items:center; justify-content:center; padding:0 9px; flex-shrink:0;}
   .price-cell .val{background:var(--paper-alt); font-family:var(--sysfont); font-size:19px; font-weight:800; color:var(--ink); letter-spacing:-0.01em; flex:1; display:flex; align-items:center; justify-content:center; padding:9px 4px; text-align:center;}
   .price-cell.cost .val{color:var(--red);}
+  /* 員工模式：藏起搜尋分頁、本錢、管理連結 */
+  body.staff .tab-btn[data-tab="search"], body.staff #tab-search, body.staff .price-cell.cost, body.staff #topLink{display:none !important;}
+  body.staff .prices{grid-template-columns:repeat(3,1fr);}
   .price-cell.sell .val{color:var(--blue);}
   .empty{text-align:center; padding:70px 20px; color:var(--secondary);}
   .empty .big{font-family:var(--monofont); font-size:12.5px; letter-spacing:0.08em; text-transform:uppercase; margin-bottom:8px; color:var(--secondary);}
@@ -242,7 +247,7 @@
     <h1>喬大百貨 POS</h1>
     <p class="sub" id="headerStats">載入中…</p>
   </div>
-  <a class="top-link" id="topLink" href="./update.html">⚙ 更新資料</a>
+  <div class="top-actions"><a class="top-link" id="topLink" href="./update.html">⚙ 更新資料</a><button class="top-link" id="lockBtn" type="button">🔒 老闆登入</button></div>
 </header>
 <div class="barcode-strip"></div>
 
@@ -1925,6 +1930,41 @@ document.getElementById('ghTokenClearBtn').addEventListener('click', ()=>{
   setGhToken(''); updateCloudBadge();
   document.getElementById('ghTokenMsg').textContent = '已清除這台裝置的設定';
 });
+
+// ===== 員工／老闆模式（只藏畫面，非真正保密）=====
+const BOSS_PIN = '1001';
+function isBoss(){ try{ return localStorage.getItem('bossMode') === '1'; }catch(e){ return false; } }
+function applyMode(){
+  const boss = isBoss();
+  document.body.classList.toggle('staff', !boss);
+  const lb = document.getElementById('lockBtn');
+  lb.textContent = boss ? '🔓 老闆模式（按此登出）' : '🔒 老闆登入';
+  const sel = document.getElementById('priceSourceSelect');
+  const costOpt = sel && sel.querySelector('option[value="cost"]');
+  if(!boss){
+    if(sel && sel.value === 'cost'){ sel.value = 'grade'; sel.dispatchEvent(new Event('change')); }
+    if(costOpt){ window._costOpt = costOpt; costOpt.remove(); }
+    const active = document.querySelector('.tab-btn.active');
+    if(!active || active.dataset.tab === 'search') switchTab('order');
+  }else{
+    if(sel && !costOpt && window._costOpt) sel.appendChild(window._costOpt);
+    const active = document.querySelector('.tab-btn.active');
+    if(active) active.click();
+  }
+}
+document.getElementById('lockBtn').addEventListener('click', ()=>{
+  if(isBoss()){
+    try{ localStorage.removeItem('bossMode'); }catch(e){}
+    applyMode(); return;
+  }
+  const v = prompt('請輸入老闆密碼');
+  if(v === null) return;
+  if(v.trim() === BOSS_PIN){
+    try{ localStorage.setItem('bossMode','1'); }catch(e){}
+    applyMode();
+  }else alert('密碼錯誤');
+});
+applyMode();
 
 loadHeldOrdersFromStorage();
 renderHeldOrders();
