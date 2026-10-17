@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>管理客戶</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+  :root{
+    --sysfont: -apple-system, BlinkMacSystemFont, "SF Pro Text", "PingFang TC", "Helvetica Neue", Arial, sans-serif;
+    --monofont: ui-monospace, "SF Mono", Menlo, Monaco, Consolas, monospace;
+    --ink:#1C1C1E; --paper:#F2F2F7; --paper-alt:#EFEFF4;
+    --blue:#007AFF; --gray-fill:#E9E9EB; --line:#E5E5EA;
+    --red:#FF3B30; --green:#34C759; --orange:#FF9500; --secondary:#8E8E93; --card:#FFFFFF;
+    --shadow: 0 1px 2px rgba(0,0,0,0.04), 0 2px 10px rgba(0,0,0,0.05);
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{background:var(--paper); color:var(--ink); font-family:var(--sysfont); -webkit-font-smoothing:antialiased; min-height:100vh;}
+  header{background:var(--ink); color:var(--paper); padding:22px 24px 18px;}
+  header .inner{max-width:820px; margin:0 auto;}
+  .eyebrow{font-family:var(--monofont); font-size:11px; letter-spacing:0.08em; text-transform:uppercase; color:var(--orange); margin:0 0 6px; display:flex; align-items:center; gap:8px;}
+  .eyebrow .dot{width:6px;height:6px;background:var(--orange);border-radius:50%;display:inline-block;}
+  h1{font-weight:800; font-size:clamp(24px,4vw,32px); margin:0 0 4px;}
+  .sub{font-size:13.5px; color:#B9C0D4; margin:0;}
+  .back-link{color:var(--orange); font-size:12.5px; text-decoration:none; display:inline-block; margin-top:10px; font-weight:600;}
+
+  main{max-width:820px; margin:0 auto; padding:24px 24px 80px;}
+  .step{background:#fff; border-radius:14px; box-shadow:var(--shadow); padding:20px 22px; margin-bottom:16px;}
+  .step h3{margin:0 0 8px; font-size:15px; display:flex; align-items:center; gap:8px;}
+  .step h3 .num{background:var(--blue); color:#fff; width:24px;height:24px;border-radius:50%; display:flex;align-items:center;justify-content:center; font-size:12px; flex-shrink:0; font-weight:700;}
+  .step p{font-size:13.5px; color:#5B5646; line-height:1.7; margin:0 0 10px;}
+
+  .form-grid{display:grid; grid-template-columns:1fr 1fr; gap:10px;}
+  .form-grid input, .form-grid select{
+    border:none; background:var(--paper-alt); border-radius:8px; padding:10px 12px;
+    font-family:var(--sysfont); font-size:13.5px; color:var(--ink); width:100%;
+  }
+  .form-grid .span2{grid-column:span 2;}
+  .save-btn{margin-top:12px; background:var(--blue); color:#fff; border:none; font-weight:600; font-size:13.5px; padding:10px 20px; border-radius:10px; cursor:pointer;}
+
+  .drop-zone{border:1.5px dashed var(--line); border-radius:10px; padding:24px 16px; text-align:center; cursor:pointer; font-size:12.5px; color:var(--secondary);}
+  .drop-zone.drag{border-color:var(--blue); background:rgba(0,122,255,0.05);}
+  .drop-zone strong{color:var(--ink);}
+  #fileInput{display:none;}
+  #importLog{margin-top:10px; font-family:var(--monofont); font-size:12px; line-height:1.8;}
+  #importLog .ok{color:var(--green);} #importLog .err{color:var(--red);}
+
+  .actions-row{display:flex; gap:10px; flex-wrap:wrap; margin-top:6px;}
+  .actions-row button{
+    background:var(--gray-fill); color:var(--ink); border:none; font-weight:600; font-size:13px;
+    padding:10px 16px; border-radius:10px; cursor:pointer; display:flex; align-items:center; gap:6px;
+  }
+  .actions-row button.primary{background:var(--blue); color:#fff;}
+  .actions-row button.danger{background:rgba(255,59,48,0.1); color:var(--red);}
+
+  table.cust-edit{width:100%; border-collapse:collapse; margin-top:14px;}
+  table.cust-edit th{text-align:left; font-size:11px; color:var(--secondary); font-weight:600; padding:6px 4px; border-bottom:1px solid var(--line);}
+  table.cust-edit td{padding:6px 4px; border-bottom:1px solid var(--line); font-size:12.5px;}
+  table.cust-edit input, table.cust-edit select{width:100%; border:none; background:var(--paper-alt); border-radius:6px; padding:6px 8px; font-family:var(--sysfont); font-size:12.5px;}
+  .row-del{background:none; border:none; color:var(--red); font-size:15px; cursor:pointer;}
+  .empty-note{text-align:center; padding:24px; color:var(--secondary); font-size:13px;}
+  code{background:var(--paper-alt); padding:1px 6px; border-radius:4px; font-family:var(--monofont); font-size:12px;}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="inner">
+    <p class="eyebrow"><span class="dot"></span>CUSTOMER DATA</p>
+    <h1>管理客戶</h1>
+    <p class="sub">新增、匯入、匯出客戶名單</p>
+    <a class="back-link" href="./index.html">← 回到主頁</a>
+  </div>
+</header>
+
+<main>
+  <div class="step">
+    <h3><span class="num">1</span>新增單一客戶</h3>
+    <div class="form-grid">
+      <input type="text" id="fName" placeholder="姓名">
+      <input type="text" id="fPhone" placeholder="電話">
+      <input type="text" id="fAddress" class="span2" placeholder="地址">
+      <select id="fGrade">
+        <option value="A">A 級</option>
+        <option value="B">B 級</option>
+        <option value="C">C 級</option>
+        <option value="D">D 級</option>
+      </select>
+      <input type="text" id="fTaxId" placeholder="統一編號（選填）">
+      <input type="text" id="fNote" class="span2" placeholder="備註（選填）">
+    </div>
+    <button class="save-btn" id="addBtn">加入清單</button>
+  </div>
+
+  <div class="step">
+    <h3><span class="num">2</span>匯入 Excel（選填）</h3>
+    <p>欄位需包含：姓名、電話、地址、會員等級（A/B/C/D）、統編、備註。可一次匯入多筆，會加到下方清單中。</p>
+    <div class="drop-zone" id="dropZone">
+      <div><strong>拖曳 Excel 檔案到這裡</strong>，或點擊選擇檔案</div>
+      <div style="margin-top:4px;">支援 .xls / .xlsx</div>
+    </div>
+    <input type="file" id="fileInput" multiple accept=".xls,.xlsx">
+    <div id="importLog"></div>
+  </div>
+
+  <div class="step">
+    <h3><span class="num">3</span>目前清單（可直接編輯／刪除）</h3>
+    <div id="custTableWrap"></div>
+    <div class="actions-row">
+      <button class="danger" id="clearAllBtn">清空全部</button>
+      <button id="exportExcelBtn">⬇ 匯出 Excel</button>
+      <button class="primary" id="downloadJsonBtn">⬇ 下載 customers.json</button>
+    </div>
+  </div>
+
+  <div class="step">
+    <h3><span class="num">4</span>上傳到 GitHub</h3>
+    <p>1. 打開你的 GitHub repo 頁面<br>
+       2. 找到 <code>customers.json</code>（如果是第一次，用「Add file → Upload files」新增；已存在的話點進去用鉛筆編輯或直接上傳覆蓋）<br>
+       3. 選擇剛剛下載的新 <code>customers.json</code>，上傳並覆蓋<br>
+       4. 填寫 commit 訊息，點 <strong>Commit changes</strong><br>
+       5. 等 30 秒到 1 分鐘，主頁「客戶」分頁和「打單」分頁就會顯示最新的客戶名單，網址不變。</p>
+  </div>
+</main>
+
+<script>
+let customers = [];
+
+async function loadCurrent(){
+  try{
+    const res = await fetch('./customers.json?_=' + Date.now());
+    if(res.ok){
+      const data = await res.json();
+      customers = data.customers || [];
+    }
+  }catch(e){ customers = []; }
+  renderTable();
+}
+
+function escapeHtml(s){
+  return String(s==null?'':s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+document.getElementById('addBtn').addEventListener('click', ()=>{
+  const name = document.getElementById('fName').value.trim();
+  if(!name){ alert('請至少輸入姓名'); return; }
+  customers.push({
+    name,
+    phone: document.getElementById('fPhone').value.trim(),
+    address: document.getElementById('fAddress').value.trim(),
+    grade: document.getElementById('fGrade').value,
+    taxId: document.getElementById('fTaxId').value.trim(),
+    note: document.getElementById('fNote').value.trim(),
+  });
+  ['fName','fPhone','fAddress','fTaxId','fNote'].forEach(id => document.getElementById(id).value = '');
+  renderTable();
+});
+
+const dropZone = document.getElementById('dropZone');
+const fileInput = document.getElementById('fileInput');
+const importLog = document.getElementById('importLog');
+
+dropZone.addEventListener('click', ()=> fileInput.click());
+dropZone.addEventListener('dragover', (e)=>{ e.preventDefault(); dropZone.classList.add('drag'); });
+dropZone.addEventListener('dragleave', ()=> dropZone.classList.remove('drag'));
+dropZone.addEventListener('drop', (e)=>{
+  e.preventDefault(); dropZone.classList.remove('drag');
+  if(e.dataTransfer.files && e.dataTransfer.files.length) handleFiles(e.dataTransfer.files);
+});
+fileInput.addEventListener('change', (e)=>{
+  if(e.target.files && e.target.files.length){ handleFiles(e.target.files); fileInput.value=''; }
+});
+
+function log(msg, type){
+  const line = document.createElement('div');
+  if(type) line.className = type;
+  line.textContent = msg;
+  importLog.prepend(line);
+}
+
+function findCol(lowerHeaders, candidates){
+  for(const c of candidates){
+    const idx = lowerHeaders.indexOf(c.toLowerCase());
+    if(idx > -1) return idx;
+  }
+  return -1;
+}
+
+async function handleFiles(fileList){
+  const files = Array.from(fileList).filter(f => /\.(xls|xlsx)$/i.test(f.name));
+  if(!files.length){ log('沒有找到 .xls / .xlsx 檔案', 'err'); return; }
+
+  for(const file of files){
+    try{
+      const buf = await file.arrayBuffer();
+      const wb = XLSX.read(buf, {type:'array'});
+      const sheetName = wb.SheetNames[0];
+      const ws = wb.Sheets[sheetName];
+      const aoa = XLSX.utils.sheet_to_json(ws, {header:1, defval:null, blankrows:false});
+      if(!aoa.length){ throw new Error('工作表是空的'); }
+
+      const headers = aoa[0].map(h => String(h||'').trim());
+      const lowerHeaders = headers.map(h => h.toLowerCase());
+
+      const cName = findCol(lowerHeaders, ['姓名','名字','name']);
+      const cPhone = findCol(lowerHeaders, ['電話','手機','phone','tel']);
+      const cAddress = findCol(lowerHeaders, ['地址','address']);
+      const cGrade = findCol(lowerHeaders, ['會員等級','等級','grade']);
+      const cTaxId = findCol(lowerHeaders, ['統編','統一編號','taxid']);
+      const cNote = findCol(lowerHeaders, ['備註','note','remark']);
+
+      if(cName === -1){ throw new Error('找不到「姓名」欄位，跳過此檔'); }
+
+      let count = 0;
+      for(let i=1; i<aoa.length; i++){
+        const r = aoa[i];
+        const name = cName>-1 ? r[cName] : null;
+        if(name===null || name===undefined || String(name).trim()==='') continue;
+        let grade = cGrade>-1 ? String(r[cGrade]||'A').trim().toUpperCase() : 'A';
+        if(!['A','B','C','D'].includes(grade)) grade = 'A';
+        customers.push({
+          name: String(name).trim(),
+          phone: cPhone>-1 ? String(r[cPhone]||'').trim() : '',
+          address: cAddress>-1 ? String(r[cAddress]||'').trim() : '',
+          grade,
+          taxId: cTaxId>-1 ? String(r[cTaxId]||'').trim() : '',
+          note: cNote>-1 ? String(r[cNote]||'').trim() : '',
+        });
+        count++;
+      }
+      log(`✓ ${file.name} → 匯入 ${count} 位客戶`, 'ok');
+    }catch(err){
+      log(`✗ ${file.name}：${err.message||'解析失敗'}`, 'err');
+    }
+  }
+  renderTable();
+}
+
+const custTableWrap = document.getElementById('custTableWrap');
+
+function renderTable(){
+  if(!customers.length){
+    custTableWrap.innerHTML = `<div class="empty-note">目前清單是空的，請新增或匯入客戶</div>`;
+    return;
+  }
+  let html = `<table class="cust-edit"><thead><tr>
+    <th>姓名</th><th>電話</th><th>地址</th><th style="width:64px;">等級</th><th>統編</th><th>備註</th><th style="width:24px;"></th>
+  </tr></thead><tbody>`;
+  customers.forEach((c,i)=>{
+    html += `<tr data-idx="${i}">
+      <td><input type="text" class="c-name" data-idx="${i}" value="${escapeHtml(c.name)}"></td>
+      <td><input type="text" class="c-phone" data-idx="${i}" value="${escapeHtml(c.phone)}"></td>
+      <td><input type="text" class="c-address" data-idx="${i}" value="${escapeHtml(c.address)}"></td>
+      <td>
+        <select class="c-grade" data-idx="${i}">
+          ${['A','B','C','D'].map(g=>`<option value="${g}" ${c.grade===g?'selected':''}>${g}</option>`).join('')}
+        </select>
+      </td>
+      <td><input type="text" class="c-taxid" data-idx="${i}" value="${escapeHtml(c.taxId)}"></td>
+      <td><input type="text" class="c-note" data-idx="${i}" value="${escapeHtml(c.note)}"></td>
+      <td><button class="row-del" data-idx="${i}">✕</button></td>
+    </tr>`;
+  });
+  html += `</tbody></table>`;
+  custTableWrap.innerHTML = html;
+}
+
+custTableWrap.addEventListener('input', (e)=>{
+  const idx = e.target.dataset.idx;
+  if(idx===undefined) return;
+  const i = parseInt(idx,10);
+  if(e.target.classList.contains('c-name')) customers[i].name = e.target.value;
+  else if(e.target.classList.contains('c-phone')) customers[i].phone = e.target.value;
+  else if(e.target.classList.contains('c-address')) customers[i].address = e.target.value;
+  else if(e.target.classList.contains('c-grade')) customers[i].grade = e.target.value;
+  else if(e.target.classList.contains('c-taxid')) customers[i].taxId = e.target.value;
+  else if(e.target.classList.contains('c-note')) customers[i].note = e.target.value;
+});
+
+custTableWrap.addEventListener('click', (e)=>{
+  const btn = e.target.closest('.row-del');
+  if(!btn) return;
+  const i = parseInt(btn.dataset.idx,10);
+  customers.splice(i,1);
+  renderTable();
+});
+
+document.getElementById('clearAllBtn').addEventListener('click', ()=>{
+  if(!customers.length) return;
+  if(!confirm('確定要清空整份客戶清單嗎？（尚未下載/上傳的變更會消失）')) return;
+  customers = [];
+  renderTable();
+});
+
+document.getElementById('downloadJsonBtn').addEventListener('click', ()=>{
+  const blob = new Blob([JSON.stringify({customers})], {type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = 'customers.json';
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+});
+
+document.getElementById('exportExcelBtn').addEventListener('click', ()=>{
+  if(!customers.length){ alert('目前沒有客戶資料可匯出'); return; }
+  const data = customers.map(c => ({
+    '姓名': c.name, '電話': c.phone, '地址': c.address,
+    '會員等級': c.grade, '統編': c.taxId, '備註': c.note
+  }));
+  const ws = XLSX.utils.json_to_sheet(data);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, '客戶名單');
+  XLSX.writeFile(wb, '客戶名單.xlsx');
+});
+
+loadCurrent();
+</script>
+</body>
+</html>
