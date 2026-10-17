@@ -1,3 +1,3 @@
 {"transactions":[
-{"id":"Tmvbrd5lw7nf","date":"2026-10-17T02:09:13.892Z","customer":null,"priceMode":"grade","lines":[{"name":"DIOR 曠野之心澄澈香精 100ml","qty":17,"unitPrice":4100,"amount":69700,"type":"item","code":"3348901728836","barcode":"3348901728836","cost":3540,"note":""},{"name":"稅金 (5%)","qty":1,"unitPrice":3485,"amount":3485,"type":"fee","kind":"稅金"}],"goods":69700,"shipping":0,"prevBalance":0,"refund":0,"tax":3485,"hasTax":true,"untaxed":69700,"total":73185,"editedAt":"2026-10-17T02:09:58.282Z"}
+
 ]}
