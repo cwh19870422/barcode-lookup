@@ -1513,39 +1513,38 @@ function fmtDateTime24(iso){
 }
 function renderReceiptHtml(o){
   const c = o.customer;
-  const td = 'padding:2px 0; vertical-align:top;';
+  const td = 'padding:4px 0; vertical-align:top; border-bottom:1px dotted #000;';
   const rowsHtml = (o.lines || []).map(l => `
     <tr>
       <td style="${td} padding-right:4px;">${escapeHtml(l.name || '')}${l.disc ? `(${l.disc}折)` : ''}</td>
       <td style="${td} text-align:right; white-space:nowrap;">${l.type === 'fee' ? '' : fmt(l.unitPrice)}</td>
-      <td style="${td} text-align:center; padding:2px 4px;">${l.type === 'fee' ? '' : l.qty}</td>
+      <td style="${td} text-align:center; padding:4px 4px; white-space:nowrap;">${l.type === 'fee' ? '' : l.qty}</td>
       <td style="${td} text-align:right; white-space:nowrap;">${fmt(l.amount)}</td>
     </tr>`).join('');
   const totalQty = (o.lines || []).filter(l => l.type !== 'fee').reduce((s,l)=>s+fmtNum(l.qty),0);
-  const line = 'border-top:1px dashed #000; margin:6px 0;';
   const rt = 'display:flex; justify-content:flex-end; gap:14px;';
+  const big = 'font-weight:700; font-size:16px;';
   const totals = o.hasTax
     ? `<div style="${rt}"><span>共 ${totalQty} 件　未稅總額</span><span>${fmt(o.untaxed)}</span></div>
-       <div style="${rt} font-weight:700; font-size:15px;"><span>含稅總額</span><span>${fmt(o.total)}</span></div>`
-    : `<div style="${rt} font-weight:700; font-size:15px;"><span>共 ${totalQty} 件　總額</span><span>${fmt(o.total)}</span></div>`;
+       <div style="${rt} ${big}"><span>含稅總額</span><span>${fmt(o.total)}</span></div>`
+    : `<div style="${rt} ${big}"><span>共 ${totalQty} 件　總額</span><span>${fmt(o.total)}</span></div>`;
+  const th = 'padding:5px 0 3px; border-bottom:1px solid #000; font-weight:700; white-space:nowrap;';
   return `
-    <div class="receipt-80" style="width:72mm; padding:2mm 1mm; color:#000; font-family:-apple-system,'PingFang TC','Microsoft JhengHei',sans-serif; font-size:12px; line-height:1.4;">
-      <div style="display:flex; justify-content:space-between; align-items:baseline; gap:6px;">
-        <span style="font-weight:700; font-size:15px;">${c ? escapeHtml(c.name || '') : ''}</span>
+    <div class="receipt-80" style="width:72mm; padding:2mm 1mm; color:#000; font-family:-apple-system,'PingFang TC','Microsoft JhengHei',sans-serif; font-size:12px; line-height:1.45;">
+      <div style="display:flex; justify-content:space-between; align-items:baseline; gap:6px; border-bottom:3px double #000; padding-bottom:5px;">
+        <span style="font-weight:700; font-size:17px;">${c ? escapeHtml(c.name || '') : ''}</span>
         <span style="font-size:11px; white-space:nowrap;">${fmtDateTime24(o.date)}</span>
       </div>
-      <div style="${line}"></div>
       <table style="width:100%; border-collapse:collapse; font-size:12px;">
-        <thead><tr style="border-bottom:1px solid #000;">
-          <th style="text-align:left; padding:2px 0;">品名</th>
-          <th style="text-align:right; padding:2px 0;">單價</th>
-          <th style="text-align:center; padding:2px 4px; white-space:nowrap;">數量</th>
-          <th style="text-align:right; padding:2px 0;">小計</th>
+        <thead><tr>
+          <th style="${th} text-align:left;">品名</th>
+          <th style="${th} text-align:right; padding-left:6px;">單價</th>
+          <th style="${th} text-align:center; padding-left:4px; padding-right:4px; white-space:nowrap;">數量</th>
+          <th style="${th} text-align:right;">小計</th>
         </tr></thead>
         <tbody>${rowsHtml}</tbody>
       </table>
-      <div style="${line}"></div>
-      ${totals}
+      <div style="border-top:3px double #000; margin-top:8px; padding-top:6px;">${totals}</div>
     </div>`;
 }
 
