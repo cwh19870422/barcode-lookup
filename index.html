@@ -156,7 +156,6 @@
   table.hp-table td{padding:5px; border-top:1px solid var(--line);}
   table.hp-table td.num, table.hp-table th.num{text-align:right;}
   table.hp-table tr.hp-me td{background:rgba(255,149,0,0.12);}
-  .pcmp-wrap{text-align:center; line-height:1.2; margin-top:2px;} .pcmp{display:inline-block; font-weight:700; font-size:11.5px; padding:1px 7px; border-radius:999px;} .pcmp.up{color:var(--red); background:#FDECEC;} .pcmp.down{color:#1f8a3d; background:#E7F5EB;} .pcmp-sub{display:block; font-size:10px; color:var(--secondary); margin-top:1px;}
   .hp-tag{font-weight:700; font-size:12px;} .hp-tag.up{color:var(--red);} .hp-tag.down{color:#1f8a3d;} .hp-tag.same{color:var(--secondary); font-weight:500;}
   tr.temp-row td{background:rgba(52,199,89,0.07);}
   table.cart-table input.cart-name-input{font-weight:600; min-width:90px;}
@@ -1100,16 +1099,19 @@ function lastPurchase(it){
 
 const ymd = iso => { const d = new Date(iso); return isNaN(d) ? '' : d.getFullYear() + '/' + pad2(d.getMonth()+1) + '/' + pad2(d.getDate()); };
 function fmtDelta(n){ const v = Math.abs(n); return String(Number(v.toFixed(1))); }
-// 與這位客人上次結帳的單價相比（有選客人才比；沒變動就不顯示）
-function priceCmpHtml(it){
-  if(!selectedCustomer || it.special || it.temp || !it.base) return '';
+// 本錢差異（只顯示漲跌多少，不顯示實際成本）：目前本錢 vs 這位客人上次購買當時的本錢
+function costDiffHtml(it){
+  if(!selectedCustomer || !it.base || it.frozen) return '';
   let list = itemHistory(it).filter(h => h.customer === selectedCustomer.name);
-  if(currentTxn) list = list.filter(h => h.txnId !== currentTxn.id);
   if(!list.length) return '';
-  const d = fmtNum(it.unitPrice) - fmtNum(list[list.length-1].unitPrice);
-  if(Math.abs(d) < 0.005) return '';
-  const v = String(Number(Math.abs(d).toFixed(1)));
-  return d > 0 ? `<span class="pcmp up">▲ 漲${v}</span><span class="pcmp-sub">與上次結帳</span>` : `<span class="pcmp down">▼ 降${v}</span><span class="pcmp-sub">與上次結帳</span>`;
+  const last = list[list.length - 1];
+  const cur = Number(it.base[5]), prev = Number(last.cost);
+  if(isNaN(cur) || isNaN(prev) || last.cost === null || last.cost === undefined) return '';
+  const d = cur - prev;
+  const when = ymd(last.date);
+  const tag = Math.abs(d) < 0.005 ? '<span class="hp-tag same">持平</span>'
+    : d > 0 ? `<span class="hp-tag up">▲ 漲${fmtDelta(d)}</span>` : `<span class="hp-tag down">▼ 降${fmtDelta(d)}</span>`;
+  return `<div class="hp-sum">${escapeHtml(selectedCustomer.name)}　本錢與上次購買（${when}）相比：${tag}</div>`;
 }
 
 function histPanelHtml(it){
@@ -1128,7 +1130,7 @@ function histPanelHtml(it){
       `</tbody></table>`;
   }
   return `<div class="hp-head"><b>${escapeHtml(it.name)}</b> 歷史價錢
-      ${nowCust ? `<label><input type="checkbox" class="hp-only" ${histOnlyCust ? 'checked' : ''}> 只看 ${escapeHtml(nowCust)}</label>` : ''}</div>${body}`;
+      ${nowCust ? `<label><input type="checkbox" class="hp-only" ${histOnlyCust ? 'checked' : ''}> 只看 ${escapeHtml(nowCust)}</label>` : ''}</div>${costDiffHtml(it)}${body}`;
 }
 
 function lastPurchaseCellHtml(it){
@@ -1148,7 +1150,7 @@ function renderCart(){
     return;
   }
   let html = `<table class="cart-table"><thead><tr>
-    <th>品名</th><th style="width:84px;">單價</th><th style="width:56px;">數量</th><th style="width:70px;">小計</th><th>備註</th><th style="width:26px;"></th><th style="width:78px;">上次購買</th><th style="width:64px;">歷史</th>
+    <th>品名</th><th style="width:70px;">單價</th><th style="width:56px;">數量</th><th style="width:70px;">小計</th><th>備註</th><th style="width:26px;"></th><th style="width:78px;">上次購買</th><th style="width:64px;">歷史</th>
   </tr></thead><tbody>`;
   cart.forEach((it,i)=>{
     const isFee = !!it.special;
@@ -1158,7 +1160,7 @@ function renderCart(){
       <td class="${isFee || it.temp ? '' : 'cart-name'}">${it.temp
         ? `<input type="text" class="cart-name-input" data-idx="${i}" value="${escapeHtml(it.name)}" placeholder="臨時商品名稱">`
         : escapeHtml(it.name) + (it.disc ? `<span class="disc-tag">${it.disc}折</span>` : '')}</td>
-      <td><input type="number" inputmode="decimal" class="cart-price" data-idx="${i}" value="${shownPrice === 0 && isFee ? '' : shownPrice}" ${isFee ? 'placeholder="金額"' : ''}><div class="pcmp-wrap" id="pcmp-${i}">${priceCmpHtml(it)}</div></td>
+      <td><input type="number" inputmode="decimal" class="cart-price" data-idx="${i}" value="${shownPrice === 0 && isFee ? '' : shownPrice}" ${isFee ? 'placeholder="金額"' : ''}></td>
       <td>${isFee ? '<span style="display:block;text-align:center;color:var(--secondary);">—</span>' : `<input type="number" class="cart-qty" data-idx="${i}" value="${it.qty}" min="1">`}</td>
       <td class="cart-subtotal" id="subtotal-${i}">${fmt(it.unitPrice*it.qty)}</td>
       <td><input type="text" class="cart-note" data-idx="${i}" value="${escapeHtml(it.note)}" placeholder="備註…"></td>
@@ -1206,8 +1208,6 @@ cartBody.addEventListener('input', (e)=>{
   }else if(e.target.classList.contains('cart-note')){
     cart[i].note = e.target.value;
   }
-  const cmpEl = document.getElementById('pcmp-' + i);
-  if(cmpEl) cmpEl.innerHTML = priceCmpHtml(cart[i]);
   const subEl = document.getElementById('subtotal-' + i);
   if(subEl) subEl.textContent = fmt(cart[i].unitPrice * cart[i].qty);
   updateCartTotals();
