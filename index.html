@@ -136,6 +136,8 @@
   .quick-fee-btn{border:none; background:var(--gray-fill); color:var(--blue); font-weight:600; font-size:13.5px; padding:9px 16px; border-radius:999px; cursor:pointer; font-family:var(--sysfont);}
   .quick-fee-btn.refund{color:var(--red);}
   .quick-fee-btn.disc-btn{color:var(--orange);}
+  td.cart-last{text-align:center; line-height:1.25;}
+  .last-price{font-weight:700; font-size:13px;} .last-sub{font-size:10.5px; color:var(--secondary);} .last-none{color:var(--secondary);}
   .cart-hist-btn{border:none; background:var(--gray-fill); color:var(--blue); font-weight:600; font-size:11px; padding:5px 8px; border-radius:8px; cursor:pointer; font-family:var(--sysfont); white-space:nowrap;}
   tr.cart-hist-row > td{background:var(--paper-alt); padding:10px 12px !important;}
   .hp-head{display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:6px; font-size:12.5px;}
@@ -896,9 +898,7 @@ function doOrderSearch(){
       <div class="meta-row">
         <span>條碼 ${highlight(barcode||'—', q)}</span>
         <span>編號 ${highlight(code||'—', q)}</span>
-        <button class="history-btn" data-barcode="${escapeHtml(barcode||'')}" data-target="hist-order-${escapeHtml(key)}">歷史價錢</button>
       </div>
-      <div class="history-panel" id="hist-order-${escapeHtml(key)}" style="display:none;"></div>
       ${priceCellsHtml(r, q)}
     </div>`;
   }
@@ -1074,43 +1074,72 @@ const cartTotalsEl = document.getElementById('cartTotals');
 const openHist = new Set(); // 展開「歷史價錢」的商品
 let histOnlyCust = false;
 
-// 本錢變動：與「上一次購買該商品時」的本錢比較，只顯示漲價/降價，不顯示實際成本
-function costTag(cur, prev){
-  if(cur === null || cur === undefined || prev === null || prev === undefined) return '';
-  const a = Number(cur), b = Number(prev);
-  if(isNaN(a) || isNaN(b)) return '';
-  if(Math.abs(a - b) < 0.005) return '<span class="hp-tag same">持平</span>';
-  return a > b ? '<span class="hp-tag up">漲價</span>' : '<span class="hp-tag down">降價</span>';
-}
-
-function histPanelHtml(it){
+// 此商品的購買紀錄（由舊到新）；編輯舊訂單時排除這張單自己
+function itemHistory(it){
   const k = x => x.barcode || x.code || x.name;
   const key = k(it);
+  return history.filter(h => k(h) === key && !(currentTxn && h.txnId && h.txnId === currentTxn.id))
+                .sort((a,b) => new Date(a.date) - new Date(b.date));
+}
+
+// 上次購買：有選客人 → 該客人上次買的單價；沒選客人 → 任何人最近一次
+function lastPurchase(it){
+  let list = itemHistory(it);
+  if(selectedCustomer) list = list.filter(h => h.customer === selectedCustomer.name);
+  return list.length ? list[list.length - 1] : null;
+}
+
+const ymd = iso => { const d = new Date(iso); return isNaN(d) ? '' : d.getFullYear() + '/' + pad2(d.getMonth()+1) + '/' + pad2(d.getDate()); };
+function fmtDelta(n){ const v = Math.abs(n); return String(Number(v.toFixed(1))); }
+// 本錢漲跌（只顯示變動多少，不顯示實際成本）
+function costChange(cur, prev){
+  if(cur === null || cur === undefined || prev === null || prev === undefined) return null;
+  const a = Number(cur), b = Number(prev);
+  if(isNaN(a) || isNaN(b)) return null;
+  const d = a - b;
+  if(Math.abs(d) < 0.005) return {cls:'same', text:'持平', d:0};
+  return d > 0 ? {cls:'up', text:'漲' + fmtDelta(d), d} : {cls:'down', text:'降' + fmtDelta(d), d};
+}
+const costChangeHtml = c => c ? `<span class="hp-tag ${c.cls}">${c.text}</span>` : '—';
+
+function histPanelHtml(it){
   const nowCust = selectedCustomer ? selectedCustomer.name : '';
-  // 此商品的所有購買紀錄（編輯舊訂單時，排除這張單自己），由舊到新
-  const all = history.filter(h => k(h) === key && !(currentTxn && h.txnId && h.txnId === currentTxn.id))
-                     .sort((a,b) => new Date(a.date) - new Date(b.date));
-  all.forEach((h, i) => { h._tag = i > 0 ? costTag(h.cost, all[i-1].cost) : ''; });
+  const all = itemHistory(it);
+  // 每一筆：與上一次購買相比的本錢漲跌；以及「最近一次本錢變動」的日期（年/月/日）
+  let lastChangeDate = '';
+  all.forEach((h, i) => {
+    h._chg = i > 0 ? costChange(h.cost, all[i-1].cost) : null;
+    if(h._chg && h._chg.d !== 0) lastChangeDate = ymd(h.date);
+    h._chgDate = lastChangeDate;
+  });
   let list = all.slice().reverse();
   if(histOnlyCust && nowCust) list = list.filter(h => h.customer === nowCust);
 
-  const fmtWhen = iso => { const d = new Date(iso); return isNaN(d) ? '' : d.toLocaleDateString('zh-TW') + ' ' + pad2(d.getHours()) + ':' + pad2(d.getMinutes()); };
+  const fmtWhen = iso => { const d = new Date(iso); return isNaN(d) ? '' : ymd(iso) + ' ' + pad2(d.getHours()) + ':' + pad2(d.getMinutes()); };
   let summary = '';
   if(all.length && it.base && !it.frozen){
     const last = all[all.length - 1];
-    const t = costTag(it.base[5], last.cost);
-    if(t) summary = `<div class="hp-sum">目前本錢與上次購買（${fmtWhen(last.date)}）相比：${t}</div>`;
+    const c = costChange(it.base[5], last.cost);
+    if(c) summary = `<div class="hp-sum">目前本錢與上次購買（${fmtWhen(last.date)}）相比：${costChangeHtml(c)}</div>`;
   }
   let body;
   if(!list.length){
     body = `<div class="hist-empty">${histOnlyCust && nowCust ? escapeHtml(nowCust) + ' 還沒有買過這項商品' : '還沒有這項商品的購買紀錄（要按「結帳」才會記錄）'}</div>`;
   }else{
-    body = `<table class="hp-table"><thead><tr><th>客人</th><th>購買時間</th><th class="num">單價</th><th class="num">數量</th><th class="num">金額</th><th>本錢</th></tr></thead><tbody>` +
-      list.map(h => `<tr class="${nowCust && h.customer === nowCust ? 'hp-me' : ''}"><td>${escapeHtml(h.customer || '（未指定客戶）')}</td><td>${fmtWhen(h.date)}</td><td class="num">${fmt(h.unitPrice)}</td><td class="num">${fmt(h.qty)}</td><td class="num">${fmt(h.amount)}</td><td>${h._tag || '—'}</td></tr>`).join('') +
+    body = `<table class="hp-table"><thead><tr><th>客人</th><th>購買時間</th><th class="num">數量</th><th class="num">單價</th><th>本錢漲跌</th><th>本錢變動日</th></tr></thead><tbody>` +
+      list.map(h => `<tr class="${nowCust && h.customer === nowCust ? 'hp-me' : ''}"><td>${escapeHtml(h.customer || '（未指定客戶）')}</td><td>${fmtWhen(h.date)}</td><td class="num">${fmt(h.qty)}</td><td class="num">${fmt(h.unitPrice)}</td><td>${costChangeHtml(h._chg)}</td><td>${h._chgDate || '—'}</td></tr>`).join('') +
       `</tbody></table>`;
   }
   return `<div class="hp-head"><b>${escapeHtml(it.name)}</b> 歷史價錢
       ${nowCust ? `<label><input type="checkbox" class="hp-only" ${histOnlyCust ? 'checked' : ''}> 只看 ${escapeHtml(nowCust)}</label>` : ''}</div>${summary}${body}`;
+}
+
+function lastPurchaseCellHtml(it){
+  const h = lastPurchase(it);
+  if(!h) return '<span class="last-none" title="還沒有購買紀錄">—</span>';
+  const d = new Date(h.date);
+  const sub = pad2(d.getMonth()+1) + '/' + pad2(d.getDate()) + (selectedCustomer ? '' : ' ' + escapeHtml(h.customer || ''));
+  return `<div class="last-price" title="${escapeHtml((h.customer || '未指定客戶') + ' · ' + ymd(h.date))}">${fmt(h.unitPrice)}</div><div class="last-sub">${sub}</div>`;
 }
 
 function renderCart(){
@@ -1122,7 +1151,7 @@ function renderCart(){
     return;
   }
   let html = `<table class="cart-table"><thead><tr>
-    <th>品名</th><th style="width:70px;">單價</th><th style="width:56px;">數量</th><th style="width:70px;">小計</th><th>備註</th><th style="width:26px;"></th><th style="width:64px;">歷史</th>
+    <th>品名</th><th style="width:70px;">單價</th><th style="width:56px;">數量</th><th style="width:70px;">小計</th><th>備註</th><th style="width:26px;"></th><th style="width:78px;">上次購買</th><th style="width:64px;">歷史</th>
   </tr></thead><tbody>`;
   cart.forEach((it,i)=>{
     const isFee = !!it.special;
@@ -1137,10 +1166,11 @@ function renderCart(){
       <td class="cart-subtotal" id="subtotal-${i}">${fmt(it.unitPrice*it.qty)}</td>
       <td><input type="text" class="cart-note" data-idx="${i}" value="${escapeHtml(it.note)}" placeholder="備註…"></td>
       <td><button class="cart-del" data-idx="${i}">✕</button></td>
+      <td class="cart-last">${(!isFee && !it.temp && it.base) ? lastPurchaseCellHtml(it) : ''}</td>
       <td>${(!isFee && !it.temp && it.base) ? `<button type="button" class="cart-hist-btn" data-idx="${i}">歷史價錢</button>` : ''}</td>
     </tr>`;
     if(openHist.has(it.key) && !isFee && !it.temp && it.base){
-      html += `<tr class="cart-hist-row"><td colspan="7">${histPanelHtml(it)}</td></tr>`;
+      html += `<tr class="cart-hist-row"><td colspan="8">${histPanelHtml(it)}</td></tr>`;
     }
   });
   html += `</tbody></table>`;
