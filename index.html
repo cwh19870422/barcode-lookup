@@ -69,7 +69,7 @@
   .price-cell .val{background:var(--paper-alt); font-family:var(--sysfont); font-size:19px; font-weight:800; color:var(--ink); letter-spacing:-0.01em; flex:1; display:flex; align-items:center; justify-content:center; padding:9px 4px; text-align:center;}
   .price-cell.cost .val{color:var(--red);}
   /* 員工模式：藏起搜尋分頁、本錢、管理連結 */
-  body.staff .tab-btn[data-tab="search"], body.staff #tab-search, body.staff .price-cell.cost, body.staff #topLink{display:none !important;}
+  body.staff .price-cell.cost, body.staff #topLink{display:none !important;}
   body.staff .prices{grid-template-columns:repeat(4,minmax(0,1fr));}
   .price-cell.sell .val{color:var(--blue);}
   .empty{text-align:center; padding:70px 20px; color:var(--secondary);}
@@ -279,6 +279,11 @@
     body > *{display:none !important;}
     body > #printArea{display:block !important; position:static;}
   }
+.cv-btn{margin-left:auto;font:inherit;font-size:13px;font-weight:600;padding:4px 12px;border-radius:8px;border:1.5px solid #1d1d1f;background:#fff;color:#1d1d1f;cursor:pointer}
+.cv-btn+.sort-sel{margin-left:8px}
+body.cust-view .cv-btn{background:#0071e3;border-color:#0071e3;color:#fff}
+body.cust-view .price-cell:not(.sell), body.cust-view .history-btn, body.cust-view .history-panel{display:none !important}
+body.cust-view .prices{grid-template-columns:minmax(0,1fr) !important; max-width:260px}
 .sort-sel{margin-left:auto;font:inherit;font-size:13px;padding:4px 8px;border:1px solid var(--line,#ccc);border-radius:8px;background:#fff;color:inherit}
 </style>
 </head>
@@ -325,6 +330,7 @@
     </div>
     <div class="status-row">
       <span id="statusText">載入中…</span>
+      <button type="button" class="cv-btn" title="只顯示賣價，給客人看">顧客檢視</button>
       <select class="sort-sel" title="排序方式"><option value="">排序：預設</option><option value="asc">賣價 低→高</option><option value="desc">賣價 高→低</option></select>
       <span id="dataDate"></span>
     </div>
@@ -400,6 +406,7 @@
 
     <div class="status-row">
       <span id="orderStatusText">請搜尋或掃描商品加入清單</span>
+      <button type="button" class="cv-btn" title="只顯示賣價，給客人看">顧客檢視</button>
       <select class="sort-sel" title="排序方式"><option value="">排序：預設</option><option value="asc">賣價 低→高</option><option value="desc">賣價 高→低</option></select>
     </div>
     <div class="results" id="orderResults"></div>
@@ -665,6 +672,12 @@ function searchRows(q, limit){
   return matches;
 }
 let sortMode = '';
+document.querySelectorAll('.cv-btn').forEach(b=>{
+  b.addEventListener('click', ()=>{
+    const on = document.body.classList.toggle('cust-view');
+    document.querySelectorAll('.cv-btn').forEach(x=>{ x.textContent = on ? '顧客檢視：開' : '顧客檢視'; });
+  });
+});
 document.querySelectorAll('.sort-sel').forEach(sel=>{
   sel.addEventListener('change', ()=>{
     sortMode = sel.value;
