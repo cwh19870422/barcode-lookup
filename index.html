@@ -76,7 +76,16 @@
   .empty .big{font-family:var(--monofont); font-size:12.5px; letter-spacing:0.08em; text-transform:uppercase; margin-bottom:8px; color:var(--secondary);}
   .empty .msg{font-size:15px; font-family:var(--sysfont);}
   footer{max-width:920px; margin:30px auto 0; padding:14px 24px 0; border-top:1px solid var(--line); font-family:var(--sysfont); font-size:11.5px; color:var(--secondary); display:flex; justify-content:space-between; flex-wrap:wrap; gap:6px;}
-  .top-link .ico{font-size:14px;} .tab-btn .tic{margin-right:5px;}
+  .top-link .ico{font-size:14px;}
+  #lockScreen{display:none; position:fixed; inset:0; z-index:100000; background:var(--paper); align-items:center; justify-content:center; padding:24px;}
+  body.locked #lockScreen{display:flex;}
+  body.locked > *:not(#lockScreen){display:none !important;}
+  #lockForm{width:100%; max-width:320px; text-align:center;}
+  .lock-title{font-size:30px; font-weight:800; letter-spacing:-0.02em; color:var(--ink); margin-bottom:6px;}
+  .lock-sub{font-size:15px; color:var(--secondary); margin-bottom:22px;}
+  #lockInput{width:100%; box-sizing:border-box; border:none; background:var(--gray-fill); border-radius:14px; padding:16px; font-size:22px; text-align:center; letter-spacing:0.3em; font-family:var(--sysfont); color:var(--ink);}
+  .lock-msg{min-height:22px; margin:10px 0; font-size:14px; color:var(--red); font-weight:600;}
+  .lock-btn{width:100%; border:none; background:var(--blue); color:#fff; font-weight:700; font-size:17px; padding:15px; border-radius:14px; cursor:pointer; font-family:var(--sysfont);} .tab-btn .tic{margin-right:5px;}
   @media (max-width:640px){
     header{padding:16px 16px 10px;} header .inner{padding-right:96px;}
     .top-actions{top:14px; right:14px; gap:6px;}
@@ -256,7 +265,17 @@
   }
 </style>
 </head>
-<body>
+<body class="locked staff">
+
+<div id="lockScreen">
+  <form id="lockForm" autocomplete="off">
+    <div class="lock-title">喬大百貨 POS</div>
+    <div class="lock-sub">請輸入密碼</div>
+    <input id="lockInput" type="password" inputmode="numeric" autocomplete="off" maxlength="16" placeholder="密碼">
+    <div id="lockMsg" class="lock-msg"></div>
+    <button type="submit" class="lock-btn">進入</button>
+  </form>
+</div>
 
 <header>
   <div class="inner">
@@ -2041,14 +2060,27 @@ document.getElementById('ghTokenClearBtn').addEventListener('click', ()=>{
   document.getElementById('ghTokenMsg').textContent = '已清除這台裝置的設定';
 });
 
-// ===== 員工／老闆模式（只藏畫面，非真正保密）=====
-const BOSS_PIN = '1001';
-function isBoss(){ try{ return localStorage.getItem('bossMode') === '1'; }catch(e){ return false; } }
+// ===== 開啟網頁先輸入密碼：員工／老闆模式（只藏畫面，非真正保密）=====
+const PIN_SALT = 'joeda:';
+const PIN_HASH = {staff:'1t9vcc04t4l', boss:'fmuk938zum'};
+function pinHash(str, seed = 0){
+  let h1 = 0xdeadbeef ^ seed, h2 = 0x41c6ce57 ^ seed;
+  for(let i = 0, ch; i < str.length; i++){
+    ch = str.charCodeAt(i);
+    h1 = Math.imul(h1 ^ ch, 2654435761); h2 = Math.imul(h2 ^ ch, 1597334677);
+  }
+  h1 = Math.imul(h1 ^ (h1 >>> 16), 2246822507) ^ Math.imul(h2 ^ (h2 >>> 13), 3266489909);
+  h2 = Math.imul(h2 ^ (h2 >>> 16), 2246822507) ^ Math.imul(h1 ^ (h1 >>> 13), 3266489909);
+  return (4294967296 * (2097151 & h2) + (h1 >>> 0)).toString(36);
+}
+let currentRole = null;   // 'staff' | 'boss'；每次開啟網頁都要重新輸入密碼，不會記住
+try{ localStorage.removeItem('bossMode'); }catch(e){}
+function isBoss(){ return currentRole === 'boss'; }
 function applyMode(){
   const boss = isBoss();
   document.body.classList.toggle('staff', !boss);
   const lb = document.getElementById('lockBtn');
-  lb.innerHTML = boss ? '<span class="ico">🔓</span><span class="lbl">老闆模式（按此登出）</span>' : '<span class="ico">🔒</span><span class="lbl">老闆登入</span>';
+  lb.innerHTML = boss ? '<span class="ico">🔓</span><span class="lbl">老闆模式（切換）</span>' : '<span class="ico">🔒</span><span class="lbl">員工模式（切換）</span>';
   const sel = document.getElementById('priceSourceSelect');
   const costOpt = sel && sel.querySelector('option[value="cost"]');
   if(!boss){
@@ -2062,19 +2094,28 @@ function applyMode(){
     if(active) active.click();
   }
 }
-document.getElementById('lockBtn').addEventListener('click', ()=>{
-  if(isBoss()){
-    try{ localStorage.removeItem('bossMode'); }catch(e){}
-    applyMode(); return;
+function showLock(){
+  const inp = document.getElementById('lockInput');
+  inp.value = ''; document.getElementById('lockMsg').textContent = '';
+  document.body.classList.add('locked');
+  setTimeout(()=> inp.focus(), 50);
+}
+function tryUnlock(){
+  const inp = document.getElementById('lockInput');
+  const h = pinHash(PIN_SALT + inp.value.trim());
+  if(h === PIN_HASH.boss) currentRole = 'boss';
+  else if(h === PIN_HASH.staff) currentRole = 'staff';
+  else{
+    document.getElementById('lockMsg').textContent = '密碼錯誤，請再試一次';
+    inp.value = ''; inp.focus(); return;
   }
-  const v = prompt('請輸入老闆密碼');
-  if(v === null) return;
-  if(v.trim() === BOSS_PIN){
-    try{ localStorage.setItem('bossMode','1'); }catch(e){}
-    applyMode();
-  }else alert('密碼錯誤');
-});
+  document.body.classList.remove('locked');
+  applyMode();
+}
+document.getElementById('lockForm').addEventListener('submit', (e)=>{ e.preventDefault(); tryUnlock(); });
+document.getElementById('lockBtn').addEventListener('click', showLock);
 applyMode();
+showLock();
 
 loadHeldOrdersFromStorage();
 renderHeldOrders();
