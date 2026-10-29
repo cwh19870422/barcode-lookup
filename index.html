@@ -41,8 +41,8 @@
   .search-box svg{flex-shrink:0; color:var(--secondary);}
   .search-box input{flex:1; border:none; outline:none; background:transparent; font-size:17px; padding:11px 4px; font-family:var(--sysfont); color:var(--ink);}
   .search-box input::placeholder{color:var(--secondary);}
-  .clear-btn{border:none; background:transparent; color:var(--secondary); width:30px;height:30px; border-radius:50%; cursor:pointer; font-size:14px; display:flex;align-items:center;justify-content:center; flex-shrink:0; transition:background .15s;}
-  .clear-btn:hover{background:#DFDFE4;}
+  .clear-btn{border:none; background:#ff3b30; color:#fff; width:28px;height:28px; font-weight:700; border-radius:50%; cursor:pointer; font-size:14px; display:flex;align-items:center;justify-content:center; flex-shrink:0; transition:background .15s;}
+  .clear-btn:hover{background:#d70015;}
   .status-row{display:flex; justify-content:space-between; align-items:baseline; margin:20px 0 10px; font-family:var(--sysfont); font-size:13px; color:var(--secondary);}
   .status-row b{color:var(--ink); font-weight:600;}
   .results{display:flex; flex-direction:column; gap:10px;}
@@ -97,7 +97,7 @@
     .tab-btn .tic{margin:0; font-size:20px; line-height:1;}
     .tab-btn{flex-direction:column; gap:2px; padding:6px 2px; font-size:11px; border-radius:10px;}
     .tab-btn.active{background:var(--gray-fill); box-shadow:none; color:var(--blue);}
-    .search-box{min-width:0;} .search-box input{min-width:0;} #scanQtyInput{flex:none;}
+    .search-box{min-width:0;} .search-box input{min-width:0;}
     body .cart-actions{flex-wrap:wrap; gap:8px;} body .cart-actions button{flex:1 1 calc(50% - 4px); white-space:nowrap; padding:13px 6px;}
   }
   .sticky-controls{position:sticky !important; top:var(--tabs-h, 62px); z-index:40 !important; background:var(--paper); padding-top:8px; padding-bottom:18px;}
@@ -105,11 +105,11 @@
   @media (max-width:520px){.price-cell .lbl{position:static; width:auto;} .price-cell .val{padding-left:2px !important; padding-right:2px !important;} .prices{grid-template-columns:repeat(5,minmax(0,1fr)); gap:5px;} body.staff .prices{grid-template-columns:repeat(4,minmax(0,1fr));} .price-cell{flex-direction:column;} .price-cell .lbl{padding:3px 0; font-size:12px; width:auto;} .price-cell .val{padding:8px 2px; font-size:15px !important;} header{padding:20px 16px 12px;} main{padding:12px 16px 60px;} .tabs{padding-left:16px; padding-right:16px;} .price-cell .val{font-size:17px;}}
   ::selection{background:rgba(0,122,255,0.25);}
 
-  #scanQtyInput{width:56px; text-align:center; border:none; background:var(--gray-fill); border-radius:12px; padding:11px 4px; font-family:var(--sysfont); font-size:16px; font-weight:700; color:var(--ink);}
   .qty-stepper{display:flex; align-items:center; background:var(--paper-alt); border-radius:8px; overflow:hidden; height:28px;}
   .qty-stepper button{width:26px; height:28px; border:none; background:transparent; color:var(--ink); font-size:16px; font-weight:600; display:flex; align-items:center; justify-content:center; line-height:1; padding:0; cursor:pointer;}
   .qty-stepper button:hover{background:var(--line);}
-  .qty-stepper .qty-num{width:26px; height:28px; display:flex; align-items:center; justify-content:center; font-size:13px; font-weight:600; color:var(--ink);}
+  .qty-stepper .qty-num{width:38px; height:28px; border:none; background:transparent; text-align:center; font-family:inherit; font-size:14px; font-weight:600; color:var(--ink); padding:0; -moz-appearance:textfield;}
+  .qty-stepper .qty-num:focus{outline:none; background:#fff; box-shadow:inset 0 0 0 1.5px var(--blue);}
   .add-btn{background:var(--blue); color:#fff; border:none; font-weight:600; font-size:12.5px; padding:0 14px; height:28px; border-radius:999px; cursor:pointer; display:flex; align-items:center;}
   .add-btn:hover{background:#0062CC;}
   .add-btn.added{background:var(--green);}
@@ -387,7 +387,6 @@
           <input id="orderSearchInput" type="text" placeholder="搜尋商品名稱／條碼，或用條碼槍掃描…" autocomplete="off">
           <button class="clear-btn" id="orderClearBtn" title="清除">✕</button>
         </div>
-        <input id="scanQtyInput" type="number" value="1" min="1" title="掃描條碼時要加入的數量">
       </div>
     </div>
 
@@ -960,8 +959,7 @@ let pendingQty = {};
 function rowKey(r){ return (r[3] || r[4]); }
 
 function getScanQty(){
-  const v = Math.max(1, Math.round(fmtNum(document.getElementById('scanQtyInput').value)) || 1);
-  return v;
+  return 1;
 }
 
 // 「數量*條碼」：輸入 3* 再掃描商品條碼 → 該商品加入數量 3（例如 3*4710088412345）
@@ -976,7 +974,6 @@ function scanAddDirect(r, qtyOverride){
   clearTimeout(orderDebounce);
   const qty = qtyOverride || getScanQty();
   addToCart(r, qty);
-  document.getElementById('scanQtyInput').value = 1;
   orderInput.value = '';
   orderResultsEl.innerHTML = '';
   orderStatusEl.textContent = `已加入：${r[4]} × ${qty}`;
@@ -1022,7 +1019,7 @@ function doOrderSearch(){
           定價 ${fmt(sellingPrice)}
           <div class="qty-stepper">
             <button class="qty-minus" type="button">−</button>
-            <span class="qty-num">${qty}</span>
+            <input class="qty-num" type="text" inputmode="numeric" value="${qty}" aria-label="數量">
             <button class="qty-plus" type="button">+</button>
           </div>
           <button class="add-btn" type="button">加入</button>
@@ -1062,6 +1059,30 @@ orderClearBtn.addEventListener('click', ()=>{
 });
 orderClearBtn.style.visibility = 'hidden';
 
+function readCardQty(card){
+  const inp = card.querySelector('.qty-num');
+  const n = Math.round(parseFloat(String(inp.value).replace(/[^\d.]/g,'')));
+  return n >= 1 ? n : 1;
+}
+orderResultsEl.addEventListener('input', (e)=>{
+  if(!e.target.classList.contains('qty-num')) return;
+  const card = e.target.closest('.order-card');
+  e.target.value = e.target.value.replace(/[^\d]/g,'').slice(0,5);
+  if(card) pendingQty[card.dataset.key] = readCardQty(card);
+});
+orderResultsEl.addEventListener('focusin', (e)=>{ if(e.target.classList.contains('qty-num')) e.target.select(); });
+orderResultsEl.addEventListener('focusout', (e)=>{
+  if(!e.target.classList.contains('qty-num')) return;
+  const card = e.target.closest('.order-card');
+  if(card){ const n = readCardQty(card); pendingQty[card.dataset.key] = n; e.target.value = n; }
+});
+orderResultsEl.addEventListener('keydown', (e)=>{
+  if(e.key === 'Enter' && e.target.classList.contains('qty-num')){
+    e.preventDefault();
+    const card = e.target.closest('.order-card');
+    if(card) card.querySelector('.add-btn').click();
+  }
+});
 orderResultsEl.addEventListener('click', (e)=>{
   const histBtn = e.target.closest('.history-btn');
   if(histBtn){ toggleHistoryPanel(histBtn); return; }
@@ -1073,17 +1094,18 @@ orderResultsEl.addEventListener('click', (e)=>{
   if(!r) return;
 
   if(e.target.closest('.qty-plus')){
-    pendingQty[key] = (pendingQty[key]||1) + 1;
-    card.querySelector('.qty-num').textContent = pendingQty[key];
+    pendingQty[key] = readCardQty(card) + 1;
+    card.querySelector('.qty-num').value = pendingQty[key];
     return;
   }
   if(e.target.closest('.qty-minus')){
-    pendingQty[key] = Math.max(1, (pendingQty[key]||1) - 1);
-    card.querySelector('.qty-num').textContent = pendingQty[key];
+    pendingQty[key] = Math.max(1, readCardQty(card) - 1);
+    card.querySelector('.qty-num').value = pendingQty[key];
     return;
   }
   if(e.target.closest('.add-btn')){
-    const qty = pendingQty[key] || 1;
+    const qty = readCardQty(card);
+    pendingQty[key] = qty;
     addToCart(r, qty);
     const btn = card.querySelector('.add-btn');
     const original = btn.textContent;
