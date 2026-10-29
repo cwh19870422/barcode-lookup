@@ -61,16 +61,16 @@
   .history-panel th{text-align:left; font-size:11px; color:var(--secondary); font-weight:600; padding:4px 6px;}
   .history-panel td{padding:5px 6px; border-top:1px solid var(--line); color:var(--ink);}
   .history-panel .hist-empty{color:var(--secondary); text-align:center; padding:8px;}
-  .prices{display:grid; grid-template-columns:repeat(4,1fr); gap:8px;}
+  .prices{display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); gap:8px;}
   .price-cell{display:flex; align-items:stretch; border-radius:12px; overflow:hidden; cursor:pointer; user-select:none; -webkit-tap-highlight-color:transparent; transition:transform .1s;}
   .price-cell:active{transform:scale(0.96);}
   .price-cell.copied .val{color:var(--green) !important;}
-  .price-cell .lbl{background:var(--paper-alt); color:#6B6B6F; font-family:var(--sysfont); font-weight:600; font-size:13px; display:flex; align-items:center; justify-content:center; padding:0 9px; flex-shrink:0;}
+  .price-cell{min-width:0; position:relative;} .price-cell .lbl{position:absolute; left:0; top:0; bottom:0; width:30px; padding-left:0 !important; padding-right:0 !important; background:var(--paper-alt); color:#6B6B6F; font-family:var(--sysfont); font-weight:600; font-size:13px; display:flex; align-items:center; justify-content:center; padding:0 9px; flex-shrink:0;}
   .price-cell .val{background:var(--paper-alt); font-family:var(--sysfont); font-size:19px; font-weight:800; color:var(--ink); letter-spacing:-0.01em; flex:1; display:flex; align-items:center; justify-content:center; padding:9px 4px; text-align:center;}
   .price-cell.cost .val{color:var(--red);}
   /* 員工模式：藏起搜尋分頁、本錢、管理連結 */
   body.staff .tab-btn[data-tab="search"], body.staff #tab-search, body.staff .price-cell.cost, body.staff #topLink{display:none !important;}
-  body.staff .prices{grid-template-columns:repeat(3,1fr);}
+  body.staff .prices{grid-template-columns:repeat(4,minmax(0,1fr));}
   .price-cell.sell .val{color:var(--blue);}
   .empty{text-align:center; padding:70px 20px; color:var(--secondary);}
   .empty .big{font-family:var(--monofont); font-size:12.5px; letter-spacing:0.08em; text-transform:uppercase; margin-bottom:8px; color:var(--secondary);}
@@ -92,7 +92,8 @@
     body .cart-actions{flex-wrap:wrap; gap:8px;} body .cart-actions button{flex:1 1 calc(50% - 4px); white-space:nowrap; padding:13px 6px;}
   }
   .sticky-controls{position:sticky !important; top:var(--tabs-h, 62px); z-index:40 !important; background:var(--paper); padding-top:8px; padding-bottom:18px;}
-  @media (max-width:520px){.prices{grid-template-columns:repeat(2,1fr);} header{padding:20px 16px 12px;} main{padding:12px 16px 60px;} .tabs{padding-left:16px; padding-right:16px;} .price-cell .val{font-size:17px;}}
+  .price-cell .val{padding-left:30px !important; padding-right:30px !important;}
+  @media (max-width:520px){.price-cell .lbl{position:static; width:auto;} .price-cell .val{padding-left:2px !important; padding-right:2px !important;} .prices{grid-template-columns:repeat(5,minmax(0,1fr)); gap:5px;} body.staff .prices{grid-template-columns:repeat(4,minmax(0,1fr));} .price-cell{flex-direction:column;} .price-cell .lbl{padding:3px 0; font-size:12px; width:auto;} .price-cell .val{padding:8px 2px; font-size:15px !important;} header{padding:20px 16px 12px;} main{padding:12px 16px 60px;} .tabs{padding-left:16px; padding-right:16px;} .price-cell .val{font-size:17px;}}
   ::selection{background:rgba(0,122,255,0.25);}
 
   #scanQtyInput{width:56px; text-align:center; border:none; background:var(--gray-fill); border-radius:12px; padding:11px 4px; font-family:var(--sysfont); font-size:16px; font-weight:700; color:var(--ink);}
@@ -580,12 +581,13 @@ const clearBtn = document.getElementById('clearBtn');
 let debounceTimer = null;
 
 function priceCellsHtml(r, q){
-  const name = r[4], cost = r[5], priceA = r[6], priceC = r[8], priceD = r[9];
+  const name = r[4], cost = r[5], priceA = r[6], priceB = r[7], priceC = r[8], priceD = r[9];
   return `
     <div class="prices">
       <div class="price-cell cost" data-name="${escapeHtml(name)}" data-value="${escapeHtml(fmt(cost))}"><div class="lbl">本</div><div class="val">${fmt(cost)}</div></div>
       <div class="price-cell" data-name="${escapeHtml(name)}" data-value="${escapeHtml(fmt(priceD))}"><div class="lbl">4</div><div class="val">${fmt(priceD)}</div></div>
       <div class="price-cell" data-name="${escapeHtml(name)}" data-value="${escapeHtml(fmt(priceC))}"><div class="lbl">3</div><div class="val">${fmt(priceC)}</div></div>
+      <div class="price-cell" data-name="${escapeHtml(name)}" data-value="${escapeHtml(fmt(priceB))}"><div class="lbl">2</div><div class="val">${fmt(priceB)}</div></div>
       <div class="price-cell sell" data-name="${escapeHtml(name)}" data-value="${escapeHtml(fmt(priceA))}"><div class="lbl">賣</div><div class="val">${fmt(priceA)}</div></div>
     </div>`;
 }
