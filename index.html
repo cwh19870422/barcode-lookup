@@ -520,12 +520,12 @@ function escapeHtml(s){
   return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 }
 function highlight(text, q){
-  if(!q) return escapeHtml(text);
+  const toks = (q||'').trim().split(/\s+/).filter(Boolean);
+  if(!toks.length) return escapeHtml(text);
   const esc = escapeHtml(text);
-  const escQ = escapeHtml(q);
   try{
-    const re = new RegExp('('+escQ.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+')','ig');
-    return esc.replace(re, '<mark>$1</mark>');
+    const pat = toks.map(t=>escapeHtml(t).replace(/[.*+?^${}()|[\]\\]/g,'\\$&')).sort((x,y)=>y.length-x.length).join('|');
+    return esc.replace(new RegExp('('+pat+')','ig'), '<mark>$1</mark>');
   }catch(e){ return esc; }
 }
 function fmt(n){
@@ -612,13 +612,15 @@ function priceCellsHtml(r, q){
 }
 
 function searchRows(q, limit){
-  const qLower = q.toLowerCase();
+  const toks = (q||'').trim().split(/\s+/).filter(Boolean).map(t=>t.toLowerCase());
   let matches = [];
   for(let i=0;i<rows.length;i++){
     const r = rows[i];
-    const name = r[4] || '', barcode = r[3] || '', code = r[2] || '', note = r[1] || '';
-    if(q){
-      if(!(name.toLowerCase().includes(qLower) || barcode.includes(q) || code.toLowerCase().includes(qLower) || note.toLowerCase().includes(qLower))) continue;
+    if(toks.length){
+      const hay = ((r[4]||'')+' '+(r[3]||'')+' '+(r[2]||'')+' '+(r[1]||'')).toLowerCase();
+      let ok = true;
+      for(const t of toks){ if(!hay.includes(t)){ ok=false; break; } }
+      if(!ok) continue;
     }
     matches.push(r);
     if(matches.length >= limit) break;
