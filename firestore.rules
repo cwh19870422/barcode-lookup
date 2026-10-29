@@ -1,0 +1,31 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function mail() {
+      return request.auth != null && request.auth.token.email != null
+        ? request.auth.token.email.lower()
+        : '';
+    }
+    function isBoss()  { return mail() in ['how@samstore.com', 'sam@samstore.com']; }
+    function isStaff() { return mail() == 'staff@samstore.com'; }
+    function signedIn() { return isBoss() || isStaff(); }
+
+    // 客戶：老闆、員工都能讀；只有老闆能新增、修改、刪除
+    match /customers/{id} {
+      allow read: if signedIn();
+      allow write: if isBoss();
+    }
+
+    // 交易紀錄：老闆、員工都能讀、新增、修改；只有老闆能刪除
+    match /transactions/{id} {
+      allow read, create, update: if signedIn();
+      allow delete: if isBoss();
+    }
+
+    // 其他一律不開放
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
