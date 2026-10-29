@@ -649,16 +649,55 @@ resultsEl.addEventListener('click', (e)=>{
   if(histBtn){ toggleHistoryPanel(histBtn); return; }
   const cell = e.target.closest('.price-cell');
   if(!cell) return;
-  const text = `${cell.dataset.name} ${cell.dataset.value}`;
+  handlePriceCellCopy(cell, e);
+});
+
+// 價錢格子複製：一般點擊＝複製單一「商品 價錢」；按住 Ctrl（Mac 為 Cmd）點擊＝連續複製，
+// 每點一次就把累積的清單（一行一個商品）放進剪貼簿，貼上時會依序換行顯示
+let multiCopy = [];   // [{name, value, text}]
+function updateMultiBar(){
+  let bar = document.getElementById('multiCopyBar');
+  if(!multiCopy.length){ if(bar) bar.style.display = 'none'; return; }
+  if(!bar){
+    bar = document.createElement('div');
+    bar.id = 'multiCopyBar';
+    bar.style.cssText = 'position:fixed; left:50%; bottom:18px; transform:translateX(-50%); z-index:200; background:#1C1C1E; color:#fff; border-radius:999px; padding:9px 10px 9px 18px; font-size:14px; font-weight:600; display:flex; align-items:center; gap:12px; box-shadow:0 4px 16px rgba(0,0,0,0.25);';
+    bar.innerHTML = '<span id="multiCopyText"></span><button type="button" id="multiCopyClear" style="border:none; background:#fff; color:#1C1C1E; border-radius:999px; padding:6px 14px; font-weight:700; font-size:13px; cursor:pointer;">清除</button>';
+    document.body.appendChild(bar);
+    bar.querySelector('#multiCopyClear').addEventListener('click', ()=>{ multiCopy = []; updateMultiBar(); });
+  }
+  bar.style.display = 'flex';
+  bar.querySelector('#multiCopyText').textContent = `連續複製：已累積 ${multiCopy.length} 項，可直接貼上`;
+}
+function handlePriceCellCopy(cell, e){
+  const name = cell.dataset.name, value = cell.dataset.value;
   const valEl = cell.querySelector('.val');
   const original = valEl.textContent;
-  const showCopied = ()=>{
+  const flash = (label)=>{
     cell.classList.add('copied');
-    valEl.textContent = '已複製';
+    valEl.textContent = label;
     setTimeout(()=>{ cell.classList.remove('copied'); valEl.textContent = original; }, 900);
   };
-  copyText(text, showCopied);
-});
+  if(e && (e.ctrlKey || e.metaKey)){
+    e.preventDefault();
+    const text = `${name} ${value}`;
+    const i = multiCopy.findIndex(x => x.name === name);
+    let label;
+    if(i >= 0 && multiCopy[i].value === value){
+      multiCopy.splice(i, 1); label = '已取消';          // 同一格再按一次＝取消
+    }else if(i >= 0){
+      multiCopy[i] = {name, value, text}; label = '已更換';  // 同商品改選別的價錢＝換成這個價錢
+    }else{
+      multiCopy.push({name, value, text}); label = '已加入 ' + multiCopy.length;
+    }
+    updateMultiBar();
+    if(multiCopy.length) copyText(multiCopy.map(x => x.text).join('\n'), ()=>flash(label));
+    else flash(label);
+    return;
+  }
+  multiCopy = []; updateMultiBar();
+  copyText(`${name} ${value}`, ()=>flash('已複製'));
+}
 
 function toggleHistoryPanel(btn){
   const targetId = btn.dataset.target;
@@ -985,14 +1024,7 @@ orderResultsEl.addEventListener('click', (e)=>{
   }
   const cell = e.target.closest('.price-cell');
   if(cell){
-    const text = `${cell.dataset.name} ${cell.dataset.value}`;
-    const valEl = cell.querySelector('.val');
-    const original = valEl.textContent;
-    copyText(text, ()=>{
-      cell.classList.add('copied');
-      valEl.textContent = '已複製';
-      setTimeout(()=>{ cell.classList.remove('copied'); valEl.textContent = original; }, 900);
-    });
+    handlePriceCellCopy(cell, e);
   }
 });
 
