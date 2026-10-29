@@ -69,7 +69,7 @@
   .price-cell .val{background:var(--paper-alt); font-family:var(--sysfont); font-size:19px; font-weight:800; color:var(--ink); letter-spacing:-0.01em; flex:1; display:flex; align-items:center; justify-content:center; padding:9px 4px; text-align:center;}
   .price-cell.cost .val{color:var(--red);}
   /* 員工模式：藏起搜尋分頁、本錢、管理連結 */
-  body.staff .price-cell.cost, body.staff #topLink{display:none !important;}
+  body.staff .price-cell.cost, body.staff .hp-sum, body.staff .txn-del, body.staff #topLink{display:none !important;}
   body.staff .prices{grid-template-columns:repeat(4,minmax(0,1fr));}
   .price-cell.sell .val{color:var(--blue);}
   .empty{text-align:center; padding:70px 20px; color:var(--secondary);}
@@ -286,6 +286,8 @@ body.cust-view .price-cell:not(.sell), body.cust-view .history-btn, body.cust-vi
 body.cust-view .prices{grid-template-columns:minmax(0,1fr) !important; max-width:260px}
 .sort-sel{margin-left:auto;font:inherit;font-size:13px;box-sizing:border-box;height:32px;min-width:112px;padding:0 8px;border:1.5px solid #1d1d1f;border-radius:8px;background:#fff;color:#1d1d1f;font-weight:600}
 </style>
+<script>window.fbReady=new Promise(function(r){window.__fbResolve=r;});</script>
+<script type="module" src="./fb.js"></script>
 </head>
 <body class="locked staff">
 
@@ -293,7 +295,7 @@ body.cust-view .prices{grid-template-columns:minmax(0,1fr) !important; max-width
   <form id="lockForm" autocomplete="off">
     <div class="lock-title">喬大百貨 POS</div>
     <div class="lock-sub">請輸入密碼</div>
-    <input id="lockInput" type="password" inputmode="numeric" autocomplete="off" maxlength="16" placeholder="密碼">
+    <input id="lockInput" type="password" autocomplete="off" maxlength="64" placeholder="密碼">
     <div id="lockMsg" class="lock-msg"></div>
     <button type="submit" class="lock-btn">進入</button>
   </form>
@@ -466,25 +468,9 @@ body.cust-view .prices{grid-template-columns:minmax(0,1fr) !important; max-width
     <div class="txn-card">
       <div class="txn-head">
         <b>☁ 雲端存檔</b>
-        <span id="cloudBadge" class="cloud-badge"></span>
-        <button type="button" class="txn-small-btn" id="cloudSettingsBtn">設定</button>
+        <span id="cloudBadge" class="cloud-badge">連線中…</span>
       </div>
-      <div class="txn-hint">每筆交易按「列印A4帳單」或「儲存交易」時，會自動存進 GitHub 倉庫的 <code>transactions/</code> 資料夾（每月一個檔案，並有完整版本備份），開啟網站時自動讀取。</div>
-      <div id="cloudSettings" style="display:none; margin-top:12px;">
-        <ol class="txn-steps">
-          <li>到 GitHub 右上角頭像 → <b>Settings</b> → 最下面 <b>Developer settings</b> → <b>Personal access tokens</b> → <b>Fine-grained tokens</b> → <b>Generate new token</b></li>
-          <li><b>Repository access</b> 選 <b>Only select repositories</b>，只勾 <b>barcode-lookup</b></li>
-          <li><b>Repository permissions</b> 找到 <b>Contents</b>，改成 <b>Read and write</b>（其他都不要開）</li>
-          <li>有效期限選最長，按 <b>Generate token</b>，複製以 <code>github_pat_</code> 開頭的那串，貼到下面</li>
-        </ol>
-        <input type="password" id="ghTokenInput" placeholder="貼上 github_pat_…（只存在這台裝置的瀏覽器）" autocomplete="off">
-        <div class="txn-btn-row">
-          <button type="button" class="txn-small-btn primary" id="ghTokenSaveBtn">儲存並測試</button>
-          <button type="button" class="txn-small-btn" id="ghTokenClearBtn">清除這台的設定</button>
-        </div>
-        <div id="ghTokenMsg" class="txn-hint" style="margin-top:8px;"></div>
-        <div class="txn-hint" style="margin-top:8px;">這組金鑰只能操作 barcode-lookup 這個倉庫，只存在你按儲存的這台裝置，不會寫進網站程式碼。每台要用的裝置（電腦、手機）都要各貼一次。</div>
-      </div>
+      <div class="txn-hint">每筆交易按「列印A4帳單」或「儲存交易」時，會自動存進雲端資料庫（Firestore），多台電腦即時同步，不需要設定金鑰。畫面預設載入最近 12 個月，更早的紀錄按「⟳ 重新讀取」載入。</div>
     </div>
 
     <div class="txn-filters">
@@ -589,15 +575,6 @@ async function init(){
     document.getElementById('statusText').textContent = '⚠ 無法載入 data.json（' + e.message + '）';
     document.getElementById('headerStats').textContent = '資料載入失敗';
   }
-
-  try{
-    const res2 = await fetch('./customers.json?_=' + Date.now());
-    if(res2.ok){
-      const d2 = await res2.json();
-      customers = d2.customers || [];
-    }
-  }catch(e){ customers = []; }
-  renderCustomerList();
 
   try{
     const res3 = await fetch('./history.json?_=' + Date.now());
@@ -1751,72 +1728,76 @@ if(window.matchMedia('(max-width:640px)').matches){ const oi = document.getEleme
 
 
 // =====================================================================
-// 雲端交易紀錄：每月一個檔 transactions/YYYY-MM.json，透過 GitHub API 自動存取
+// 雲端交易紀錄：存在 Firestore（transactions 集合），由 fb.js 連線；多台電腦即時同步
 // =====================================================================
-const GH = {owner:'cwh19870422', repo:'barcode-lookup', branch:'main'};
-const GH_TOKEN_KEY = 'joeda_pos_gh_token_v1';
-const PENDING_KEY = 'joeda_pos_pending_txns_v1';
 let allTxns = [];
 let currentTxn = null;      // 目前這張單的 {id, date}，同一張單重印/重存會覆蓋同一筆
 let saveChain = Promise.resolve();
+let txnsRecent = new Map(), txnsOlder = new Map();
+let olderLoaded = false;
+let unsubTxns = null, unsubCust = null;
 
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 const pad2 = n => String(n).padStart(2,'0');
-function ghToken(){ try{ return localStorage.getItem(GH_TOKEN_KEY) || ''; }catch(e){ return ''; } }
-function setGhToken(t){ try{ t ? localStorage.setItem(GH_TOKEN_KEY, t) : localStorage.removeItem(GH_TOKEN_KEY); }catch(e){} }
-function loadPending(){ try{ return JSON.parse(localStorage.getItem(PENDING_KEY) || '[]') || []; }catch(e){ return []; } }
-function savePending(list){ try{ localStorage.setItem(PENDING_KEY, JSON.stringify(list)); }catch(e){} }
 function monthOf(iso){ const d = new Date(iso); return d.getFullYear() + '-' + pad2(d.getMonth()+1); }
 function localDateStr(iso){ const d = new Date(iso); return d.getFullYear() + '-' + pad2(d.getMonth()+1) + '-' + pad2(d.getDate()); }
-function b64enc(str){ const bytes = new TextEncoder().encode(str); let bin = ''; bytes.forEach(b => bin += String.fromCharCode(b)); return btoa(bin); }
-function b64dec(b64){ const bin = atob(b64.replace(/\s/g,'')); return new TextDecoder().decode(Uint8Array.from(bin, c => c.charCodeAt(0))); }
-
-function ghApi(path, opts={}){
-  const headers = {'Accept': opts.accept || 'application/vnd.github+json'};
-  const t = ghToken();
-  if(t) headers['Authorization'] = 'Bearer ' + t;
-  if(opts.body) headers['Content-Type'] = 'application/json';
-  return fetch(`https://api.github.com/repos/${GH.owner}/${GH.repo}${path}`, {method: opts.method || 'GET', headers, body: opts.body, cache:'no-store'});
-}
-
-async function ghReadMonth(month){
-  const path = `/contents/transactions/${month}.json?ref=${GH.branch}&_=${Date.now()}`;
-  const r = await ghApi(path);
-  if(r.status === 404) return {list:[], sha:null};
-  if(!r.ok) throw new Error('讀取失敗（HTTP ' + r.status + '）');
-  const j = await r.json();
-  let text;
-  if(j.content){ text = b64dec(j.content); }
-  else{ const raw = await ghApi(path, {accept:'application/vnd.github.raw+json'}); text = await raw.text(); }
-  return {list: (JSON.parse(text).transactions || []), sha: j.sha};
-}
-
-function serializeMonth(list){
-  return '{"transactions":[\n' + list.map(t => JSON.stringify(t)).join(',\n') + '\n]}\n';
-}
-
-// 讀 → 修改 → 寫；遇到同時有人寫入（409/422）就重讀重試
-async function ghWriteMonth(month, mutator, message){
-  let lastErr = null;
-  for(let attempt = 0; attempt < 4; attempt++){
-    const {list, sha} = await ghReadMonth(month);
-    const next = mutator(list);
-    const body = {message, content: b64enc(serializeMonth(next)), branch: GH.branch};
-    if(sha) body.sha = sha;
-    const r = await ghApi(`/contents/transactions/${month}.json`, {method:'PUT', body: JSON.stringify(body)});
-    if(r.ok) return next;
-    if(r.status === 409 || r.status === 422){ lastErr = new Error('同時有其他寫入，重試中'); await sleep(500 * (attempt+1)); continue; }
-    if(r.status === 401) throw new Error('金鑰無效或已過期，請到「交易紀錄」重新設定');
-    if(r.status === 403 || r.status === 404) throw new Error('金鑰沒有寫入權限（Contents 要設成 Read and write，且要選到 barcode-lookup）');
-    throw new Error('寫入失敗（HTTP ' + r.status + '）');
-  }
-  throw lastErr || new Error('寫入失敗');
-}
+function hmNow(){ const d = new Date(); return pad2(d.getHours()) + ':' + pad2(d.getMinutes()); }
+function sinceMonth(){ const d = new Date(); d.setDate(1); d.setMonth(d.getMonth()-11); return d.getFullYear() + '-' + pad2(d.getMonth()+1); }
 
 function upsertTxn(list, txn){
   const i = list.findIndex(t => t.id === txn.id);
   if(i >= 0){ const copy = list.slice(); copy[i] = txn; return copy; }
   return list.concat([txn]);
+}
+
+function mergeAllTxns(){
+  const m = new Map(txnsOlder);
+  txnsRecent.forEach((v, k) => m.set(k, v));
+  allTxns = Array.from(m.values());
+  rebuildHistory();
+  renderTxns();
+}
+
+function cloudErrMsg(e){
+  if(e && e.code === 'permission-denied') return '沒有權限，請重新登入';
+  return (e && e.message) || String(e);
+}
+
+function startCloud(){
+  stopCloud();
+  setCloudBadge('連線中…', false);
+  unsubCust = FB.listenCustomers(list => {
+    customers = list;
+    renderCustomerList();
+    if(custSearch.value.trim()) renderCustDropdown();
+  }, e => setCloudStatus('err', '⚠ 讀取客戶資料失敗：' + cloudErrMsg(e)));
+  unsubTxns = FB.listenTxns(sinceMonth(), list => {
+    txnsRecent = new Map(list.map(t => [t.id, t]));
+    mergeAllTxns();
+    setCloudBadge('已連線', true);
+  }, e => { setCloudBadge('讀取失敗', false); setCloudStatus('err', '⚠ 讀取交易紀錄失敗：' + cloudErrMsg(e)); });
+}
+function stopCloud(){
+  if(unsubCust){ try{ unsubCust(); }catch(e){} unsubCust = null; }
+  if(unsubTxns){ try{ unsubTxns(); }catch(e){} unsubTxns = null; }
+  customers = []; txnsRecent = new Map(); txnsOlder = new Map(); olderLoaded = false; allTxns = [];
+  try{ renderCustomerList(); rebuildHistory(); renderTxns(); }catch(e){}
+}
+function setCloudBadge(text, on){
+  const b = document.getElementById('cloudBadge');
+  if(!b) return;
+  b.textContent = text;
+  b.className = 'cloud-badge' + (on ? ' on' : '');
+}
+// 載入 12 個月以前的紀錄（按「重新讀取」或看「今年/全部」時才讀，省額度）
+async function loadAllTxns(){
+  if(!FB.currentUser()) return;
+  try{
+    const list = await FB.getAllTxns();
+    txnsOlder = new Map(list.map(t => [t.id, t]));
+    olderLoaded = true;
+    mergeAllTxns();
+  }catch(e){ setCloudStatus('err', '⚠ 讀取交易紀錄失敗：' + cloudErrMsg(e)); }
 }
 
 // 把目前清單原樣記下來（當時的客人資料、單價、數量、折數、備註、總額），之後不會用新價格重算
@@ -1868,110 +1849,31 @@ function setCloudStatus(kind, msg){
   el.className = 'cloud-status ' + (kind || '');
   el.textContent = msg || '';
 }
-function updateCloudBadge(){
-  const b = document.getElementById('cloudBadge');
-  const on = !!ghToken();
-  b.textContent = on ? '已啟用' : '未設定';
-  b.className = 'cloud-badge' + (on ? ' on' : '');
-}
-
 function saveTransaction(){
   if(!cart.length) return Promise.resolve(false);
   const txn = buildTxn();
-  allTxns = upsertTxn(allTxns, txn);
-  rebuildHistory();
-  renderTxns();
+  txnsRecent.set(txn.id, txn);
+  mergeAllTxns();
   saveChain = saveChain.then(()=> pushTxn(txn));
   return saveChain;
 }
 
 async function pushTxn(txn){
-  if(!ghToken()){
-    savePending(upsertTxn(loadPending(), txn));
-    setCloudStatus('warn', '⚠ 還沒設定雲端存檔，這筆先暫存在這台裝置。請到「📊 交易紀錄」貼上金鑰，之後會自動補存。');
-    return false;
-  }
   setCloudStatus('', '☁ 儲存中…');
   try{
-    const who = (txn.customer && txn.customer.name) || '散客';
-    await ghWriteMonth(monthOf(txn.date), list => upsertTxn(list, txn), `POS: ${who} $${txn.total} (${txn.id})`);
-    savePending(loadPending().filter(t => t.id !== txn.id));
-    const d = new Date();
-    setCloudStatus('ok', `✓ 已儲存到雲端 ${pad2(d.getHours())}:${pad2(d.getMinutes())}`);
-    flushPending();
+    const p = FB.saveTxn(txn);
+    const r = await Promise.race([p.then(()=> 'ok'), sleep(8000).then(()=> 'slow')]);
+    if(r === 'ok'){ setCloudStatus('ok', '✓ 已儲存到雲端 ' + hmNow()); return true; }
+    setCloudStatus('warn', '⚠ 網路較慢或離線，這筆已暫存在這台裝置，連線後會自動存到雲端。');
+    p.then(()=> setCloudStatus('ok', '✓ 已儲存到雲端 ' + hmNow()), ()=>{});
     return true;
   }catch(e){
-    savePending(upsertTxn(loadPending(), txn));
-    setCloudStatus('err', '⚠ 雲端儲存失敗：' + e.message + '（已暫存在這台裝置，之後會自動重試）');
+    setCloudStatus('err', '⚠ 雲端儲存失敗：' + cloudErrMsg(e));
     return false;
   }
 }
 
-let flushing = false;
-async function flushPending(){
-  if(flushing || !ghToken()) return;
-  const pend = loadPending();
-  if(!pend.length) return;
-  flushing = true;
-  try{
-    const byMonth = {};
-    pend.forEach(t => (byMonth[monthOf(t.date)] = byMonth[monthOf(t.date)] || []).push(t));
-    for(const m of Object.keys(byMonth)){
-      await ghWriteMonth(m, list => byMonth[m].reduce(upsertTxn, list), `POS: 補存 ${byMonth[m].length} 筆交易`);
-      const ids = new Set(byMonth[m].map(t => t.id));
-      savePending(loadPending().filter(t => !ids.has(t.id)));
-    }
-    setCloudStatus('ok', `✓ 已補存 ${pend.length} 筆暫存的交易`);
-  }catch(e){ /* 下次再試 */ }
-  flushing = false;
-}
-window.addEventListener('online', flushPending);
-
-async function listTxnMonths(){
-  try{
-    const r = await ghApi(`/contents/transactions?ref=${GH.branch}&_=${Date.now()}`);
-    if(r.status === 404) return [];
-    if(r.ok){
-      const j = await r.json();
-      return j.map(f => /^(\d{4}-\d{2})\.json$/.exec(f.name)).filter(Boolean).map(m => m[1]).sort();
-    }
-  }catch(e){}
-  // 目錄清單失敗時（例如沒有金鑰又被限流），退回去試最近 24 個月
-  const months = []; const now = new Date();
-  for(let i = 0; i < 24; i++){ const d = new Date(now.getFullYear(), now.getMonth()-i, 1); months.push(d.getFullYear() + '-' + pad2(d.getMonth()+1)); }
-  return months.reverse();
-}
-
-async function readMonthAny(month){
-  if(ghToken()){
-    try{ return (await ghReadMonth(month)).list; }catch(e){ /* 退回公開網址 */ }
-  }
-  try{
-    const r = await fetch(`./transactions/${month}.json?_=${Date.now()}`);
-    if(r.ok) return (await r.json()).transactions || [];
-  }catch(e){}
-  return [];
-}
-
-async function loadTransactions(){
-  const box = document.getElementById('txnList');
-  if(box) box.innerHTML = '<div class="status-row"><span>載入交易紀錄中…</span></div>';
-  let loaded = [];
-  try{
-    const months = await listTxnMonths();
-    const lists = await Promise.all(months.map(readMonthAny));
-    lists.forEach(l => loaded = loaded.concat(l));
-  }catch(e){}
-  // 合併：雲端 + 還沒存上去的暫存；以 id 為準（同 id 取暫存/本機較新的版本）
-  const byId = new Map();
-  loaded.forEach(t => byId.set(t.id, t));
-  loadPending().forEach(t => byId.set(t.id, t));
-  allTxns.forEach(t => byId.set(t.id, t));
-  allTxns = Array.from(byId.values());
-  rebuildHistory();
-  renderTxns();
-  flushPending();
-}
+async function loadTransactions(){ await loadAllTxns(); }
 
 // ---------------- 交易紀錄頁面 ----------------
 const txnCustEl = document.getElementById('txnCust');
@@ -1979,6 +1881,7 @@ const txnFromEl = document.getElementById('txnFrom');
 const txnToEl = document.getElementById('txnTo');
 
 function setTxnRange(kind){
+  if((kind === 'year' || kind === 'all') && !olderLoaded && window.FB) loadAllTxns();
   const now = new Date();
   const ymd = d => d.getFullYear() + '-' + pad2(d.getMonth()+1) + '-' + pad2(d.getDate());
   let from = '', to = '';
@@ -2090,15 +1993,10 @@ document.getElementById('txnList').addEventListener('click', async (e)=>{
     const id = item.dataset.id;
     const t = allTxns.find(x => x.id === id);
     if(!t) return;
-    if(!confirm(`確定要刪除這筆交易嗎？\n${txnCustName(t)}  $${fmt(t.total)}\n刪除後無法在網站上復原（GitHub 版本紀錄仍可找回）。`)) return;
-    if(!ghToken()){
-      // 還沒存上雲端的暫存交易可以直接刪
-      savePending(loadPending().filter(x => x.id !== id));
-    }else{
-      try{ await ghWriteMonth(monthOf(t.date), list => list.filter(x => x.id !== id), `POS: 刪除交易 ${id}`); }
-      catch(err){ alert('刪除失敗：' + err.message); return; }
-      savePending(loadPending().filter(x => x.id !== id));
-    }
+    if(!confirm(`確定要刪除這筆交易嗎？\n${txnCustName(t)}  $${fmt(t.total)}\n刪除後無法復原。`)) return;
+    try{ await FB.deleteTxn(id); }
+    catch(err){ alert('刪除失敗：' + cloudErrMsg(err)); return; }
+    txnsRecent.delete(id); txnsOlder.delete(id);
     allTxns = allTxns.filter(x => x.id !== id);
     if(currentTxn && currentTxn.id === id){ currentTxn = null; updateEditBanner(); }
     rebuildHistory();
@@ -2107,73 +2005,21 @@ document.getElementById('txnList').addEventListener('click', async (e)=>{
 });
 
 // 雲端存檔設定
-document.getElementById('txnReloadBtn').addEventListener('click', ()=> loadTransactions());
+document.getElementById('txnReloadBtn').addEventListener('click', ()=> loadAllTxns());
 document.getElementById('viewCustTxnsBtn').addEventListener('click', ()=>{
   if(!selectedCustomer) return;
   switchTab('txns');
   txnCustEl.value = selectedCustomer.name || '';
   setTxnRange('all');
 });
-document.getElementById('cloudSettingsBtn').addEventListener('click', ()=>{
-  const box = document.getElementById('cloudSettings');
-  box.style.display = box.style.display === 'none' ? 'block' : 'none';
-});
-document.getElementById('ghTokenSaveBtn').addEventListener('click', async ()=>{
-  const msg = document.getElementById('ghTokenMsg');
-  const t = document.getElementById('ghTokenInput').value.trim();
-  if(!t){ msg.textContent = '請先貼上金鑰'; return; }
-  setGhToken(t);
-  msg.textContent = '測試中…';
-  try{
-    // 實際寫一個說明檔來確認「有寫入權限」
-    const path = '/contents/transactions/README.txt';
-    const check = await ghApi(path + `?ref=${GH.branch}&_=${Date.now()}`);
-    if(check.status === 401) throw new Error('金鑰無效或已過期');
-    const body = {message:'POS: 啟用雲端交易紀錄', branch: GH.branch,
-      content: b64enc('這個資料夾由「喬大百貨 POS」自動寫入，每月一個 YYYY-MM.json，請勿手動修改。\n')};
-    if(check.ok){ body.sha = (await check.json()).sha; }
-    const w = await ghApi(path, {method:'PUT', body: JSON.stringify(body)});
-    if(!w.ok){
-      if(w.status === 403 || w.status === 404) throw new Error('金鑰沒有寫入權限：Contents 要設成 Read and write，且 Repository access 要選到 barcode-lookup');
-      throw new Error('測試寫入失敗（HTTP ' + w.status + '）');
-    }
-    msg.textContent = '✓ 連線成功，可以寫入。之後的交易會自動存檔。';
-    document.getElementById('ghTokenInput').value = '';
-    updateCloudBadge();
-    await loadTransactions();
-  }catch(e){
-    setGhToken('');
-    updateCloudBadge();
-    msg.textContent = '✗ ' + e.message;
-  }
-});
-document.getElementById('ghTokenClearBtn').addEventListener('click', ()=>{
-  if(!confirm('清除這台裝置上的雲端存檔金鑰？（已存的交易不受影響）')) return;
-  setGhToken(''); updateCloudBadge();
-  document.getElementById('ghTokenMsg').textContent = '已清除這台裝置的設定';
-});
-
-// ===== 開啟網頁先輸入密碼：員工／老闆模式（只藏畫面，非真正保密）=====
-const PIN_SALT = 'joeda:';
-const PIN_HASH = {staff:'1t9vcc04t4l', boss:'fmuk938zum'};
-function pinHash(str, seed = 0){
-  let h1 = 0xdeadbeef ^ seed, h2 = 0x41c6ce57 ^ seed;
-  for(let i = 0, ch; i < str.length; i++){
-    ch = str.charCodeAt(i);
-    h1 = Math.imul(h1 ^ ch, 2654435761); h2 = Math.imul(h2 ^ ch, 1597334677);
-  }
-  h1 = Math.imul(h1 ^ (h1 >>> 16), 2246822507) ^ Math.imul(h2 ^ (h2 >>> 13), 3266489909);
-  h2 = Math.imul(h2 ^ (h2 >>> 16), 2246822507) ^ Math.imul(h1 ^ (h1 >>> 13), 3266489909);
-  return (4294967296 * (2097151 & h2) + (h1 >>> 0)).toString(36);
-}
-let currentRole = null;   // 'staff' | 'boss'；每次開啟網頁都要重新輸入密碼，不會記住
-try{ localStorage.removeItem('bossMode'); }catch(e){}
+// ===== 登入：Firebase Authentication（密碼由 Google 伺服器驗證；老闆/員工由帳號決定）=====
+let currentRole = null;   // 'staff' | 'boss'；登入後這台電腦會記住，除非按右上角登出
 function isBoss(){ return currentRole === 'boss'; }
 function applyMode(){
   const boss = isBoss();
   document.body.classList.toggle('staff', !boss);
   const lb = document.getElementById('lockBtn');
-  lb.innerHTML = boss ? '<span class="ico">🔓</span><span class="lbl">老闆模式（切換）</span>' : '<span class="ico">🔒</span><span class="lbl">員工模式（切換）</span>';
+  lb.innerHTML = boss ? '<span class="ico">🔓</span><span class="lbl">老闆（登出）</span>' : '<span class="ico">🔒</span><span class="lbl">員工（登出）</span>';
   const sel = document.getElementById('priceSourceSelect');
   const costOpt = sel && sel.querySelector('option[value="cost"]');
   if(!boss){
@@ -2193,30 +2039,54 @@ function showLock(){
   document.body.classList.add('locked');
   setTimeout(()=> inp.focus(), 50);
 }
-function tryUnlock(){
+async function tryUnlock(){
   const inp = document.getElementById('lockInput');
-  const h = pinHash(PIN_SALT + inp.value.trim());
-  if(h === PIN_HASH.boss) currentRole = 'boss';
-  else if(h === PIN_HASH.staff) currentRole = 'staff';
-  else{
-    document.getElementById('lockMsg').textContent = '密碼錯誤，請再試一次';
-    inp.value = ''; inp.focus(); return;
+  const msg = document.getElementById('lockMsg');
+  const pw = inp.value.trim();
+  if(!pw) return;
+  msg.textContent = '登入中…';
+  let FBlib;
+  try{ FBlib = await Promise.race([window.fbReady, sleep(8000).then(()=> null)]); }catch(e){ FBlib = null; }
+  if(!FBlib){ msg.textContent = '無法載入登入元件，請檢查網路後重新整理'; return; }
+  try{
+    await FBlib.login(pw);
+    msg.textContent = '';
+    inp.value = '';
+  }catch(e){
+    msg.textContent = e.code === 'auth/too-many-requests' ? '嘗試次數太多，請稍後再試'
+      : e.code === 'auth/network-request-failed' ? '連不上網路，請檢查連線'
+      : '密碼錯誤，請再試一次';
+    inp.value = ''; inp.focus();
   }
-  document.body.classList.remove('locked');
-  applyMode();
 }
 document.getElementById('lockForm').addEventListener('submit', (e)=>{ e.preventDefault(); tryUnlock(); });
-document.getElementById('lockBtn').addEventListener('click', showLock);
+document.getElementById('lockBtn').addEventListener('click', ()=>{ if(window.FB) FB.logout(); else showLock(); });
 applyMode();
 showLock();
+window.fbReady.then(FBlib=>{
+  FBlib.onAuth(u=>{
+    if(u && u.role){
+      currentRole = u.role;
+      document.body.classList.remove('locked');
+      applyMode();
+      startCloud();
+    }else{
+      if(u) FBlib.logout();
+      currentRole = null;
+      stopCloud();
+      applyMode();
+      showLock();
+    }
+  });
+});
+setTimeout(()=>{ if(!window.FB && document.body.classList.contains('locked')) document.getElementById('lockMsg').textContent = '無法載入登入元件，請檢查網路後重新整理'; }, 10000);
 
 loadHeldOrdersFromStorage();
 renderHeldOrders();
-updateCloudBadge();
 updateEditBanner();
 setTxnRange('month');
 
-init().then(loadTransactions);
+init();
 </script>
 </body>
 </html>

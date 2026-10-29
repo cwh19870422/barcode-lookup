@@ -62,6 +62,8 @@
   .empty-note{text-align:center; padding:24px; color:var(--secondary); font-size:13px;}
   code{background:var(--paper-alt); padding:1px 6px; border-radius:4px; font-family:var(--monofont); font-size:12px;}
 </style>
+<script>window.fbReady=new Promise(function(r){window.__fbResolve=r;});</script>
+<script type="module" src="./fb.js"></script>
 </head>
 <body>
 
@@ -110,32 +112,61 @@
     <div class="actions-row">
       <button class="danger" id="clearAllBtn">清空全部</button>
       <button id="exportExcelBtn">⬇ 匯出 Excel</button>
-      <button class="primary" id="downloadJsonBtn">⬇ 下載 customers.json</button>
+      <button class="primary" id="saveCloudBtn">☁ 儲存到雲端</button>
     </div>
   </div>
 
   <div class="step">
-    <h3><span class="num">4</span>上傳到 GitHub</h3>
-    <p>1. 打開你的 GitHub repo 頁面<br>
-       2. 找到 <code>customers.json</code>（如果是第一次，用「Add file → Upload files」新增；已存在的話點進去用鉛筆編輯或直接上傳覆蓋）<br>
-       3. 選擇剛剛下載的新 <code>customers.json</code>，上傳並覆蓋<br>
-       4. 填寫 commit 訊息，點 <strong>Commit changes</strong><br>
-       5. 等 30 秒到 1 分鐘，主頁「客戶」分頁和「打單」分頁就會顯示最新的客戶名單，網址不變。</p>
+    <h3><span class="num">4</span>儲存到雲端</h3>
+    <p>改完之後按上面的「☁ 儲存到雲端」。主頁的「客戶」分頁和「打單」分頁會立即更新（其他電腦也會同步），不需要再上傳任何檔案。<span id="saveMsg" style="display:block;margin-top:6px;font-weight:600;"></span></p>
   </div>
 </main>
 
 <script>
 let customers = [];
+let existingIds = [];
+let authedBoss = false;
+
+function setGate(msg){
+  document.querySelectorAll('main .step').forEach(el => el.style.display = msg ? 'none' : '');
+  let g = document.getElementById('gateMsg');
+  if(!g){ g = document.createElement('div'); g.id = 'gateMsg'; g.className = 'step'; document.querySelector('main').prepend(g); }
+  g.style.display = msg ? '' : 'none';
+  g.innerHTML = msg ? '<p style="font-size:14px;">' + msg + '</p>' : '';
+}
+
+function loadFromCloud(){
+  return new Promise((resolve) => {
+    let unsub = null, done = false;
+    unsub = FB.listenCustomers(list => {
+      if(done) return; done = true;
+      if(unsub) try{ unsub(); }catch(e){}
+      customers = list.map(c => ({...c}));
+      existingIds = list.map(c => c.id);
+      renderTable();
+      resolve();
+    }, e => { if(done) return; done = true; setGate('讀取客戶資料失敗：' + (e && e.message || e)); resolve(); });
+  });
+}
 
 async function loadCurrent(){
-  try{
-    const res = await fetch('./customers.json?_=' + Date.now());
-    if(res.ok){
-      const data = await res.json();
-      customers = data.customers || [];
+  setGate('登入狀態確認中…');
+  const FBlib = await Promise.race([window.fbReady, new Promise(r => setTimeout(()=> r(null), 8000))]);
+  if(!FBlib){ setGate('無法載入雲端元件，請檢查網路後重新整理。'); return; }
+  FBlib.onAuth(async u => {
+    if(u && u.role === 'boss'){
+      if(authedBoss) return;
+      authedBoss = true;
+      setGate('');
+      await loadFromCloud();
+    }else if(u){
+      authedBoss = false;
+      setGate('這個頁面只有老闆帳號可以使用。請回到主頁，登出後用老闆密碼登入。');
+    }else{
+      authedBoss = false;
+      setGate('請先回到<a href="./index.html">主頁</a>登入（用老闆密碼），再回來這個頁面。');
     }
-  }catch(e){ customers = []; }
-  renderTable();
+  });
 }
 
 function escapeHtml(s){
@@ -288,18 +319,26 @@ custTableWrap.addEventListener('click', (e)=>{
 
 document.getElementById('clearAllBtn').addEventListener('click', ()=>{
   if(!customers.length) return;
-  if(!confirm('確定要清空整份客戶清單嗎？（尚未下載/上傳的變更會消失）')) return;
+  if(!confirm('確定要清空整份客戶清單嗎？（按「儲存到雲端」之後才會真的刪除）')) return;
   customers = [];
   renderTable();
 });
 
-document.getElementById('downloadJsonBtn').addEventListener('click', ()=>{
-  const blob = new Blob([JSON.stringify({customers})], {type:'application/json'});
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url; a.download = 'customers.json';
-  document.body.appendChild(a); a.click(); document.body.removeChild(a);
-  URL.revokeObjectURL(url);
+document.getElementById('saveCloudBtn').addEventListener('click', async ()=>{
+  const btn = document.getElementById('saveCloudBtn'), msg = document.getElementById('saveMsg');
+  const bad = customers.findIndex(c => !String(c.name || '').trim());
+  if(bad >= 0){ alert('第 ' + (bad + 1) + ' 列沒有姓名，請補上或刪除這一列'); return; }
+  const removing = existingIds.filter(id => !customers.some(c => c.id === id)).length;
+  if(removing && !confirm('這次會從雲端刪除 ' + removing + ' 位客戶，確定嗎？')) return;
+  btn.disabled = true; msg.style.color = ''; msg.textContent = '儲存中…';
+  try{
+    await FB.replaceCustomers(customers, existingIds);
+    await loadFromCloud();
+    msg.style.color = '#1f8a3d'; msg.textContent = '✓ 已儲存到雲端（共 ' + customers.length + ' 位客戶）';
+  }catch(e){
+    msg.style.color = '#FF3B30'; msg.textContent = '✗ 儲存失敗：' + (e && e.message || e);
+  }
+  btn.disabled = false;
 });
 
 document.getElementById('exportExcelBtn').addEventListener('click', ()=>{
