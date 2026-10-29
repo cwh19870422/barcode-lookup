@@ -423,8 +423,8 @@
       <div class="cart-actions">
         <button class="btn-hold" id="holdCartBtn">暫存訂單</button>
         <button class="btn-clear" id="clearCartBtn">清空清單</button>
-        <button class="btn-print" id="printReceiptBtn">列印收據</button>
-        <button class="btn-print" id="printBtn">列印出貨單</button>
+        <button class="btn-print" id="printReceiptBtn">列印小張收據</button>
+        <button class="btn-print" id="printBtn">列印A4帳單</button>
         <button class="btn-save" id="checkoutBtn">結帳</button>
       </div>
       <div id="cloudStatus" class="cloud-status"></div>
@@ -454,7 +454,7 @@
         <span id="cloudBadge" class="cloud-badge"></span>
         <button type="button" class="txn-small-btn" id="cloudSettingsBtn">設定</button>
       </div>
-      <div class="txn-hint">每筆交易按「列印出貨單」或「儲存交易」時，會自動存進 GitHub 倉庫的 <code>transactions/</code> 資料夾（每月一個檔案，並有完整版本備份），開啟網站時自動讀取。</div>
+      <div class="txn-hint">每筆交易按「列印A4帳單」或「儲存交易」時，會自動存進 GitHub 倉庫的 <code>transactions/</code> 資料夾（每月一個檔案，並有完整版本備份），開啟網站時自動讀取。</div>
       <div id="cloudSettings" style="display:none; margin-top:12px;">
         <ol class="txn-steps">
           <li>到 GitHub 右上角頭像 → <b>Settings</b> → 最下面 <b>Developer settings</b> → <b>Personal access tokens</b> → <b>Fine-grained tokens</b> → <b>Generate new token</b></li>
@@ -2015,7 +2015,7 @@ function renderTxns(){
         <div class="txn-actions" style="gap:8px;">
           <button type="button" class="txn-small-btn txn-edit">編輯</button>
           <button type="button" class="txn-small-btn txn-reprint">重新列印</button>
-          <button type="button" class="txn-small-btn txn-reprint-receipt">列印收據</button>
+          <button type="button" class="txn-small-btn txn-reprint-receipt">列印小張收據</button>
           <button type="button" class="txn-small-btn danger txn-del">刪除</button>
         </div>
       </div>
