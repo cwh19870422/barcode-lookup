@@ -584,11 +584,11 @@ function priceCellsHtml(r, q){
   const name = r[4], cost = r[5], priceA = r[6], priceB = r[7], priceC = r[8], priceD = r[9];
   return `
     <div class="prices">
-      <div class="price-cell cost" data-name="${escapeHtml(name)}" data-value="${escapeHtml(fmt(cost))}"><div class="lbl">本</div><div class="val">${fmt(cost)}</div></div>
-      <div class="price-cell" data-name="${escapeHtml(name)}" data-value="${escapeHtml(fmt(priceD))}"><div class="lbl">4</div><div class="val">${fmt(priceD)}</div></div>
-      <div class="price-cell" data-name="${escapeHtml(name)}" data-value="${escapeHtml(fmt(priceC))}"><div class="lbl">3</div><div class="val">${fmt(priceC)}</div></div>
-      <div class="price-cell" data-name="${escapeHtml(name)}" data-value="${escapeHtml(fmt(priceB))}"><div class="lbl">2</div><div class="val">${fmt(priceB)}</div></div>
       <div class="price-cell sell" data-name="${escapeHtml(name)}" data-value="${escapeHtml(fmt(priceA))}"><div class="lbl">賣</div><div class="val">${fmt(priceA)}</div></div>
+      <div class="price-cell" data-name="${escapeHtml(name)}" data-value="${escapeHtml(fmt(priceB))}"><div class="lbl">2</div><div class="val">${fmt(priceB)}</div></div>
+      <div class="price-cell" data-name="${escapeHtml(name)}" data-value="${escapeHtml(fmt(priceC))}"><div class="lbl">3</div><div class="val">${fmt(priceC)}</div></div>
+      <div class="price-cell" data-name="${escapeHtml(name)}" data-value="${escapeHtml(fmt(priceD))}"><div class="lbl">4</div><div class="val">${fmt(priceD)}</div></div>
+      <div class="price-cell cost" data-name="${escapeHtml(name)}" data-value="${escapeHtml(fmt(cost))}"><div class="lbl">本</div><div class="val">${fmt(cost)}</div></div>
     </div>`;
 }
 
