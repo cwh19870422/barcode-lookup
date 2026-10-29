@@ -263,6 +263,7 @@
     body > *{display:none !important;}
     body > #printArea{display:block !important; position:static;}
   }
+.sort-sel{margin-left:auto;font:inherit;font-size:13px;padding:4px 8px;border:1px solid var(--line,#ccc);border-radius:8px;background:#fff;color:inherit}
 </style>
 </head>
 <body class="locked staff">
@@ -308,6 +309,7 @@
     </div>
     <div class="status-row">
       <span id="statusText">載入中…</span>
+      <select class="sort-sel" title="排序方式"><option value="">排序：預設</option><option value="asc">賣價 低→高</option><option value="desc">賣價 高→低</option></select>
       <span id="dataDate"></span>
     </div>
     <div class="results" id="results"></div>
@@ -366,6 +368,7 @@
 
     <div class="status-row">
       <span id="orderStatusText">請搜尋或掃描商品加入清單</span>
+      <select class="sort-sel" title="排序方式"><option value="">排序：預設</option><option value="asc">賣價 低→高</option><option value="desc">賣價 高→低</option></select>
     </div>
     <div class="results" id="orderResults"></div>
 
@@ -623,10 +626,30 @@ function searchRows(q, limit){
       if(!ok) continue;
     }
     matches.push(r);
-    if(matches.length >= limit) break;
+    if(!sortMode && matches.length >= limit) break;
+  }
+  if(sortMode){
+    const pv = r => { const n = parseFloat(String(r[6]).replace(/,/g,'')); return isNaN(n) ? null : n; };
+    matches.sort((a,b)=>{
+      const x = pv(a), y = pv(b);
+      if(x===null && y===null) return 0;
+      if(x===null) return 1;
+      if(y===null) return -1;
+      return sortMode==='asc' ? x-y : y-x;
+    });
+    matches = matches.slice(0, limit);
   }
   return matches;
 }
+let sortMode = '';
+document.querySelectorAll('.sort-sel').forEach(sel=>{
+  sel.addEventListener('change', ()=>{
+    sortMode = sel.value;
+    document.querySelectorAll('.sort-sel').forEach(o=>{ o.value = sortMode; });
+    if(typeof doSearch==='function') doSearch();
+    if(typeof doOrderSearch==='function') doOrderSearch();
+  });
+});
 
 function doSearch(){
   const q = input.value.trim();
