@@ -63,7 +63,8 @@
   .history-panel td{padding:5px 6px; border-top:1px solid var(--line); color:var(--ink);}
   .history-panel .hist-empty{color:var(--secondary); text-align:center; padding:8px;}
   .prices{display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); gap:8px;}
-  .price-cell{display:flex; align-items:stretch; border-radius:12px; overflow:hidden; cursor:pointer; user-select:none; -webkit-tap-highlight-color:transparent; transition:transform .1s;}
+  .price-cell{-webkit-touch-callout:none; -webkit-user-select:none; display:flex; align-items:stretch; border-radius:12px; overflow:hidden; cursor:pointer; user-select:none; -webkit-tap-highlight-color:transparent; transition:transform .1s;}
+  .price-cell.lp-armed{box-shadow:inset 0 0 0 3px #0071e3; transform:scale(.96);}
   .price-cell:active{transform:scale(0.96);}
   .price-cell.copied .val{color:var(--green) !important;}
   .price-cell{min-width:0; position:relative;} .price-cell .lbl{position:absolute; left:0; top:0; bottom:0; width:30px; padding-left:0 !important; padding-right:0 !important; background:var(--paper-alt); color:#6B6B6F; font-family:var(--sysfont); font-weight:600; font-size:13px; display:flex; align-items:center; justify-content:center; padding:0 9px; flex-shrink:0;}
@@ -779,8 +780,39 @@ resultsEl.addEventListener('click', (e)=>{
   if(histBtn){ toggleHistoryPanel(histBtn); return; }
   const cell = e.target.closest('.price-cell');
   if(!cell) return;
+  if(Date.now() < suppressClickUntil){ e.preventDefault(); return; }   // 長按放開後瀏覽器補發的 click，忽略
   handlePriceCellCopy(cell, e);
 });
+
+// 手機／平板：長按價格格子 ＝ 加入連續複製（再長按同一格＝取消）；輕點＝單一複製
+// 長按滿 0.5 秒會震動並亮藍框，「放開手指」時才真正加入（這樣剪貼簿一定在手勢內寫入，iOS 也能用）
+let suppressClickUntil = 0;
+(function(){
+  let timer = null, armed = false, cellEl = null, sx = 0, sy = 0;
+  const clear = ()=>{ clearTimeout(timer); timer = null; if(cellEl) cellEl.classList.remove('lp-armed'); armed = false; cellEl = null; };
+  resultsEl.addEventListener('pointerdown', (e)=>{
+    if(e.pointerType === 'mouse') return;
+    const cell = e.target.closest('.price-cell'); if(!cell) return;
+    clear(); cellEl = cell; sx = e.clientX; sy = e.clientY;
+    timer = setTimeout(()=>{ armed = true; cell.classList.add('lp-armed'); try{ navigator.vibrate && navigator.vibrate(25); }catch(_){} }, 500);
+  });
+  resultsEl.addEventListener('pointermove', (e)=>{
+    if(!cellEl) return;
+    if(Math.abs(e.clientX - sx) > 10 || Math.abs(e.clientY - sy) > 10) clear();
+  });
+  resultsEl.addEventListener('pointerup', (e)=>{
+    if(!cellEl) return;
+    const cell = cellEl, wasArmed = armed;
+    clear();
+    if(wasArmed){
+      suppressClickUntil = Date.now() + 700;
+      e.preventDefault();
+      handlePriceCellCopy(cell, {ctrlKey:true, preventDefault(){}});
+    }
+  });
+  resultsEl.addEventListener('pointercancel', clear);
+  resultsEl.addEventListener('contextmenu', (e)=>{ if(e.target.closest('.price-cell')) e.preventDefault(); });
+})();
 
 // 價錢格子複製：一般點擊＝複製單一「商品 價錢」；按住 Ctrl（Mac 為 Cmd）點擊＝連續複製，
 // 每點一次就把累積的清單（一行一個商品）放進剪貼簿，貼上時會依序換行顯示
