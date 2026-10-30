@@ -174,11 +174,16 @@
   .cart-totals{display:flex; justify-content:flex-end; gap:26px; padding:14px 4px; border-top:1.5px solid var(--ink); margin-top:4px;}
   .cart-totals .tline{font-size:13px; color:var(--secondary);}
   .cart-totals .tline b{color:var(--ink); font-size:16px; margin-left:4px;}
-  .quick-fee-row{display:flex; align-items:center; gap:8px; margin-top:12px; flex-wrap:wrap;}
+  .quick-fee-row{display:grid; grid-template-columns:max-content repeat(6, minmax(0,112px)); justify-content:start; align-items:center; gap:8px; margin-top:12px;}
   .quick-fee-label{font-size:12px; color:var(--secondary); font-weight:600; margin-right:2px;}
-  .quick-fee-btn{border:1.5px solid #1d1d1f; background:#fff; color:var(--ink); font-weight:600; font-size:13.5px; padding:9px 16px; border-radius:999px; cursor:pointer; font-family:var(--sysfont);}
+  .quick-fee-btn{border:1px solid #e3e3e8; background:#f7f7f9; color:var(--ink); font-weight:600; font-size:13.5px; height:40px; padding:0 6px; border-radius:10px; cursor:pointer; font-family:var(--sysfont); white-space:nowrap; display:flex; align-items:center; justify-content:center;}
   .quick-fee-btn.refund{color:var(--ink);}
   .quick-fee-btn.disc-btn{color:var(--ink);}
+  @media (max-width:640px){
+    .quick-fee-row{grid-template-columns:repeat(3, minmax(0,1fr)); gap:8px;}
+    .quick-fee-label{grid-column:1 / -1; margin:0;}
+    .quick-fee-btn{height:44px; font-size:13px; padding:0 2px;}
+  }
   td.cart-last{text-align:center; line-height:1.25;}
   .last-price{font-weight:700; font-size:13px;} .last-sub{font-size:10.5px; color:var(--secondary);} .last-none{color:var(--secondary);}
   .cart-hist-btn{border:none; background:var(--gray-fill); color:var(--blue); font-weight:600; font-size:11px; padding:5px 8px; border-radius:8px; cursor:pointer; font-family:var(--sysfont); white-space:nowrap;}
