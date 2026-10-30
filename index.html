@@ -289,6 +289,7 @@ body.cust-view .prices{grid-template-columns:minmax(0,1fr) !important; max-width
 </style>
 <script>window.fbReady=new Promise(function(r){window.__fbResolve=r;});</script>
 <script type="module" src="./fb.js"></script>
+<link rel="stylesheet" href="./pick.css">
 </head>
 <body class="locked staff">
 
@@ -317,6 +318,7 @@ body.cust-view .prices{grid-template-columns:minmax(0,1fr) !important; max-width
     <button class="tab-btn" data-tab="order"><span class="tic">🧾</span>打單</button>
     <button class="tab-btn" data-tab="txns"><span class="tic">📊</span>交易紀錄</button>
     <button class="tab-btn" data-tab="customers"><span class="tic">👤</span>客戶</button>
+    <button class="tab-btn" data-tab="pick"><span class="tic">📦</span>撿貨單</button>
   </div>
 </div>
 
@@ -492,6 +494,7 @@ body.cust-view .prices{grid-template-columns:minmax(0,1fr) !important; max-width
     <div id="txnList"></div>
   </section>
 
+  <section class="tab-panel" id="tab-pick"></section>
 </main>
 
 <div id="printArea"></div>
@@ -1764,6 +1767,7 @@ function startCloud(){
   unsubCust = FB.listenCustomers(list => {
     customers = list;
     renderCustomerList();
+    if(window.Pick) Pick.refreshCustomers();
     if(custSearch.value.trim()) renderCustDropdown();
   }, e => setCloudStatus('err', '⚠ 讀取客戶資料失敗：' + cloudErrMsg(e)));
   unsubTxns = FB.listenTxns(sinceMonth(), list => {
@@ -1771,8 +1775,10 @@ function startCloud(){
     mergeAllTxns();
     setCloudBadge('已連線', true);
   }, e => { setCloudBadge('讀取失敗', false); setCloudStatus('err', '⚠ 讀取交易紀錄失敗：' + cloudErrMsg(e)); });
+  if(window.Pick) Pick.start();
 }
 function stopCloud(){
+  if(window.Pick) Pick.stop();
   if(unsubCust){ try{ unsubCust(); }catch(e){} unsubCust = null; }
   if(unsubTxns){ try{ unsubTxns(); }catch(e){} unsubTxns = null; }
   customers = []; txnsRecent = new Map(); txnsOlder = new Map(); olderLoaded = false; allTxns = [];
@@ -2083,5 +2089,7 @@ setTxnRange('month');
 
 init();
 </script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.2/Sortable.min.js"></script>
+<script src="./pick.js"></script>
 </body>
 </html>
