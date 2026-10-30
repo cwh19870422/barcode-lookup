@@ -446,7 +446,7 @@ body.cust-view .prices{grid-template-columns:minmax(0,1fr) !important; max-width
     <div class="cart-section">
       <div class="cart-title-row">
         <div class="cart-title-left"><div class="cart-title">出貨清單</div><div class="cart-count" id="cartCount">0 項</div>
-          <select id="operatorSel" class="op-sel" aria-label="打單人員"><option value="">打單人員</option><option>六六</option><option>宜惠</option><option>小豪</option><option>文軒</option><option>文嘉</option><option>小蔚</option></select>
+          <select id="operatorSel" class="op-sel" aria-label="打單人員"><option value="">打單人員</option><option>六六</option><option>宜惠</option><option>小豪</option><option>sam</option><option>文嘉</option><option>小蔚</option></select>
           <span class="cart-cust-note" id="cartCustNote"></span>
         </div>
         <div class="cart-head-actions">
@@ -1654,7 +1654,7 @@ document.getElementById('printReceiptBtn').addEventListener('click', ()=>{
   const sel = document.getElementById('operatorSel');
   const KEY = 'joeda_pos_operator';
   const paint = ()=> sel.classList.toggle('empty', !sel.value);
-  try{ const v = localStorage.getItem(KEY); if(v && Array.from(sel.options).some(o=>o.value===v)) sel.value = v; }catch(e){}
+  try{ let v = localStorage.getItem(KEY); if(v === '文軒') v = 'sam'; if(v && Array.from(sel.options).some(o=>o.value===v)) sel.value = v; }catch(e){}
   paint();
   sel.addEventListener('change', ()=>{ paint(); if(opAppliedFor) return; try{ localStorage.setItem(KEY, sel.value); }catch(e){} });
   window.paintOperator = paint;
@@ -1727,9 +1727,15 @@ function syncOperatorWithEdit(){
   if(!sel) return;
   if(currentTxn && opAppliedFor !== currentTxn.id){
     opAppliedFor = currentTxn.id;
-    if(currentTxn.operator && Array.from(sel.options).some(o => o.value === currentTxn.operator)) sel.value = currentTxn.operator;
+    if(currentTxn.operator){
+      if(!Array.from(sel.options).some(o => o.value === currentTxn.operator)){   // 舊單的打單人員已不在選單內（例如改名前的「文軒」）：暫時加進去
+        const o = document.createElement('option'); o.value = o.textContent = currentTxn.operator; o.dataset.tmp = '1'; sel.appendChild(o);
+      }
+      sel.value = currentTxn.operator;
+    }
   }else if(!currentTxn && opAppliedFor){
     opAppliedFor = null;
+    sel.querySelectorAll('option[data-tmp]').forEach(o => o.remove());
     let v = ''; try{ v = localStorage.getItem('joeda_pos_operator') || ''; }catch(e){}
     sel.value = Array.from(sel.options).some(o => o.value === v) ? v : '';
   }
