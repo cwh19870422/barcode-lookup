@@ -14,6 +14,9 @@
 .pk-pill.done{background:var(--pk-green-soft); color:#1E8E3E;}
 .pk-empty{color:var(--secondary); font-size:13px; text-align:center; padding:14px; border:1px dashed var(--line); border-radius:12px;}
 .pk-main{display:flex; flex-direction:column; gap:12px; min-width:0;}
+.pk-main.is-closed > :not(.pk-closed), .pk-main:not(.is-closed) > .pk-closed{display:none;}
+.pk-card.pk-closed{align-items:center; text-align:center; padding:36px 16px; gap:10px;}
+.pk-closed-t{font-size:18px; font-weight:700; color:#1E8E3E;}
 .pk-cust{display:flex; gap:8px; align-items:center;}
 .pk-cust .search-box{flex:1; min-width:0;}
 .pk-cust .grade-badge{margin-right:6px;}
