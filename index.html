@@ -511,16 +511,35 @@ let legacyHistory = []; // 舊版 history.json 內容（若有）
 let heldOrders = []; // {id, customer, cart, priceMode, savedAt}
 const HELD_ORDERS_KEY = 'joeda_pos_held_orders_v1';
 
-function loadHeldOrdersFromStorage(){
+// 暫存訂單存在雲端（Firestore heldOrders），所有電腦即時共用。
+// 舊版存在這台瀏覽器的暫存單，第一次連線時會自動上傳一次，再清掉本機的。
+let unsubHeld = null;
+function readLocalHeld(){
+  try{ const raw = localStorage.getItem(HELD_ORDERS_KEY); return raw ? (JSON.parse(raw) || []) : []; }
+  catch(e){ return []; }
+}
+async function migrateLocalHeld(){
+  const local = readLocalHeld();
+  if(!local.length) return;
   try{
-    const raw = localStorage.getItem(HELD_ORDERS_KEY);
-    heldOrders = raw ? (JSON.parse(raw) || []) : [];
-  }catch(e){ heldOrders = []; }
+    await Promise.all(local.map(h => FB.saveHeld(h)));
+    try{ localStorage.removeItem(HELD_ORDERS_KEY); }catch(e){}
+  }catch(e){ /* 這次失敗就保留本機資料，下次登入再試 */ }
 }
-function saveHeldOrdersToStorage(){
-  try{ localStorage.setItem(HELD_ORDERS_KEY, JSON.stringify(heldOrders)); }
-  catch(e){ /* storage full or disabled — held orders still work for this session */ }
+function startHeld(){
+  stopHeld();
+  unsubHeld = FB.listenHeld(list => {
+    heldOrders = list.sort((a,b) => String(a.savedAt||'').localeCompare(String(b.savedAt||'')));
+    renderHeldOrders();
+  }, e => { /* 讀不到就先不顯示 */ });
+  migrateLocalHeld();
 }
+function stopHeld(){
+  if(unsubHeld){ try{ unsubHeld(); }catch(e){} unsubHeld = null; }
+  heldOrders = [];
+  try{ renderHeldOrders(); }catch(e){}
+}
+function heldErr(e){ alert('暫存訂單同步失敗：' + ((e && e.code === 'permission-denied') ? '沒有權限（請確認 Firestore 規則已更新）' : ((e && e.message) || e))); }
 
 const PRICE_IDX = {cost:5, A:6, B:7, C:8, D:9, sell:10};
 const GRADE_TO_IDX = {A:6, B:7, C:8, D:9};
@@ -1392,15 +1411,16 @@ function holdCurrentOrder(){
     alert('目前沒有客戶或商品可以暫存');
     return false;
   }
-  heldOrders.push({
+  const held = {
     id: Date.now() + '-' + Math.random().toString(36).slice(2,7),
     customer: selectedCustomer ? {...selectedCustomer} : null,
     cart: cart.map(it => ({...it})),
     priceMode: document.getElementById('priceSourceSelect').value,
     txn: currentTxn,
     savedAt: new Date().toISOString()
-  });
-  saveHeldOrdersToStorage();
+  };
+  heldOrders.push(held);
+  FB.saveHeld(held).catch(heldErr);
   cart = [];
   currentTxn = null;
   selectedCustomer = null;
@@ -1420,7 +1440,7 @@ function resumeHeldOrder(id){
   }
   const target = heldOrders[idx];
   heldOrders.splice(idx, 1);
-  saveHeldOrdersToStorage();
+  FB.deleteHeld(id).catch(heldErr);
   cart = target.cart.map(it => ({...it}));
   if(target.customer){
     selectCustomer(target.customer);
@@ -1438,7 +1458,7 @@ function resumeHeldOrder(id){
 function deleteHeldOrder(id){
   if(!confirm('確定要刪除這筆暫存的訂單嗎？刪除後無法復原。')) return;
   heldOrders = heldOrders.filter(h => h.id !== id);
-  saveHeldOrdersToStorage();
+  FB.deleteHeld(id).catch(heldErr);
   renderHeldOrders();
 }
 
@@ -1781,9 +1801,11 @@ function startCloud(){
     mergeAllTxns();
     setCloudBadge('已連線', true);
   }, e => { setCloudBadge('讀取失敗', false); setCloudStatus('err', '⚠ 讀取交易紀錄失敗：' + cloudErrMsg(e)); });
+  startHeld();
   if(window.Pick) Pick.start();
 }
 function stopCloud(){
+  stopHeld();
   if(window.Pick) Pick.stop();
   if(unsubCust){ try{ unsubCust(); }catch(e){} unsubCust = null; }
   if(unsubTxns){ try{ unsubTxns(); }catch(e){} unsubTxns = null; }
@@ -2088,7 +2110,6 @@ window.fbReady.then(FBlib=>{
 });
 setTimeout(()=>{ if(!window.FB && document.body.classList.contains('locked')) document.getElementById('lockMsg').textContent = '無法載入登入元件，請檢查網路後重新整理'; }, 10000);
 
-loadHeldOrdersFromStorage();
 renderHeldOrders();
 updateEditBanner();
 setTxnRange('month');

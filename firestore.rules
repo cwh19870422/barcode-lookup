@@ -34,6 +34,11 @@ service cloud.firestore {
       allow read, write: if signedIn();
     }
 
+    // 暫存訂單：老闆、員工都能讀、新增、修改、刪除（取回訂單時會刪除）
+    match /heldOrders/{id} {
+      allow read, write: if signedIn();
+    }
+
     // 其他一律不開放
     match /{document=**} {
       allow read, write: if false;
