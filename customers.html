@@ -98,6 +98,7 @@
       </select>
       <input type="text" id="fTaxId" placeholder="統一編號（選填）">
       <input type="text" id="fNote" class="span2" placeholder="備註（選填）">
+      <label class="span2" style="font-size:13.5px; display:flex; align-items:center; gap:8px;"><input type="checkbox" id="fAlert" style="width:auto;"> 結帳時跳出提醒「帳單金額 XXX 請登記」</label>
     </div>
     <button class="save-btn" id="addBtn">加入清單</button>
   </div>
@@ -196,7 +197,9 @@ document.getElementById('addBtn').addEventListener('click', ()=>{
     grade: document.getElementById('fGrade').value,
     taxId: document.getElementById('fTaxId').value.trim(),
     note: document.getElementById('fNote').value.trim(),
+    checkoutAlert: document.getElementById('fAlert').checked,
   });
+  document.getElementById('fAlert').checked = false;
   ['fName','fMemberNo','fPhone','fPhone2','fAddress','fTaxId','fNote'].forEach(id => document.getElementById(id).value = '');
   renderTable();
 });
@@ -255,6 +258,7 @@ async function handleFiles(fileList){
       const cGrade = findCol(lowerHeaders, ['會員等級','等級','grade']);
       const cTaxId = findCol(lowerHeaders, ['統編','統一編號','taxid']);
       const cNote = findCol(lowerHeaders, ['備註','note','remark']);
+      const cAlert = findCol(lowerHeaders, ['結帳提醒','提醒']);
 
       if(cName === -1){ throw new Error('找不到「姓名」欄位，跳過此檔'); }
 
@@ -274,6 +278,7 @@ async function handleFiles(fileList){
           grade,
           taxId: cTaxId>-1 ? String(r[cTaxId]||'').trim() : '',
           note: cNote>-1 ? String(r[cNote]||'').trim() : '',
+          checkoutAlert: cAlert>-1 && /^(是|y|yes|v|1|true|✓|✔)$/i.test(String(r[cAlert]||'').trim()),
         });
         count++;
       }
@@ -309,7 +314,7 @@ function renderTable(){
     return;
   }
   let html = `<table class="cust-edit"><thead><tr>
-    <th>姓名</th><th>會員號碼</th><th>電話</th><th>電話2</th><th>地址</th><th style="width:64px;">等級</th><th>統編</th><th>備註</th><th style="width:24px;"></th>
+    <th>姓名</th><th>會員號碼</th><th>電話</th><th>電話2</th><th>地址</th><th style="width:64px;">等級</th><th>統編</th><th>備註</th><th style="width:54px;">結帳提醒</th><th style="width:24px;"></th>
   </tr></thead><tbody>`;
   shown.forEach(({c,i})=>{
     html += `<tr data-idx="${i}">
@@ -325,6 +330,7 @@ function renderTable(){
       </td>
       <td><input type="text" class="c-taxid" data-idx="${i}" value="${escapeHtml(c.taxId)}"></td>
       <td><input type="text" class="c-note" data-idx="${i}" value="${escapeHtml(c.note)}"></td>
+      <td style="text-align:center;"><input type="checkbox" class="c-alert" data-idx="${i}" style="width:auto;" ${c.checkoutAlert ? 'checked' : ''}></td>
       <td><button class="row-del" data-idx="${i}">✕</button></td>
     </tr>`;
   });
@@ -345,6 +351,7 @@ custTableWrap.addEventListener('input', (e)=>{
   else if(e.target.classList.contains('c-grade')) customers[i].grade = e.target.value;
   else if(e.target.classList.contains('c-taxid')) customers[i].taxId = e.target.value;
   else if(e.target.classList.contains('c-note')) customers[i].note = e.target.value;
+  else if(e.target.classList.contains('c-alert')) customers[i].checkoutAlert = e.target.checked;
 });
 
 custTableWrap.addEventListener('click', (e)=>{
@@ -383,7 +390,7 @@ document.getElementById('exportExcelBtn').addEventListener('click', ()=>{
   if(!customers.length){ alert('目前沒有客戶資料可匯出'); return; }
   const data = customers.map(c => ({
     '姓名': c.name, '會員號碼': c.memberNo || '', '電話': c.phone, '電話2': c.phone2 || '', '地址': c.address,
-    '會員等級': c.grade, '統編': c.taxId, '備註': c.note
+    '會員等級': c.grade, '統編': c.taxId, '備註': c.note, '結帳提醒': c.checkoutAlert ? '是' : ''
   }));
   const ws = XLSX.utils.json_to_sheet(data);
   const wb = XLSX.utils.book_new();
