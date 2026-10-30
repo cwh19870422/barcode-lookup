@@ -255,7 +255,7 @@
   .cart-actions{display:flex; gap:10px; margin-top:14px; align-items:stretch; background:var(--paper-alt); border:1px solid var(--line); border-radius:16px; padding:10px;}
   .cart-actions .print-group{display:flex; gap:10px; flex:none;}
   .cart-actions button{border:none; font-weight:600; font-size:14px; padding:12px 16px; border-radius:12px; cursor:pointer; font-family:var(--sysfont); white-space:nowrap;}
-  .cart-actions .btn-save{flex:1; font-size:17px; min-height:48px;}
+  .cart-actions .btn-save{flex:1; font-size:15px; min-height:44px;}
   .btn-hold{background:#fff; color:#0071e3; box-shadow:inset 0 0 0 1.5px #0071e3;}
   .btn-clear{background:#fff; color:#ff3b30; box-shadow:inset 0 0 0 1.5px #ff3b30;}
   .btn-print{background:#fff; color:#0071e3; box-shadow:inset 0 0 0 1.5px #0071e3;}
@@ -276,6 +276,15 @@
   table.cust-list tr:last-child td{border-bottom:none;}
 
   #printArea{display:none;}
+  #previewOverlay{display:none; position:fixed; inset:0; z-index:9000; background:rgba(0,0,0,.62); flex-direction:column;}
+  #previewOverlay.on{display:flex;}
+  .pv-bar{display:flex; align-items:center; gap:8px; padding:10px 14px; background:#1d1d1f; color:#fff; flex-wrap:wrap;}
+  .pv-bar button{border:none; border-radius:9px; padding:8px 14px; font:inherit; font-size:14px; font-weight:600; cursor:pointer; background:#fff; color:#1d1d1f;}
+  .pv-bar .pv-pct{min-width:52px; text-align:center; font-size:14px; font-weight:600;}
+  .pv-bar .pv-sp{flex:1;}
+  .pv-bar .pv-go{background:#0071e3; color:#fff;}
+  .pv-scroll{flex:1; overflow:auto; padding:18px; text-align:center;}
+  .pv-sheet{display:inline-block; width:210mm; min-height:297mm; background:#fff; text-align:left; box-shadow:0 6px 30px rgba(0,0,0,.4); box-sizing:border-box; vertical-align:top;}
   @media print{
     body > *{display:none !important;}
     body > #printArea{display:block !important; position:static;}
@@ -443,6 +452,7 @@ body.cust-view .prices{grid-template-columns:minmax(0,1fr) !important; max-width
         <div class="print-group">
           <button class="btn-print" id="printReceiptBtn">列印小張收據</button>
           <button class="btn-print" id="printBtn">列印A4帳單</button>
+          <button class="btn-print" id="previewBtn">預覽</button>
         </div>
         <button class="btn-save" id="checkoutBtn">結帳</button>
       </div>
@@ -498,6 +508,18 @@ body.cust-view .prices{grid-template-columns:minmax(0,1fr) !important; max-width
 </main>
 
 <div id="printArea"></div>
+<div id="previewOverlay">
+  <div class="pv-bar">
+    <button type="button" id="pvOut">－ 縮小</button>
+    <span class="pv-pct" id="pvPct">100%</span>
+    <button type="button" id="pvIn">＋ 放大</button>
+    <button type="button" id="pvFit">符合寬度</button>
+    <span class="pv-sp"></span>
+    <button type="button" class="pv-go" id="pvPrint">列印</button>
+    <button type="button" id="pvClose">關閉</button>
+  </div>
+  <div class="pv-scroll" id="pvScroll"><div class="pv-sheet" id="pvSheet"></div></div>
+</div>
 
 <script>
 let cats = [];
@@ -1500,6 +1522,35 @@ document.getElementById('clearCartBtn').addEventListener('click', ()=>{
   currentTxn = null;
   renderCart();
 });
+
+// A4 預覽：全螢幕顯示帳單，可放大縮小（方便截圖給客人確認）
+let pvZoom = 1;
+function pvApply(z){
+  pvZoom = Math.max(0.4, Math.min(3, z));
+  document.getElementById('pvSheet').style.zoom = pvZoom;
+  document.getElementById('pvPct').textContent = Math.round(pvZoom*100) + '%';
+}
+function pvFitWidth(){
+  const w = document.getElementById('pvScroll').clientWidth - 36;
+  pvApply(w / (210 / 25.4 * 96));
+}
+function openPreview(){
+  if(!cart.length){ alert('清單是空的，先加入商品再預覽'); return; }
+  document.getElementById('pvSheet').innerHTML =
+    renderOrderHtml({...snapshotCart(), date: (currentTxn && currentTxn.date) || new Date().toISOString()});
+  document.getElementById('previewOverlay').classList.add('on');
+  document.getElementById('pvScroll').scrollTop = 0;
+  pvFitWidth();
+}
+function closePreview(){ document.getElementById('previewOverlay').classList.remove('on'); }
+document.getElementById('previewBtn').addEventListener('click', openPreview);
+document.getElementById('pvClose').addEventListener('click', closePreview);
+document.getElementById('pvIn').addEventListener('click', ()=>pvApply(pvZoom + 0.1));
+document.getElementById('pvOut').addEventListener('click', ()=>pvApply(pvZoom - 0.1));
+document.getElementById('pvFit').addEventListener('click', pvFitWidth);
+document.getElementById('pvPrint').addEventListener('click', ()=>{ buildPrintArea(); window.print(); });
+document.addEventListener('keydown', e=>{ if(e.key==='Escape' && document.getElementById('previewOverlay').classList.contains('on')) closePreview(); });
+window.addEventListener('resize', ()=>{ if(document.getElementById('previewOverlay').classList.contains('on')) pvFitWidth(); });
 
 document.getElementById('printBtn').addEventListener('click', ()=>{
   if(!cart.length){ alert('清單是空的，先加入商品再列印'); return; }
