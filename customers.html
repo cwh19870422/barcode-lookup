@@ -82,7 +82,9 @@
     <h3><span class="num">1</span>新增單一客戶</h3>
     <div class="form-grid">
       <input type="text" id="fName" placeholder="姓名">
+      <input type="text" id="fMemberNo" placeholder="會員號碼（例如 A001）">
       <input type="text" id="fPhone" placeholder="電話">
+      <input type="text" id="fPhone2" placeholder="電話2（選填）">
       <input type="text" id="fAddress" class="span2" placeholder="地址">
       <select id="fGrade">
         <option value="A">A 級</option>
@@ -179,13 +181,15 @@ document.getElementById('addBtn').addEventListener('click', ()=>{
   if(!name){ alert('請至少輸入姓名'); return; }
   customers.push({
     name,
+    memberNo: document.getElementById('fMemberNo').value.trim(),
     phone: document.getElementById('fPhone').value.trim(),
+    phone2: document.getElementById('fPhone2').value.trim(),
     address: document.getElementById('fAddress').value.trim(),
     grade: document.getElementById('fGrade').value,
     taxId: document.getElementById('fTaxId').value.trim(),
     note: document.getElementById('fNote').value.trim(),
   });
-  ['fName','fPhone','fAddress','fTaxId','fNote'].forEach(id => document.getElementById(id).value = '');
+  ['fName','fMemberNo','fPhone','fPhone2','fAddress','fTaxId','fNote'].forEach(id => document.getElementById(id).value = '');
   renderTable();
 });
 
@@ -236,7 +240,9 @@ async function handleFiles(fileList){
       const lowerHeaders = headers.map(h => h.toLowerCase());
 
       const cName = findCol(lowerHeaders, ['姓名','名字','name']);
+      const cMemberNo = findCol(lowerHeaders, ['會員號碼','會員編號','memberno']);
       const cPhone = findCol(lowerHeaders, ['電話','手機','phone','tel']);
+      const cPhone2 = findCol(lowerHeaders, ['電話2','電話二','phone2']);
       const cAddress = findCol(lowerHeaders, ['地址','address']);
       const cGrade = findCol(lowerHeaders, ['會員等級','等級','grade']);
       const cTaxId = findCol(lowerHeaders, ['統編','統一編號','taxid']);
@@ -253,7 +259,9 @@ async function handleFiles(fileList){
         if(!['A','B','C','D'].includes(grade)) grade = 'A';
         customers.push({
           name: String(name).trim(),
+          memberNo: cMemberNo>-1 ? String(r[cMemberNo]||'').trim() : '',
           phone: cPhone>-1 ? String(r[cPhone]||'').trim() : '',
+          phone2: cPhone2>-1 ? String(r[cPhone2]||'').trim() : '',
           address: cAddress>-1 ? String(r[cAddress]||'').trim() : '',
           grade,
           taxId: cTaxId>-1 ? String(r[cTaxId]||'').trim() : '',
@@ -277,12 +285,14 @@ function renderTable(){
     return;
   }
   let html = `<table class="cust-edit"><thead><tr>
-    <th>姓名</th><th>電話</th><th>地址</th><th style="width:64px;">等級</th><th>統編</th><th>備註</th><th style="width:24px;"></th>
+    <th>姓名</th><th>會員號碼</th><th>電話</th><th>電話2</th><th>地址</th><th style="width:64px;">等級</th><th>統編</th><th>備註</th><th style="width:24px;"></th>
   </tr></thead><tbody>`;
   customers.forEach((c,i)=>{
     html += `<tr data-idx="${i}">
       <td><input type="text" class="c-name" data-idx="${i}" value="${escapeHtml(c.name)}"></td>
+      <td><input type="text" class="c-memberno" data-idx="${i}" value="${escapeHtml(c.memberNo)}"></td>
       <td><input type="text" class="c-phone" data-idx="${i}" value="${escapeHtml(c.phone)}"></td>
+      <td><input type="text" class="c-phone2" data-idx="${i}" value="${escapeHtml(c.phone2)}"></td>
       <td><input type="text" class="c-address" data-idx="${i}" value="${escapeHtml(c.address)}"></td>
       <td>
         <select class="c-grade" data-idx="${i}">
@@ -303,6 +313,8 @@ custTableWrap.addEventListener('input', (e)=>{
   if(idx===undefined) return;
   const i = parseInt(idx,10);
   if(e.target.classList.contains('c-name')) customers[i].name = e.target.value;
+  else if(e.target.classList.contains('c-memberno')) customers[i].memberNo = e.target.value;
+  else if(e.target.classList.contains('c-phone2')) customers[i].phone2 = e.target.value;
   else if(e.target.classList.contains('c-phone')) customers[i].phone = e.target.value;
   else if(e.target.classList.contains('c-address')) customers[i].address = e.target.value;
   else if(e.target.classList.contains('c-grade')) customers[i].grade = e.target.value;
@@ -345,7 +357,7 @@ document.getElementById('saveCloudBtn').addEventListener('click', async ()=>{
 document.getElementById('exportExcelBtn').addEventListener('click', ()=>{
   if(!customers.length){ alert('目前沒有客戶資料可匯出'); return; }
   const data = customers.map(c => ({
-    '姓名': c.name, '電話': c.phone, '地址': c.address,
+    '姓名': c.name, '會員號碼': c.memberNo || '', '電話': c.phone, '電話2': c.phone2 || '', '地址': c.address,
     '會員等級': c.grade, '統編': c.taxId, '備註': c.note
   }));
   const ws = XLSX.utils.json_to_sheet(data);
