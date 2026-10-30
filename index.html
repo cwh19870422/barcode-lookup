@@ -1589,6 +1589,10 @@ document.getElementById('checkoutBtn').addEventListener('click', ()=>{
   cart = []; currentTxn = null; selectedCartKey = null;
   resetOrderCustomerUI();
   renderCart(); updateEditBanner();
+  // 客戶若勾了「結帳提醒」，結帳後跳出提醒
+  if(snap.customer && snap.customer.checkoutAlert){
+    setTimeout(()=> alert(`${snap.customer.name}\n帳單金額 $${fmt(snap.total)}　請登記`), 80);
+  }
 });
 
 function resetOrderCustomerUI(){
