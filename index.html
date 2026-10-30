@@ -810,7 +810,7 @@ function handlePriceCellCopy(cell, e){
   };
   if(e && (e.ctrlKey || e.metaKey)){
     e.preventDefault();
-    const text = `${name} ${value}`;
+    const text = `${name} $${value}`;
     const i = multiCopy.findIndex(x => x.name === name);
     let label;
     if(i >= 0 && multiCopy[i].value === value){
@@ -826,7 +826,7 @@ function handlePriceCellCopy(cell, e){
     return;
   }
   multiCopy = []; updateMultiBar();
-  copyText(`${name} ${value}`, ()=>flash('已複製'));
+  copyText(`${name} $${value}`, ()=>flash('已複製'));
 }
 
 function toggleHistoryPanel(btn){
