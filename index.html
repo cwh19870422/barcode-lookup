@@ -176,9 +176,8 @@
   .cart-totals .tline b{color:var(--ink); font-size:16px; margin-left:4px;}
   .quick-fee-row{display:grid; grid-template-columns:max-content repeat(6, minmax(0,112px)); justify-content:start; align-items:center; gap:8px; margin-top:12px;}
   .quick-fee-label{font-size:12px; color:var(--secondary); font-weight:600; margin-right:2px;}
-  .quick-fee-btn{border:1px solid #e3e3e8; background:#f7f7f9; color:var(--ink); font-weight:600; font-size:13.5px; height:40px; padding:0 6px; border-radius:10px; cursor:pointer; font-family:var(--sysfont); white-space:nowrap; display:flex; align-items:center; justify-content:center;}
-  .quick-fee-btn.refund{color:var(--ink);}
-  .quick-fee-btn.disc-btn{color:var(--ink);}
+  .quick-fee-btn{border:1px solid #e3e3e8; background:#f7f7f9; color:#5f6570; font-weight:600; font-size:13.5px; height:40px; padding:0 6px; border-radius:10px; cursor:pointer; font-family:var(--sysfont); white-space:nowrap; display:flex; align-items:center; justify-content:center;}
+  .quick-fee-btn.refund, .quick-fee-btn.disc-btn{color:#5f6570;}
   @media (max-width:640px){
     .quick-fee-row{grid-template-columns:repeat(3, minmax(0,1fr)); gap:8px;}
     .quick-fee-label{grid-column:1 / -1; margin:0;}
@@ -260,6 +259,15 @@
   .cart-title-left{flex:1; min-width:0; margin-right:12px;}
   .cart-cust-note{flex:1 1 160px; min-width:0; text-align:center; font-size:14px; font-weight:700; color:#c2410c; line-height:1.35; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; overflow-wrap:anywhere;}
   .cart-cust-note:empty{display:none;}
+  @media (max-width:640px){
+    .cart-title-row{display:grid; grid-template-columns:max-content 1fr auto; column-gap:8px; row-gap:8px; align-items:center;}
+    .cart-title-left{display:contents;}
+    .cart-title-row .cart-title{grid-column:1; grid-row:1; white-space:nowrap;}
+    .cart-title-row .cart-count{grid-column:2; grid-row:1;}
+    .cart-title-row .op-sel{grid-column:1 / 3; grid-row:2; justify-self:start;}
+    .cart-title-row .cart-head-actions{grid-column:3; grid-row:2; justify-self:end;}
+    .cart-title-row .cart-cust-note{grid-column:1 / -1; grid-row:3; text-align:center; flex:none;}
+  }
   .op-sel.empty{color:#8e8e93; border-color:#c7c7cc;}
   .cart-head-actions{display:flex; gap:8px; align-items:center;}
   .cart-head-actions button{border:none; font-weight:600; font-size:13px; padding:7px 14px; border-radius:10px; cursor:pointer; font-family:var(--sysfont); white-space:nowrap;}
