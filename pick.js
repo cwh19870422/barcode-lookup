@@ -17,7 +17,8 @@ const S = {
   unsub: [],
   confirmDel: null,
   pendingImgs: [],
-  needRender: false
+  needRender: false,
+  closed: false          // 按「暫存」後先把編輯區收起來
 };
 const cur = () => S.slips.get(S.curId);
 
@@ -26,7 +27,8 @@ const panel = $('tab-pick');
 panel.innerHTML = `
 <div class="pk-grid">
   <aside class="pk-side" id="pkSide"></aside>
-  <div class="pk-main">
+  <div class="pk-main" id="pkMainWrap">
+    <div class="pk-card pk-closed" id="pkClosed"></div>
     <div class="pk-cust">
       <div class="search-box">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
@@ -200,9 +202,9 @@ function renderSide(){
     <button class="pk-new" type="button" data-pk="new">＋ 新撿貨單</button>
     <div class="pk-seg"><button type="button" data-pktab="draft" class="${S.tab === 'draft' ? 'on' : ''}">進行中 ${drafts.filter(hasContent).length}</button><button type="button" data-pktab="done" class="${S.tab === 'done' ? 'on' : ''}">已完成 ${dones.length}</button></div>
     ${list.length ? list.map(s => { const k = s.items.filter(i => i.reserved).length;
-      return `<button type="button" class="pk-ord${s.id === S.curId ? ' cur' : ''}" data-pkopen="${s.id}"><span class="t">${esc(s.customer || '（未填客戶）')}<span class="pk-pill">${esc(s.location)}</span>${s.status === 'done' ? '<span class="pk-pill done">已完成</span>' : ''}</span><span class="m">${s.items.length} 項 · 已留 ${k}/${s.items.length} · ${ts(s.updatedAt)}</span></button>`; }).join('')
+      return `<button type="button" class="pk-ord${s.id === S.curId && !S.closed ? ' cur' : ''}" data-pkopen="${s.id}"><span class="t">${esc(s.customer || '（未填客戶）')}<span class="pk-pill">${esc(s.location)}</span>${s.status === 'done' ? '<span class="pk-pill done">已完成</span>' : ''}</span><span class="m">${s.items.length} 項 · 已留 ${k}/${s.items.length} · ${ts(s.updatedAt)}</span></button>`; }).join('')
       : `<div class="pk-empty">${S.tab === 'done' ? '還沒有完成的單' : '沒有進行中的單'}</div>`}
-    ${canDelete() && S.slips.has(S.curId) && hasContent(cur()) ? `<button class="pk-b ${S.confirmDel === S.curId ? 'red' : ''}" type="button" data-pk="del">${S.confirmDel === S.curId ? '確定刪除這張單？' : '刪除這張單'}</button>` : ''}
+    ${canDelete() && !S.closed && S.slips.has(S.curId) && hasContent(cur()) ? `<button class="pk-b ${S.confirmDel === S.curId ? 'red' : ''}" type="button" data-pk="del">${S.confirmDel === S.curId ? '確定刪除這張單？' : '刪除這張單'}</button>` : ''}
     <p class="pk-hint">單子 3 台電腦即時同步。</p>`;
 }
 function renderLocs(){
@@ -250,7 +252,16 @@ function renderRules(){
   const list = S.rules.slice().sort((a, b) => (b.on - a.on) || (b.count - a.count));
   $('pkRules').innerHTML = list.length ? list.map(r => `<span class="pk-rule${r.on ? '' : ' off'}">${esc(r.w)} <span class="c">${r.on ? '自動' : '刪過' + r.count + '次'}</span><button type="button" data-w="${esc(r.w)}" data-act="toggle">${r.on ? '停用' : '啟用'}</button><button type="button" data-w="${esc(r.w)}" data-act="remove">移除</button></span>`).join('') : '<span class="pk-hint">目前還沒有學到的字。</span>';
 }
+function renderClosed(){
+  $('pkMainWrap').classList.toggle('is-closed', S.closed);
+  if(!S.closed) return;
+  const s = cur();
+  $('pkClosed').innerHTML = `<div class="pk-closed-t">✓ 已暫存${s && s.customer ? '「' + esc(s.customer) + '」' : ''}</div>
+    <p class="pk-hint">點${window.innerWidth <= 760 ? '上面' : '左邊'}的單子可以繼續編輯，或開一張新的。</p>
+    <div class="pk-row" style="justify-content:center"><button class="pk-b" type="button" data-pkreopen>繼續編輯這張</button><button class="pk-b pri" type="button" data-pknew>＋ 新撿貨單</button></div>`;
+}
 function renderAll(){
+  renderClosed();
   $('pkCust').value = cur().customer || '';
   renderGrade(); renderLocs(); renderItems(); renderRules(); renderSide(); renderCustList();
 }
@@ -295,14 +306,14 @@ $('pkSide').addEventListener('click', async e => {
   if(t.dataset.pktab){ S.tab = t.dataset.pktab; S.confirmDel = null; renderSide(); return; }
   if(t.dataset.pkopen){ const old = cur(); if(old && !hasContent(old) && !S.saved.has(old.id)) S.slips.delete(old.id);
     clearTimeout(saveT); if(old && hasContent(old)) saveNow(old);
-    S.curId = t.dataset.pkopen; S.confirmDel = null; renderAll(); return; }
+    S.curId = t.dataset.pkopen; S.closed = false; S.confirmDel = null; renderAll(); return; }
   if(t.dataset.pk === 'new'){ const old = cur(); clearTimeout(saveT); if(old && hasContent(old)) saveNow(old); else if(old && !S.saved.has(old.id)) S.slips.delete(old.id);
-    const n = newSlip(); S.slips.set(n.id, n); S.curId = n.id; S.tab = 'draft'; S.confirmDel = null; renderAll(); $('pkCust').focus(); return; }
+    const n = newSlip(); S.slips.set(n.id, n); S.curId = n.id; S.closed = false; S.tab = 'draft'; S.confirmDel = null; renderAll(); $('pkCust').focus(); return; }
   if(t.dataset.pk === 'del'){
     if(S.confirmDel !== S.curId){ S.confirmDel = S.curId; renderSide(); return; }
     const id = S.curId; S.confirmDel = null; clearTimeout(saveT);
     try{ if(S.saved.has(id)) await FB.deletePickslip(id); }catch(err){ toast('刪除失敗：' + (err.message || err)); return; }
-    S.slips.delete(id); S.saved.delete(id); pickDefault(); renderAll(); toast('已刪除');
+    S.slips.delete(id); S.saved.delete(id); S.closed = false; pickDefault(); renderAll(); toast('已刪除');
   }
 });
 $('pkCust').addEventListener('input', e => { cur().customer = e.target.value; renderGrade(); touch(); });
@@ -399,7 +410,11 @@ $('pkRuleForm').addEventListener('submit', e => { e.preventDefault(); const w = 
   $('pkRuleIn').value = ''; saveRules(); renderRules(); toast('已加入「' + w + '」'); });
 $('pkApplyRules').addEventListener('click', () => { let c = 0; cur().items.forEach(i => { const s = simplify(i.name); if(s !== i.name){ i.name = s; c++; } }); renderItems(); touch(); toast(c ? '簡化了 ' + c + ' 項' : '沒有需要簡化的'); });
 
-$('pkSave').addEventListener('click', async () => { if(!hasContent(cur())){ toast('這張單還是空的'); return; } clearTimeout(saveT); cur().updatedAt = Date.now(); await saveNow(); renderSide(); toast('已暫存'); });
+$('pkSave').addEventListener('click', async () => { if(!hasContent(cur())){ toast('這張單還是空的'); return; } clearTimeout(saveT); cur().updatedAt = Date.now(); await saveNow(); S.closed = true; S.confirmDel = null; $('pkOutSheet').style.display = 'none'; renderAll(); window.scrollTo({ top: 0, behavior: 'smooth' }); toast('已暫存'); });
+$('pkClosed').addEventListener('click', e => {
+  if(e.target.closest('[data-pkreopen]')){ S.closed = false; renderAll(); }
+  if(e.target.closest('[data-pknew]')) $('pkSide').querySelector('[data-pk="new"]').click();
+});
 $('pkDone').addEventListener('click', async () => {
   const s = cur(); if(!hasContent(s)){ toast('這張單還是空的'); return; }
   s.status = s.status === 'done' ? 'draft' : 'done'; s.updatedAt = Date.now(); clearTimeout(saveT); await saveNow(s);
