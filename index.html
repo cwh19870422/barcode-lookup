@@ -156,7 +156,7 @@
   .order-card .card-top{margin-bottom:8px;}
 
   .cart-section{background:#fff; border-radius:16px; padding:18px 20px; box-shadow:var(--shadow); margin-top:20px;}
-  .cart-title-row{display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;}
+  .cart-title-row{display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; position:sticky; top:var(--ord-top, 62px); z-index:35; background:#fff; padding:10px 0; margin-top:-10px; border-bottom:1px solid var(--line);}
   .cart-title{font-size:17px; font-weight:700;}
   .cart-count{font-size:12px; color:var(--secondary);}
   .price-source-row{display:flex; align-items:center; gap:10px; background:var(--paper); border-radius:10px; padding:10px 12px; margin-bottom:14px; flex-wrap:wrap;}
@@ -1882,7 +1882,20 @@ custListSearch.addEventListener('input', renderCustomerList);
 function updateStickyOffset(){
   const h = window.matchMedia('(max-width:640px)').matches ? 0 : document.getElementById('tabsStickyWrap').offsetHeight;
   document.documentElement.style.setProperty('--tabs-h', h + 'px');
+  updateOrderTop();
 }
+// 出貨清單標題列（打單人員、暫存訂單…）固定在上方控制列的正下方
+function updateOrderTop(){
+  const oc = document.getElementById('orderStickyControls');
+  const tabsH = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--tabs-h')) || 0;
+  const ch = oc && oc.offsetParent !== null ? oc.offsetHeight : 0;
+  document.documentElement.style.setProperty('--ord-top', (tabsH + ch) + 'px');
+}
+(function(){
+  const oc = document.getElementById('orderStickyControls');
+  if(oc && window.ResizeObserver) new ResizeObserver(updateOrderTop).observe(oc);
+  document.querySelectorAll('.tab-btn').forEach(b => b.addEventListener('click', ()=> setTimeout(updateOrderTop, 50)));
+})();
 window.addEventListener('resize', updateStickyOffset);
 updateStickyOffset();
 if(window.matchMedia('(max-width:640px)').matches){ const oi = document.getElementById('orderSearchInput'); if(oi) oi.placeholder = '搜尋商品／條碼／掃描'; }
