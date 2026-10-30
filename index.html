@@ -1654,7 +1654,8 @@ document.getElementById('checkoutBtn').addEventListener('click', ()=>{
   resetOrderCustomerUI();
   renderCart(); updateEditBanner();
   // 客戶若勾了「結帳提醒」，結帳後跳出提醒
-  if(snap.customer && snap.customer.checkoutAlert){
+  const freshCust = snap.customer && snap.customer.id ? customers.find(c => c.id === snap.customer.id) : null;
+  if((freshCust || snap.customer) && (freshCust || snap.customer).checkoutAlert){
     setTimeout(()=> showCheckoutAlert(snap.customer.name, snap.total), 80);
   }
 });
