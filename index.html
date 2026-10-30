@@ -276,6 +276,13 @@
   table.cust-list tr:last-child td{border-bottom:none;}
 
   #printArea{display:none;}
+  #ckAlert{display:none; position:fixed; inset:0; z-index:9500; background:rgba(0,0,0,.55); align-items:center; justify-content:center; padding:20px;}
+  #ckAlert.on{display:flex;}
+  .ck-card{background:#fff; border-radius:22px; padding:44px 48px 34px; text-align:center; box-shadow:0 18px 60px rgba(0,0,0,.4); max-width:92vw;}
+  .ck-name{font-size:22px; color:#6e6e73; font-weight:600; margin-bottom:14px;}
+  .ck-msg{font-size:clamp(30px,6vw,52px); font-weight:800; color:#1d1d1f; line-height:1.3;}
+  .ck-msg .ck-amt{color:#ff3b30;}
+  .ck-ok{margin-top:26px; border:none; background:#0071e3; color:#fff; font:inherit; font-size:20px; font-weight:700; padding:12px 44px; border-radius:14px; cursor:pointer;}
   @page{size:A4; margin:0;}
   #previewOverlay{display:none; position:fixed; inset:0; z-index:9000; background:rgba(0,0,0,.62); flex-direction:column;}
   #previewOverlay.on{display:flex;}
@@ -513,6 +520,7 @@ body.cust-view .prices{grid-template-columns:minmax(0,1fr) !important; max-width
 </main>
 
 <div id="printArea"></div>
+<div id="ckAlert"><div class="ck-card"><div class="ck-msg" id="ckMsg"></div><button type="button" class="ck-ok" id="ckOk">確定</button></div></div>
 <div id="previewOverlay">
   <div class="pv-bar">
     <button type="button" id="pvOut">－ 縮小</button>
@@ -1578,6 +1586,15 @@ document.getElementById('printReceiptBtn').addEventListener('click', ()=>{
 });
 
 // 結帳：存進該客人的交易紀錄（編輯舊訂單時則覆蓋原訂單），存完清空準備下一張單
+function showCheckoutAlert(name, total){
+  document.getElementById('ckMsg').innerHTML = '帳單金額 <span class="ck-amt">$' + fmt(total) + '</span> 請登記';
+  document.getElementById('ckAlert').classList.add('on');
+  document.getElementById('ckOk').focus();
+}
+function closeCheckoutAlert(){ document.getElementById('ckAlert').classList.remove('on'); }
+document.getElementById('ckOk').addEventListener('click', closeCheckoutAlert);
+document.addEventListener('keydown', e=>{ if((e.key==='Escape'||e.key==='Enter') && document.getElementById('ckAlert').classList.contains('on')){ e.preventDefault(); closeCheckoutAlert(); } });
+
 document.getElementById('checkoutBtn').addEventListener('click', ()=>{
   if(!cart.length){ alert('清單是空的，沒有可結帳的內容'); return; }
   const editing = !!currentTxn;
@@ -1591,7 +1608,7 @@ document.getElementById('checkoutBtn').addEventListener('click', ()=>{
   renderCart(); updateEditBanner();
   // 客戶若勾了「結帳提醒」，結帳後跳出提醒
   if(snap.customer && snap.customer.checkoutAlert){
-    setTimeout(()=> alert(`${snap.customer.name}\n帳單金額 $${fmt(snap.total)}　請登記`), 80);
+    setTimeout(()=> showCheckoutAlert(snap.customer.name, snap.total), 80);
   }
 });
 
