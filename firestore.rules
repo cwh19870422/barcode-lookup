@@ -23,6 +23,17 @@ service cloud.firestore {
       allow delete: if isBoss();
     }
 
+    // 撿貨單：老闆、員工都能讀、新增、修改；只有老闆能刪除
+    match /pickslips/{id} {
+      allow read, create, update: if signedIn();
+      allow delete: if isBoss();
+    }
+
+    // 撿貨單簡化詞庫：老闆、員工都能讀寫
+    match /pickrules/{id} {
+      allow read, write: if signedIn();
+    }
+
     // 其他一律不開放
     match /{document=**} {
       allow read, write: if false;
