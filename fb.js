@@ -119,6 +119,16 @@ const FB = {
   },
   savePickRules(r) { return setDoc(doc(db, 'pickrules', 'main'), clean(r)); },
 
+  // ---- 暫存訂單（heldOrders）：所有電腦共用 ----
+  listenHeld(cb, onErr) {
+    return onSnapshot(collection(db, 'heldOrders'), snap => cb(snap.docs.map(d => ({ ...d.data(), id: d.id }))), e => onErr && onErr(e));
+  },
+  saveHeld(h) {
+    const { id, ...rest } = h;
+    return setDoc(doc(db, 'heldOrders', id), clean(rest));
+  },
+  deleteHeld(id) { return deleteDoc(doc(db, 'heldOrders', id)); },
+
   // ---- 一次性：把舊的 customers.json / transactions/*.json 匯入 ----
   async importLegacy(customers, txns, onProgress) {
     const ops = [];
