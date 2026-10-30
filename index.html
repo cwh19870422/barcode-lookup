@@ -551,6 +551,12 @@ function fmt(n){
   if(isNaN(num)) return '—';
   return num.toLocaleString('en-US', {maximumFractionDigits:0});
 }
+function fmtCost(n){
+  if(n===null || n===undefined || n==='' || (typeof n==='number' && isNaN(n))) return '—';
+  const num = Number(n);
+  if(isNaN(num)) return '—';
+  return num.toLocaleString('en-US', {maximumFractionDigits:1});
+}
 function fmtNum(n){
   const num = Number(n);
   return isNaN(num) ? 0 : num;
@@ -615,7 +621,7 @@ function priceCellsHtml(r, q){
       <div class="price-cell" data-name="${escapeHtml(name)}" data-value="${escapeHtml(fmt(priceB))}"><div class="lbl">2</div><div class="val">${fmt(priceB)}</div></div>
       <div class="price-cell" data-name="${escapeHtml(name)}" data-value="${escapeHtml(fmt(priceC))}"><div class="lbl">3</div><div class="val">${fmt(priceC)}</div></div>
       <div class="price-cell" data-name="${escapeHtml(name)}" data-value="${escapeHtml(fmt(priceD))}"><div class="lbl">4</div><div class="val">${fmt(priceD)}</div></div>
-      <div class="price-cell cost" data-name="${escapeHtml(name)}" data-value="${escapeHtml(fmt(cost))}"><div class="lbl">本</div><div class="val">${fmt(cost)}</div></div>
+      <div class="price-cell cost" data-name="${escapeHtml(name)}" data-value="${escapeHtml(fmtCost(cost))}"><div class="lbl">本</div><div class="val">${fmtCost(cost)}</div></div>
     </div>`;
 }
 
@@ -788,7 +794,7 @@ function toggleHistoryPanel(btn){
           <td>${dateStr}</td>
           <td>${fmt(h.qty)}</td>
           <td>${fmt(h.amount)}</td>
-          <td>${fmt(h.cost)}</td>
+          <td>${fmtCost(h.cost)}</td>
         </tr>`;
       });
       html += `</tbody></table>`;
@@ -814,7 +820,7 @@ function toggleHistoryPanel(btn){
         <td>${dateStr}</td>
         <td>${fmt(h.qty)}</td>
         <td>${fmt(h.amount)}</td>
-        <td>${fmt(h.cost)}</td>
+        <td>${fmtCost(h.cost)}</td>
       </tr>`;
     });
     html += `</tbody></table>`;
