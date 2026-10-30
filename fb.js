@@ -105,6 +105,20 @@ const FB = {
   },
   deleteTxn(id) { return deleteDoc(doc(db, 'transactions', id)); },
 
+  // ---- 撿貨單（pickslips）＋ 簡化詞庫（pickrules/main）----
+  listenPickslips(cb, onErr) {
+    return onSnapshot(collection(db, 'pickslips'), snap => cb(snap.docs.map(d => ({ ...d.data(), id: d.id }))), e => onErr && onErr(e));
+  },
+  savePickslip(s) {
+    const { id, ...rest } = s;
+    return setDoc(doc(db, 'pickslips', id), clean(rest));
+  },
+  deletePickslip(id) { return deleteDoc(doc(db, 'pickslips', id)); },
+  listenPickRules(cb, onErr) {
+    return onSnapshot(doc(db, 'pickrules', 'main'), d => cb(d.exists() ? d.data() : { words: [] }), e => onErr && onErr(e));
+  },
+  savePickRules(r) { return setDoc(doc(db, 'pickrules', 'main'), clean(r)); },
+
   // ---- 一次性：把舊的 customers.json / transactions/*.json 匯入 ----
   async importLegacy(customers, txns, onProgress) {
     const ops = [];
