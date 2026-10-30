@@ -251,6 +251,9 @@
   .txn-detail .txn-actions{margin-top:8px; display:flex; justify-content:flex-end;}
   .cart-title-left{display:flex; align-items:center; gap:10px; flex-wrap:wrap;}
   .op-sel{font:inherit; font-size:13px; font-weight:600; box-sizing:border-box; height:32px; min-width:112px; padding:0 8px; border:1.5px solid #1d1d1f; border-radius:8px; background:#fff; color:#1d1d1f;}
+  .cart-title-left{flex:1; min-width:0; margin-right:12px;}
+  .cart-cust-note{flex:1 1 160px; min-width:0; font-size:14px; font-weight:700; color:#c2410c; line-height:1.35; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; overflow-wrap:anywhere;}
+  .cart-cust-note:empty{display:none;}
   .op-sel.empty{color:#8e8e93; border-color:#c7c7cc;}
   .cart-head-actions{display:flex; gap:8px; align-items:center;}
   .cart-head-actions button{border:none; font-weight:600; font-size:13px; padding:7px 14px; border-radius:10px; cursor:pointer; font-family:var(--sysfont); white-space:nowrap;}
@@ -443,6 +446,7 @@ body.cust-view .prices{grid-template-columns:minmax(0,1fr) !important; max-width
       <div class="cart-title-row">
         <div class="cart-title-left"><div class="cart-title">出貨清單</div><div class="cart-count" id="cartCount">0 項</div>
           <select id="operatorSel" class="op-sel" aria-label="打單人員"><option value="">打單人員</option><option>六六</option><option>宜惠</option><option>小豪</option><option>文軒</option><option>文嘉</option><option>小蔚</option></select>
+          <span class="cart-cust-note" id="cartCustNote"></span>
         </div>
         <div class="cart-head-actions">
           <button class="btn-hold" id="holdCartBtn">暫存訂單</button>
@@ -1003,10 +1007,12 @@ function selectCustomer(c){
   const sel = document.getElementById('priceSourceSelect');
   if(!cart.length){ sel.value = 'grade'; }
   applyPriceSourceToCart();
+  updateCartNote();
 }
 
 document.getElementById('changeCustBtn').addEventListener('click', ()=>{
   selectedCustomer = null;
+  updateCartNote();
   custInfoBar.style.display = 'none';
   custPickerWrap.style.display = 'block'; document.querySelector('#custPickerWrap .cust-row').appendChild(document.getElementById('priceSrcSlotPicker'));
   custSearch.focus();
@@ -1364,7 +1370,18 @@ function lastPurchaseCellHtml(it){
   return `<div class="last-price" title="${escapeHtml((h.customer || '未指定客戶') + ' · ' + ymd(h.date))}">${fmt(h.unitPrice)}</div><div class="last-sub">${sub}</div>`;
 }
 
+// 出貨清單標題列顯示目前客戶的備註（只顯示在畫面上，不印在帳單）
+function updateCartNote(){
+  const el = document.getElementById('cartCustNote');
+  if(!el) return;
+  const c = selectedCustomer;
+  const fresh = c && c.id ? customers.find(x => x.id === c.id) : null;
+  const note = String(((fresh || c || {}).note) || '').trim();
+  el.textContent = note ? ('📌 ' + note) : '';
+  el.title = note;
+}
 function renderCart(){
+  updateCartNote();
   updateEditBanner();
   document.getElementById('cartCount').textContent = cart.length + ' 項';
   if(!cart.length){
@@ -1662,6 +1679,7 @@ document.getElementById('checkoutBtn').addEventListener('click', ()=>{
 
 function resetOrderCustomerUI(){
   selectedCustomer = null;
+  updateCartNote();
   custInfoBar.style.display = 'none';
   custPickerWrap.style.display = 'block'; document.querySelector('#custPickerWrap .cust-row').appendChild(document.getElementById('priceSrcSlotPicker'));
 }
