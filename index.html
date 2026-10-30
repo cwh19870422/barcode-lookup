@@ -276,6 +276,7 @@
   table.cust-list tr:last-child td{border-bottom:none;}
 
   #printArea{display:none;}
+  @page{size:A4; margin:0;}
   #previewOverlay{display:none; position:fixed; inset:0; z-index:9000; background:rgba(0,0,0,.62); flex-direction:column;}
   #previewOverlay.on{display:flex;}
   .pv-bar{display:flex; align-items:center; gap:8px; padding:10px 14px; background:#1d1d1f; color:#fff; flex-wrap:wrap;}
@@ -287,7 +288,8 @@
   .pv-sheet{display:inline-block; width:210mm; min-height:297mm; background:#fff; text-align:left; box-shadow:0 6px 30px rgba(0,0,0,.4); box-sizing:border-box; vertical-align:top;}
   @media print{
     body > *{display:none !important;}
-    body > #printArea{display:block !important; position:static;}
+    body > #printArea{display:block !important; position:static; padding:10mm 8mm; box-sizing:border-box;}
+    body > #printArea.rc{padding:0;}
   }
 .cv-btn{margin-left:auto;font:inherit;font-size:13px;font-weight:600;box-sizing:border-box;height:32px;min-width:112px;padding:0 12px;border-radius:8px;border:1.5px solid #1d1d1f;background:#fff;color:#1d1d1f;cursor:pointer;white-space:nowrap}
 .cv-btn+.sort-sel{margin-left:8px}
@@ -1748,7 +1750,9 @@ function renderReceiptHtml(o){
 
 // 列印：收據用 80mm 紙張尺寸（無邊界、長度自動），出貨單維持原本 A4 設定
 function printHtml(html, receipt){
-  document.getElementById('printArea').innerHTML = html;
+  const pa = document.getElementById('printArea');
+  pa.innerHTML = html;
+  pa.classList.toggle('rc', !!receipt);
   let st = null;
   if(receipt){
     st = document.createElement('style');
