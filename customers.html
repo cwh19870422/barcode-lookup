@@ -55,6 +55,10 @@
   .actions-row button.primary{background:var(--blue); color:#fff;}
   .actions-row button.danger{background:rgba(255,59,48,0.1); color:var(--red);}
 
+  .cust-find{display:flex; align-items:center; gap:10px; margin-top:6px;}
+  .cust-find input{flex:1; min-width:0; border:1.5px solid var(--line); background:#fff; border-radius:10px; padding:10px 12px; font-family:var(--sysfont); font-size:14px;}
+  .cust-find input:focus{outline:none; border-color:#0071e3;}
+  #custFilterCount{font-size:12px; color:var(--secondary); white-space:nowrap;}
   table.cust-edit{width:100%; border-collapse:collapse; margin-top:14px;}
   table.cust-edit th{text-align:left; font-size:11px; color:var(--secondary); font-weight:600; padding:6px 4px; border-bottom:1px solid var(--line);}
   table.cust-edit td{padding:6px 4px; border-bottom:1px solid var(--line); font-size:12.5px;}
@@ -100,7 +104,7 @@
 
   <div class="step">
     <h3><span class="num">2</span>匯入 Excel（選填）</h3>
-    <p>欄位需包含：姓名、電話、地址、會員等級（A/B/C/D）、統編、備註。可一次匯入多筆，會加到下方清單中。</p>
+    <p>欄位需包含：姓名；選填：會員號碼、電話、電話2、地址、會員等級（A/B/C/D）、統編、備註。可一次匯入多筆，會加到下方清單中。</p>
     <div class="drop-zone" id="dropZone">
       <div><strong>拖曳 Excel 檔案到這裡</strong>，或點擊選擇檔案</div>
       <div style="margin-top:4px;">支援 .xls / .xlsx</div>
@@ -111,6 +115,10 @@
 
   <div class="step">
     <h3><span class="num">3</span>目前清單（可直接編輯／刪除）</h3>
+    <div class="cust-find">
+      <input type="text" id="custFilter" placeholder="🔍 搜尋客戶：姓名、會員號碼、電話、地址、備註…" autocomplete="off">
+      <span id="custFilterCount"></span>
+    </div>
     <div id="custTableWrap"></div>
     <div class="actions-row">
       <button class="danger" id="clearAllBtn">清空全部</button>
@@ -279,15 +287,31 @@ async function handleFiles(fileList){
 
 const custTableWrap = document.getElementById('custTableWrap');
 
+const custFilterEl = document.getElementById('custFilter');
+const custFilterCount = document.getElementById('custFilterCount');
+const normKey = v => String(v||'').toLowerCase().replace(/[\s\-()（）]/g,'');
+function custMatches(c, q){
+  if(!q) return true;
+  const nq = normKey(q);
+  return [c.name, c.memberNo, c.phone, c.phone2, c.address, c.note, c.taxId].some(v => String(v||'').toLowerCase().includes(q) || (nq && normKey(v).includes(nq)));
+}
 function renderTable(){
   if(!customers.length){
     custTableWrap.innerHTML = `<div class="empty-note">目前清單是空的，請新增或匯入客戶</div>`;
+    custFilterCount.textContent = '';
+    return;
+  }
+  const q = custFilterEl.value.trim().toLowerCase();
+  const shown = customers.map((c,i)=>({c,i})).filter(x => custMatches(x.c, q));
+  custFilterCount.textContent = q ? ('符合 ' + shown.length + ' / 共 ' + customers.length + ' 位') : ('共 ' + customers.length + ' 位');
+  if(!shown.length){
+    custTableWrap.innerHTML = `<div class="empty-note">沒有符合「${escapeHtml(custFilterEl.value.trim())}」的客戶</div>`;
     return;
   }
   let html = `<table class="cust-edit"><thead><tr>
     <th>姓名</th><th>會員號碼</th><th>電話</th><th>電話2</th><th>地址</th><th style="width:64px;">等級</th><th>統編</th><th>備註</th><th style="width:24px;"></th>
   </tr></thead><tbody>`;
-  customers.forEach((c,i)=>{
+  shown.forEach(({c,i})=>{
     html += `<tr data-idx="${i}">
       <td><input type="text" class="c-name" data-idx="${i}" value="${escapeHtml(c.name)}"></td>
       <td><input type="text" class="c-memberno" data-idx="${i}" value="${escapeHtml(c.memberNo)}"></td>
@@ -308,6 +332,7 @@ function renderTable(){
   custTableWrap.innerHTML = html;
 }
 
+custFilterEl.addEventListener('input', renderTable);
 custTableWrap.addEventListener('input', (e)=>{
   const idx = e.target.dataset.idx;
   if(idx===undefined) return;
