@@ -1591,7 +1591,7 @@ function pvFitWidth(){
 function openPreview(){
   if(!cart.length){ alert('清單是空的，先加入商品再預覽'); return; }
   document.getElementById('pvSheet').innerHTML =
-    renderOrderHtml({...snapshotCart(), date: (currentTxn && currentTxn.date) || new Date().toISOString(), operator: (currentTxn && currentTxn.operator) || document.getElementById('operatorSel').value});
+    renderOrderHtml({...snapshotCart(), date: (currentTxn && currentTxn.date) || new Date().toISOString(), operator: document.getElementById('operatorSel').value});
   document.getElementById('previewOverlay').classList.add('on');
   document.getElementById('pvScroll').scrollTop = 0;
   pvFitWidth();
@@ -1624,7 +1624,8 @@ document.getElementById('printReceiptBtn').addEventListener('click', ()=>{
   const paint = ()=> sel.classList.toggle('empty', !sel.value);
   try{ const v = localStorage.getItem(KEY); if(v && Array.from(sel.options).some(o=>o.value===v)) sel.value = v; }catch(e){}
   paint();
-  sel.addEventListener('change', ()=>{ paint(); try{ localStorage.setItem(KEY, sel.value); }catch(e){} });
+  sel.addEventListener('change', ()=>{ paint(); if(opAppliedFor) return; try{ localStorage.setItem(KEY, sel.value); }catch(e){} });
+  window.paintOperator = paint;
 })();
 
 // 掃到沒建檔的條碼：螢幕中間跳出提醒
@@ -1689,7 +1690,21 @@ function switchTab(name){
   if(btn) btn.click();
 }
 
+function syncOperatorWithEdit(){
+  const sel = document.getElementById('operatorSel');
+  if(!sel) return;
+  if(currentTxn && opAppliedFor !== currentTxn.id){
+    opAppliedFor = currentTxn.id;
+    if(currentTxn.operator && Array.from(sel.options).some(o => o.value === currentTxn.operator)) sel.value = currentTxn.operator;
+  }else if(!currentTxn && opAppliedFor){
+    opAppliedFor = null;
+    let v = ''; try{ v = localStorage.getItem('joeda_pos_operator') || ''; }catch(e){}
+    sel.value = Array.from(sel.options).some(o => o.value === v) ? v : '';
+  }
+  if(window.paintOperator) window.paintOperator();
+}
 function updateEditBanner(){
+  syncOperatorWithEdit();
   const el = document.getElementById('editBanner');
   const btn = document.getElementById('checkoutBtn');
   if(currentTxn){
@@ -1865,7 +1880,7 @@ function printHtml(html, receipt){
 
 function buildPrintArea(){
   document.getElementById('printArea').innerHTML =
-    renderOrderHtml({...snapshotCart(), date: (currentTxn && currentTxn.date) || new Date().toISOString(), operator: (currentTxn && currentTxn.operator) || document.getElementById('operatorSel').value});
+    renderOrderHtml({...snapshotCart(), date: (currentTxn && currentTxn.date) || new Date().toISOString(), operator: document.getElementById('operatorSel').value});
 }
 
 const custListSearch = document.getElementById('custListSearch');
@@ -1924,6 +1939,7 @@ if(window.matchMedia('(max-width:640px)').matches){ const oi = document.getEleme
 // 雲端交易紀錄：存在 Firestore（transactions 集合），由 fb.js 連線；多台電腦即時同步
 // =====================================================================
 let allTxns = [];
+let opAppliedFor = null;  // 正在編輯的訂單 id：下拉暫時顯示那張單的打單人員，編輯結束後還原成這台電腦記住的人
 let currentTxn = null;      // 目前這張單的 {id, date}，同一張單重印/重存會覆蓋同一筆
 let saveChain = Promise.resolve();
 let txnsRecent = new Map(), txnsOlder = new Map();
@@ -2132,7 +2148,7 @@ function buildTxn(){
     currentTxn = {id: 'T' + Date.now().toString(36) + Math.random().toString(36).slice(2,5), date: new Date().toISOString()};
   }
   const t = {id: currentTxn.id, date: currentTxn.date, ...snapshotCart()};
-  const op = currentTxn.operator || document.getElementById('operatorSel').value;
+  const op = document.getElementById('operatorSel').value;   // 編輯舊單時，下拉會先帶入原本的人，可以改
   if(op) t.operator = op;
   if(currentTxn.editedAt) t.editedAt = currentTxn.editedAt;
   return t;
