@@ -129,6 +129,20 @@ const FB = {
   },
   deleteHeld(id) { return deleteDoc(doc(db, 'heldOrders', id)); },
 
+  // ---- 還原備份：只補回雲端沒有的（保留原本的 id），雲端已有的不動 ----
+  async restoreMissing(customersList, txnList, onProgress) {
+    const ops = [];
+    customersList.forEach(c => { if (c && c.id) { const { id, ...rest } = c; ops.push(['customers', id, clean(rest)]); } });
+    txnList.forEach(t => { if (t && t.id) { const x = clean(t); if (!x.month && x.date) x.month = monthOfIso(x.date); ops.push(['transactions', x.id, x]); } });
+    for (let i = 0; i < ops.length; i += 400) {
+      const batch = writeBatch(db);
+      ops.slice(i, i + 400).forEach(([col, id, data]) => batch.set(doc(db, col, id), data));
+      await batch.commit();
+      if (onProgress) onProgress(Math.min(ops.length, i + 400), ops.length);
+    }
+    return ops.length;
+  },
+
   // ---- 一次性：把舊的 customers.json / transactions/*.json 匯入 ----
   async importLegacy(customers, txns, onProgress) {
     const ops = [];

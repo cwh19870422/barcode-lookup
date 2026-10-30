@@ -70,7 +70,7 @@
   .price-cell .val{background:var(--paper-alt); font-family:var(--sysfont); font-size:19px; font-weight:800; color:var(--ink); letter-spacing:-0.01em; flex:1; display:flex; align-items:center; justify-content:center; padding:9px 4px; text-align:center;}
   .price-cell.cost .val{color:var(--red);}
   /* 員工模式：藏起搜尋分頁、本錢、管理連結 */
-  body.staff #exportBackupBtn, body.staff .price-cell.cost, body.staff .hp-sum, body.staff .txn-del, body.staff #topLink{display:none !important;}
+  body.staff #exportBackupBtn, body.staff #importBackupBtn, body.staff .price-cell.cost, body.staff .hp-sum, body.staff .txn-del, body.staff #topLink{display:none !important;}
   body.staff .prices{grid-template-columns:repeat(4,minmax(0,1fr));}
   .price-cell.sell .val{color:var(--blue);}
   .empty{text-align:center; padding:70px 20px; color:var(--secondary);}
@@ -484,6 +484,8 @@ body.cust-view .prices{grid-template-columns:minmax(0,1fr) !important; max-width
         <b>☁ 雲端存檔</b>
         <span id="cloudBadge" class="cloud-badge">連線中…</span>
         <button type="button" class="txn-small-btn" id="exportBackupBtn">匯出備份</button>
+        <button type="button" class="txn-small-btn" id="importBackupBtn" style="margin-left:0;">匯入備份</button>
+        <input type="file" id="importBackupFile" accept=".json,application/json" style="display:none;">
       </div>
       <div class="txn-hint">每筆交易按「列印A4帳單」或「儲存交易」時，會自動存進雲端資料庫（Firestore），多台電腦即時同步，不需要設定金鑰。畫面預設載入最近 12 個月，更早的紀錄按「⟳ 重新讀取」載入。</div>
     </div>
@@ -1893,6 +1895,48 @@ document.getElementById('exportBackupBtn').addEventListener('click', async ()=>{
     else alert('JSON 備份已匯出，但 Excel 檔載入失敗（請檢查網路後再按一次）');
   }catch(e){
     alert('匯出備份失敗：' + cloudErrMsg(e));
+  }finally{
+    btn.disabled = false; btn.textContent = old;
+  }
+});
+
+// ===== 匯入備份（老闆專用）：只補回「雲端沒有」的客戶與交易，雲端已有的不動 =====
+document.getElementById('importBackupBtn').addEventListener('click', ()=>{
+  if(currentRole !== 'boss'){ alert('只有老闆帳號可以匯入備份'); return; }
+  const f = document.getElementById('importBackupFile'); f.value = ''; f.click();
+});
+document.getElementById('importBackupFile').addEventListener('change', async (e)=>{
+  const file = e.target.files && e.target.files[0];
+  if(!file) return;
+  const btn = document.getElementById('importBackupBtn');
+  const old = btn.textContent; btn.disabled = true; btn.textContent = '讀取中…';
+  try{
+    let data;
+    try{ data = JSON.parse(await file.text()); }catch(err){ throw new Error('這不是有效的備份檔（JSON 格式錯誤）'); }
+    if(!data || !Array.isArray(data.customers) || !Array.isArray(data.transactions)) throw new Error('這個檔案不是 POS 備份檔（找不到客戶與交易資料）');
+    const cloudTxns = await FB.getAllTxns();
+    const haveTxn = new Set(cloudTxns.map(t => t.id));
+    const haveCust = new Set(customers.map(c => c.id));
+    const addC = data.customers.filter(c => c && c.id && !haveCust.has(c.id));
+    const addT = data.transactions.filter(t => t && t.id && !haveTxn.has(t.id));
+    if(!addC.length && !addT.length){
+      alert('備份檔裡的資料雲端都已經有了，沒有需要補回的。');
+      return;
+    }
+    const when = data.exportedAt ? new Date(data.exportedAt).toLocaleString() : '未知';
+    const msg = '備份時間：' + when + '\n'
+      + '備份檔：客戶 ' + data.customers.length + ' 筆、交易 ' + data.transactions.length + ' 筆\n\n'
+      + '雲端目前沒有、將補回：客戶 ' + addC.length + ' 筆、交易 ' + addT.length + ' 筆\n'
+      + '（雲端已有的資料一律不動，不會被覆蓋或刪除）\n\n確定要補回嗎？';
+    if(!confirm(msg)) return;
+    btn.textContent = '補回中…';
+    await FB.restoreMissing(addC, addT);
+    btn.textContent = '✓ 已補回';
+    await sleep(2500);
+    alert('已補回：客戶 ' + addC.length + ' 筆、交易 ' + addT.length + ' 筆。');
+    loadAllTxns();
+  }catch(err){
+    alert('匯入備份失敗：' + cloudErrMsg(err));
   }finally{
     btn.disabled = false; btn.textContent = old;
   }
