@@ -39,6 +39,16 @@ service cloud.firestore {
       allow read, write: if signedIn();
     }
 
+    // 商品資料解密鑰匙（只能在 Firebase 後台手動建立，網頁一律不能寫）
+    match /config/dataKeyBoss {
+      allow read: if isBoss();
+      allow write: if false;
+    }
+    match /config/dataKeyStaff {
+      allow read: if signedIn();
+      allow write: if false;
+    }
+
     // 其他一律不開放
     match /{document=**} {
       allow read, write: if false;
