@@ -4,7 +4,7 @@ import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.14.1/fireba
 import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut, setPersistence, browserLocalPersistence }
   from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js';
 import { initializeFirestore, persistentLocalCache, persistentMultipleTabManager, getFirestore,
-  collection, doc, setDoc, deleteDoc, onSnapshot, query, where, getDocs, writeBatch }
+  collection, doc, setDoc, deleteDoc, onSnapshot, query, where, getDocs, getDoc, writeBatch }
   from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js';
 
 const firebaseConfig = {
@@ -94,6 +94,11 @@ const FB = {
   listenTxns(sinceMonth, cb, onErr) {
     const q = query(collection(db, 'transactions'), where('month', '>=', sinceMonth));
     return onSnapshot(q, snap => cb(snap.docs.map(d => d.data())), e => onErr && onErr(e));
+  },
+  // 商品資料解密鑰匙：老闆讀 config/dataKeyBoss，員工讀 config/dataKeyStaff（權限由 Firestore 規則把關）
+  async getDataKey(role) {
+    const snap = await getDoc(doc(db, 'config', role === 'boss' ? 'dataKeyBoss' : 'dataKeyStaff'));
+    return snap.exists() ? (snap.data().k || null) : null;
   },
   async getAllTxns() {
     const snap = await getDocs(collection(db, 'transactions'));

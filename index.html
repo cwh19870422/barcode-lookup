@@ -646,21 +646,62 @@ function catLabel(c){
   return (c && typeof c === 'object' && 'name' in c) ? c.name : c;
 }
 
-async function init(){
-  try{
-    const res = await fetch('./data.json?_=' + Date.now());
-    if(!res.ok) throw new Error('HTTP ' + res.status);
-    const data = await res.json();
-    cats = data.cats || [];
-    rows = data.rows || [];
-    document.getElementById('headerStats').textContent =
-      rows.length.toLocaleString() + ' 筆商品 · ' + cats.length + ' 個分類';
-    document.getElementById('statusText').textContent = '請輸入關鍵字開始搜尋';
-  }catch(e){
-    document.getElementById('statusText').textContent = '⚠ 無法載入 data.json（' + e.message + '）';
-    document.getElementById('headerStats').textContent = '資料載入失敗';
-  }
+// ── 商品資料：公開網站上只放加密檔，登入後依身分取鑰匙解密 ──
+let productsRole = null, productsLoading = null;
+function b64ToBytes(b64){ const bin = atob(b64); const u = new Uint8Array(bin.length); for(let i=0;i<bin.length;i++) u[i] = bin.charCodeAt(i); return u; }
+async function decryptPackage(pkg, keyB64){
+  const key = await crypto.subtle.importKey('raw', b64ToBytes(keyB64), 'AES-GCM', false, ['decrypt']);
+  const plain = await crypto.subtle.decrypt({ name:'AES-GCM', iv: b64ToBytes(pkg.iv) }, key, b64ToBytes(pkg.ct));
+  return JSON.parse(new TextDecoder().decode(plain));
+}
+function applyProducts(data, tag){
+  cats = data.cats || [];
+  rows = data.rows || [];
+  document.getElementById('headerStats').textContent =
+    rows.length.toLocaleString() + ' 筆商品 · ' + cats.length + ' 個分類' + (tag || '');
+  document.getElementById('statusText').textContent = '請輸入關鍵字開始搜尋';
+  if(input && input.value.trim()) input.dispatchEvent(new Event('input'));
+}
+function clearProducts(){
+  cats = []; rows = []; productsRole = null;
+  document.getElementById('headerStats').textContent = '';
+  document.getElementById('statusText').textContent = '請先登入';
+  try{ resultsEl.innerHTML = ''; }catch(e){}
+}
+async function loadProducts(role){
+  if(productsRole === role && rows.length) return;
+  if(productsLoading) return productsLoading;
+  productsLoading = (async ()=>{
+    document.getElementById('statusText').textContent = '載入商品資料中…';
+    let encErr = null;
+    try{
+      const file = role === 'boss' ? 'data.boss.enc' : 'data.staff.enc';
+      const [res, keyB64] = await Promise.all([
+        fetch('./' + file + '?_=' + Date.now()),
+        window.FB.getDataKey(role)
+      ]);
+      if(!res.ok) throw new Error(file + ' HTTP ' + res.status);
+      if(!keyB64) throw new Error('雲端找不到解密鑰匙');
+      applyProducts(await decryptPackage(await res.json(), keyB64), ' · 🔒');
+      productsRole = role;
+      return;
+    }catch(e){ encErr = e; }
+    // 過渡期備援：加密版還沒準備好時，讀舊的明碼 data.json
+    try{
+      const res = await fetch('./data.json?_=' + Date.now());
+      if(!res.ok) throw new Error('HTTP ' + res.status);
+      applyProducts(await res.json(), '');
+      productsRole = role;
+    }catch(e){
+      document.getElementById('statusText').textContent = '⚠ 無法載入商品資料（' + (encErr ? encErr.message : e.message) + '）';
+      document.getElementById('headerStats').textContent = '資料載入失敗';
+    }
+  })();
+  try{ await productsLoading; } finally { productsLoading = null; }
+}
 
+async function init(){
+  document.getElementById('statusText').textContent = '請先登入';
   try{
     const res3 = await fetch('./history.json?_=' + Date.now());
     if(res3.ok){
@@ -2440,9 +2481,11 @@ window.fbReady.then(FBlib=>{
       document.body.classList.remove('locked');
       applyMode();
       startCloud();
+      loadProducts(u.role);
     }else{
       if(u) FBlib.logout();
       currentRole = null;
+      clearProducts();
       stopCloud();
       applyMode();
       showLock();
