@@ -107,12 +107,10 @@
   .price-cell .val{padding-left:30px !important; padding-right:30px !important;}
   @media (max-width:520px){.price-cell .lbl{position:static; width:auto;} .price-cell .val{padding-left:2px !important; padding-right:2px !important;} .prices{grid-template-columns:repeat(5,minmax(0,1fr)); gap:5px;} body.staff .prices{grid-template-columns:repeat(4,minmax(0,1fr));} .price-cell{flex-direction:column;} .price-cell .lbl{padding:3px 0; font-size:12px; width:auto;} .price-cell .val{padding:8px 2px; font-size:15px !important;} header{padding:20px 16px 12px;} main{padding:12px 16px 60px;} .tabs{padding-left:16px; padding-right:16px;} .price-cell .val{font-size:17px;}}
   ::selection{background:rgba(0,122,255,0.25);}
-  /* 打單：商品搜尋固定在畫面最下方 */
-  .order-search-sec{position:sticky; bottom:0; z-index:45; background:var(--paper); margin:18px -10px 0; padding:8px 10px 10px; border-radius:14px 14px 0 0; box-shadow:0 -1px 0 var(--line), 0 -8px 18px rgba(0,0,0,0.06); display:flex; flex-direction:column; gap:8px;}
-  .order-search-sec .status-row{margin:0;}
-  .order-search-sec #orderResults{max-height:52vh; overflow-y:auto; overscroll-behavior:contain; padding:2px;}
-  .order-search-sec #orderResults:empty{display:none;}
-  @media (max-width:640px){ .order-search-sec{bottom:calc(68px + env(safe-area-inset-bottom)); margin-left:-6px; margin-right:-6px; padding-left:6px; padding-right:6px;} .order-search-sec #orderResults{max-height:45vh;} }
+  /* 打單：商品搜尋列，捲不到時固定在畫面最下方 */
+  .order-search-bar{position:sticky; bottom:0; z-index:45; background:var(--paper); margin:18px -10px 0; padding:10px 10px 8px; border-radius:14px 14px 0 0; box-shadow:0 -1px 0 var(--line), 0 -8px 18px rgba(0,0,0,0.06);}
+  .order-search-bar .status-row{margin:8px 0 0;}
+  @media (max-width:640px){ .order-search-bar{bottom:calc(68px + env(safe-area-inset-bottom)); margin-left:-6px; margin-right:-6px; padding-left:6px; padding-right:6px;} }
 
   .qty-stepper{display:flex; align-items:center; background:var(--paper-alt); border-radius:8px; overflow:hidden; height:28px;}
   .qty-stepper button{width:26px; height:28px; border:none; background:transparent; color:var(--ink); font-size:16px; font-weight:600; display:flex; align-items:center; justify-content:center; line-height:1; padding:0; cursor:pointer;}
@@ -487,14 +485,8 @@ body.cust-view .prices{grid-template-columns:minmax(0,1fr) !important; max-width
       <div id="cloudStatus" class="cloud-status"></div>
     </div>
 
-    <!-- 商品搜尋：固定在畫面最下方，搜尋結果往上展開 -->
-    <div class="order-search-sec" id="orderSearchSec">
-      <div class="status-row">
-      <span id="orderStatusText">請搜尋或掃描商品加入清單</span>
-      <button type="button" class="cv-btn" title="只顯示賣價，給客人看">顧客檢視</button>
-      <select class="sort-sel" title="排序方式"><option value="">排序：預設</option><option value="asc">賣價 低→高</option><option value="desc">賣價 高→低</option></select>
-      </div>
-      <div class="results" id="orderResults"></div>
+    <!-- 商品搜尋：不在畫面裡時固定在最下方；搜尋結果接在下面，畫面順著往下 -->
+    <div class="order-search-bar" id="orderSearchBar">
       <div style="display:flex; gap:8px; align-items:center;">
         <div class="search-box" style="flex:1;">
           <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><rect x="3" y="7" width="18" height="10" rx="1"/><line x1="7" y1="7" x2="7" y2="17"/><line x1="10" y1="7" x2="10" y2="17"/><line x1="14" y1="7" x2="14" y2="17"/><line x1="17" y1="7" x2="17" y2="17"/></svg>
@@ -502,7 +494,13 @@ body.cust-view .prices{grid-template-columns:minmax(0,1fr) !important; max-width
           <button class="clear-btn" id="orderClearBtn" title="清除">✕</button>
         </div>
       </div>
+      <div class="status-row">
+      <span id="orderStatusText">請搜尋或掃描商品加入清單</span>
+      <button type="button" class="cv-btn" title="只顯示賣價，給客人看">顧客檢視</button>
+      <select class="sort-sel" title="排序方式"><option value="">排序：預設</option><option value="asc">賣價 低→高</option><option value="desc">賣價 高→低</option></select>
+      </div>
     </div>
+    <div class="results" id="orderResults"></div>
   </section>
 
   <section class="tab-panel" id="tab-customers">
@@ -1213,6 +1211,16 @@ function doOrderSearch(){
   }
   orderResultsEl.innerHTML = html;
   window._lastOrderMatches = matches;
+  revealOrderResults();
+}
+// 搜尋結果在畫面下方看不到時，把畫面往下捲到搜尋列，結果接在下面
+function revealOrderResults(){
+  const bar = document.getElementById('orderSearchBar');
+  if(!bar || !orderResultsEl.firstElementChild) return;
+  const rTop = orderResultsEl.getBoundingClientRect().top;
+  if(rTop < window.innerHeight * 0.55) return;
+  const ordTop = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--ord-top')) || 0;
+  window.scrollTo({ top: window.scrollY + rTop - bar.offsetHeight - ordTop - 12, behavior: 'smooth' });
 }
 
 orderInput.addEventListener('input', ()=>{
