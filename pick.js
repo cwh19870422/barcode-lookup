@@ -187,7 +187,7 @@ function buildText(){
   const s = cur();
   const name = (s.customer || '').trim();
   const head = '#' + s.location + (name ? ' （' + name + '）' : '');
-  const line = it => `${it.name}${s.showPrice && it.price ? ' 定價' + it.price : ''} *${it.qty}${it.reserved ? '（已留）' : ''}`;
+  const line = it => `${it.name}${s.showPrice && it.price ? ' ' + it.price : ''} *${it.qty}${it.reserved ? '（已留）' : ''}`;
   const n = normals().map((it, i) => `${i + 1}. ${line(it)}`), p = pres().map(it => '（預訂）' + line(it));
   let t = head + '\n\n' + n.join('\n');
   if(p.length) t += (n.length ? '\n\n' : '') + p.join('\n');
