@@ -204,7 +204,7 @@ function buildText(){
   let t = head + '\n\n' + n.join('\n');
   if(p.length) t += (n.length ? '\n\n' : '') + p.join('\n');
   const note = (s.note || '').trim();
-  if(note) t += '\n\n備註：' + note;   // 備註放最下面，上面空一行
+  if(note) t += '\n\n' + note;   // 備註放最下面，上面空一行（不加「備註：」）
   return t;
 }
 
