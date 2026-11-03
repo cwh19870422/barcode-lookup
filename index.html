@@ -1278,7 +1278,7 @@ orderResultsEl.addEventListener('click', (e)=>{
   }
   if(e.target.closest('.add-btn')){
     const qty = readCardQty(card);
-    pendingQty[key] = qty;
+    delete pendingQty[key];   // 加入後忘掉這次的數量，下次搜尋同款商品會回到 1
     addToCart(r, qty);
     const btn = card.querySelector('.add-btn');
     const original = btn.textContent;
