@@ -59,7 +59,7 @@ panel.innerHTML = `
         <button class="pk-b" id="pkOcr" type="button" style="display:none">辨識照片文字</button>
         <span class="pk-hint" id="pkOcrNote"></span>
       </div>
-      <p class="pk-hint">照片會先轉成文字放進上面的框，檢查一下錯字，再按「快速整理」。</p>
+      <p class="pk-hint">數量可以寫成「*3」「x3」或「留3」。照片會先轉成文字放進上面的框，檢查一下錯字，再按「快速整理」。</p>
     </div>
 
     <div class="pk-card">
@@ -146,7 +146,7 @@ function parseItem(s){
   const preorder = RE_PRE.test(s); RE_PRE.lastIndex = 0; s = s.replace(RE_PRE, ' ');
   s = s.trim().replace(/^(?:\d{1,3}\s*[.、．)）:：]|[-•・●▪]\s*)\s*/, '');
   let qty = 1, price = null, m;
-  if((m = s.match(/[*＊×xX]\s*(\d{1,4})\s*[個瓶支盒組件條包入罐片份]?\s*$/))){ qty = +m[1]; s = s.slice(0, m.index); }
+  if((m = s.match(/(?:[*＊×xX]|留)\s*(\d{1,4})\s*[個瓶支盒組件條包入罐片份]?\s*$/))){ qty = +m[1]; s = s.slice(0, m.index); }   // *3、x3、留3 都當數量
   else if((m = s.match(/\s(\d{1,4})\s*[個瓶支盒組件條包罐片份]\s*$/))){ qty = +m[1]; s = s.slice(0, m.index); }
   if((m = s.match(/(?:定價|售價|特價|原價|NT\$?|＄|\$)\s*(\d[\d,]*)\s*元?/i))){ price = +m[1].replace(/,/g, ''); s = s.slice(0, m.index) + ' ' + s.slice(m.index + m[0].length); }
   else if((m = s.match(/(\d[\d,]*)\s*元/))){ price = +m[1].replace(/,/g, ''); s = s.slice(0, m.index) + ' ' + s.slice(m.index + m[0].length); }
@@ -163,9 +163,9 @@ function parseText(txt){
       if(p.join('')) out.customer = p.join(' ');
       continue;
     }
-    const marks = line.match(/[*＊×xX]\s*\d+/g) || [];
+    const marks = line.match(/(?:[*＊×xX]|留)\s*\d+/g) || [];
     const parts = marks.length > 1
-      ? (line.match(/.+?[*＊×xX]\s*\d+\s*(?:[（(]\s*已留\s*[)）])?/g) || [line]).map(p => p.replace(/^[、，,;；/／\s]+/, ''))
+      ? (line.match(/.+?(?:[*＊×xX]|留)\s*\d+\s*[個瓶支盒組件條包入罐片份]?\s*(?:[（(]\s*已留\s*[)）])?/g) || [line]).map(p => p.replace(/^[、，,;；/／\s]+/, ''))
       : [line];
     for(const p of parts){ const it = parseItem(p); if(it) out.items.push(it); }
   }
