@@ -125,3 +125,7 @@ textarea.pk-in.pk-note{min-height:52px;}
 .pk-kq{font-size:12px; color:var(--secondary); font-variant-numeric:tabular-nums;}
 .pk-it.partial .pk-kp{color:#B35C00; font-weight:700;}
 .pk-it.partial .pk-kn{color:#B35C00;}
+
+/* 預訂商品：數量待確認 */
+.pk-tbd{flex:0 0 auto; border:1px dashed var(--orange); background:transparent; color:var(--orange); font:600 12px var(--sysfont); border-radius:999px; padding:4px 9px; cursor:pointer; white-space:nowrap;}
+.pk-tbd.on{border-style:solid; background:var(--orange); color:#fff; padding:5px 11px; font-size:13px;}

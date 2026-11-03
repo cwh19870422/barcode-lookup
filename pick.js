@@ -93,7 +93,7 @@ function toast(m){ const t = $('pkToast'); t.textContent = m; t.style.display = 
 // ---------- 資料 ----------
 function newSlip(){ const now = Date.now(); return { id: uid('p'), customer: '', location: '準備中', showPrice: false, status: 'draft', items: [], createdAt: now, updatedAt: now }; }
 function mkItem(o){
-  const it = { id: uid('i'), name: String(o.name || ''), qty: Math.max(1, parseInt(o.qty) || 1), price: o.price ? Number(o.price) : null, reserved: false, kept: 0, preorder: !!o.preorder };
+  const it = { id: uid('i'), name: String(o.name || ''), qty: Math.max(1, parseInt(o.qty) || 1), price: o.price ? Number(o.price) : null, reserved: false, kept: 0, preorder: !!o.preorder, tbd: !!(o.preorder && o.tbd) };
   setKept(it, o.kept != null ? o.kept : (o.reserved ? it.qty : 0));
   return it;
 }
@@ -156,6 +156,7 @@ function parseItem(s){
   let reserved = false, keptN = null;
   s = s.replace(RE_KEPT, (_, d) => { reserved = true; if(d) keptN = +d; return ' '; });   // （已留）＝全留；（已留1）＝留了 1 個
   const preorder = RE_PRE.test(s); RE_PRE.lastIndex = 0; s = s.replace(RE_PRE, ' ');
+  let tbd = false; s = s.replace(/[（(]?\s*數量\s*待確認\s*[)）]?/g, () => { tbd = true; return ' '; });   // 預訂商品：數量待確認
   s = s.trim().replace(/^(?:\d{1,3}\s*[.、．)）:：]|[-•・●▪]\s*)\s*/, '');
   let qty = 1, price = null, m;
   if((m = s.match(/(?:[*＊×xX+＋]|留)\s*(\d{1,4})\s*[個瓶支盒組件條包入罐片份]?\s*$/))){ qty = +m[1]; s = s.slice(0, m.index); }   // *3、x3、+3、留3 都當數量
@@ -163,7 +164,7 @@ function parseItem(s){
   if((m = s.match(/(?:定價|售價|特價|原價|NT\$?|＄|\$)\s*(\d[\d,]*)\s*元?/i))){ price = +m[1].replace(/,/g, ''); s = s.slice(0, m.index) + ' ' + s.slice(m.index + m[0].length); }
   else if((m = s.match(/(\d[\d,]*)\s*元/))){ price = +m[1].replace(/,/g, ''); s = s.slice(0, m.index) + ' ' + s.slice(m.index + m[0].length); }
   const name = simplify(s.replace(/\s+/g, ' ').trim());
-  return name ? mkItem({ name, qty, price, reserved, kept: keptN, preorder }) : null;
+  return name ? mkItem({ name, qty, price, reserved, kept: keptN, preorder, tbd }) : null;
 }
 function parseText(txt){
   const out = { customer: null, location: null, items: [] };
@@ -198,7 +199,7 @@ function buildText(){
   const s = cur();
   const name = (s.customer || '').trim();
   const head = '#' + s.location + (name ? ' （' + name + '）' : '');
-  const line = it => `${it.name}${s.showPrice && it.price ? ' ' + it.price : ''} *${it.qty}${it.reserved ? '（已留）' : isPartial(it) ? '（已留' + kOf(it) + '）' : ''}`;
+  const line = it => it.preorder && it.tbd ? `${it.name}${s.showPrice && it.price ? ' ' + it.price : ''}（數量待確認）` : `${it.name}${s.showPrice && it.price ? ' ' + it.price : ''} *${it.qty}${it.reserved ? '（已留）' : isPartial(it) ? '（已留' + kOf(it) + '）' : ''}`;
   const n = normals().map((it, i) => `${i + 1}. ${line(it)}`), p = pres().map(it => '（預訂）' + line(it));
   let t = head + '\n\n' + n.join('\n');
   if(p.length) t += (n.length ? '\n\n' : '') + p.join('\n');
@@ -255,7 +256,8 @@ function itemHTML(it, idx){
     <button type="button" class="pk-sn${it.preorder ? ' pre' : ''}" data-act="pre" title="${it.preorder ? '改回一般' : '改成預訂'}">${it.preorder ? '預訂' : idx}</button>
     <input class="pk-nm" id="pkn-${it.id}" value="${esc(it.name)}" data-f="name" aria-label="品名">
     ${s.showPrice ? `<label class="pk-price">$<input id="pkp-${it.id}" inputmode="numeric" value="${it.price == null ? '' : it.price}" data-f="price" aria-label="金額" placeholder="—"></label>` : ''}
-    <div class="qty-stepper"><button type="button" data-act="minus" aria-label="減一">−</button><input class="qty-num" id="pkq-${it.id}" inputmode="numeric" value="${it.qty}" data-f="qty" aria-label="數量"><button type="button" data-act="plus" aria-label="加一">＋</button></div>
+    ${it.preorder ? `<button type="button" class="pk-tbd${it.tbd ? ' on' : ''}" data-act="tbd" title="${it.tbd ? '改回填數量' : '數量還不確定'}">${it.tbd ? '數量待確認' : '待確認'}</button>` : ''}
+    ${it.preorder && it.tbd ? '' : `<div class="qty-stepper"><button type="button" data-act="minus" aria-label="減一">−</button><input class="qty-num" id="pkq-${it.id}" inputmode="numeric" value="${it.qty}" data-f="qty" aria-label="數量"><button type="button" data-act="plus" aria-label="加一">＋</button></div>`}
     <span class="pk-kp"><label class="pk-kpc"><input type="checkbox" id="pkk-${it.id}" data-f="reserved" ${it.reserved ? 'checked' : ''} title="全部已留"><span class="kt">已留</span></label>${it.qty > 1 ? `<input class="pk-kn" id="pkkn-${it.id}" inputmode="numeric" data-f="kept" value="${kOf(it)}" aria-label="已留幾個" title="已留幾個"><span class="pk-kq">/${it.qty}</span>` : ''}</span>
     <button type="button" class="pk-del" data-act="del" aria-label="刪除">×</button>
   </li>`;
@@ -269,7 +271,7 @@ function renderItems(){
   renderSum();
 }
 function renderSum(){
-  const s = cur(); const n = s.items.length, k = s.items.filter(i => i.reserved).length, q = s.items.reduce((a, b) => a + (+b.qty || 0), 0);
+  const s = cur(); const n = s.items.length, k = s.items.filter(i => i.reserved).length, q = s.items.reduce((a, b) => a + (b.preorder && b.tbd ? 0 : (+b.qty || 0)), 0);
   $('pkSum').innerHTML = `<b>${n}</b> 項 · 共 ${q} 件 · 已留 ${k}/${n}${s.status === 'done' ? ' <span class="pk-pill done">已完成</span>' : ''}`;
   $('pkDone').textContent = s.status === 'done' ? '改回進行中' : '完成';
 }
@@ -362,6 +364,7 @@ const findItem = el => { const li = el.closest('.pk-it'); return li && cur().ite
     const b = e.target.closest('[data-act]'); if(!b) return; const it = findItem(b); if(!it) return;
     const s = cur(), a = b.dataset.act;
     if(a === 'del'){ s.items = s.items.filter(i => i !== it); toast('已刪除「' + it.name + '」'); }
+    if(a === 'tbd') it.tbd = !it.tbd;
     if(a === 'plus'){ const k = kOf(it); it.qty++; setKept(it, k); }
     if(a === 'minus'){ const k = kOf(it); it.qty = Math.max(1, it.qty - 1); setKept(it, k); }
     if(a === 'pre'){ s.items = s.items.filter(i => i !== it); it.preorder = !it.preorder; s.items = it.preorder ? s.items.concat(it) : normals().concat(it, pres()); }
