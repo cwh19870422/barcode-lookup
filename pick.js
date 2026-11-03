@@ -18,7 +18,8 @@ const S = {
   confirmDel: null,
   pendingImgs: [],
   needRender: false,
-  closed: false          // 按「暫存」後先把編輯區收起來
+  closed: false,         // 按「暫存」後先把編輯區收起來
+  idle: false            // 剛進撿貨單分頁：還沒選任何客人
 };
 const cur = () => S.slips.get(S.curId);
 
@@ -59,7 +60,7 @@ panel.innerHTML = `
         <button class="pk-b" id="pkOcr" type="button" style="display:none">辨識照片文字</button>
         <span class="pk-hint" id="pkOcrNote"></span>
       </div>
-      <p class="pk-hint">數量可以寫成「*3」「x3」或「留3」。照片會先轉成文字放進上面的框，檢查一下錯字，再按「快速整理」。</p>
+      <p class="pk-hint">數量可以寫成「*3」「x3」「+3」或「留3」。照片會先轉成文字放進上面的框，檢查一下錯字，再按「快速整理」。</p>
     </div>
 
     <div class="pk-card" id="pkRulesCard" style="display:none">   <!-- 簡化詞庫：先隱藏，功能照常運作 -->
@@ -146,7 +147,7 @@ function parseItem(s){
   const preorder = RE_PRE.test(s); RE_PRE.lastIndex = 0; s = s.replace(RE_PRE, ' ');
   s = s.trim().replace(/^(?:\d{1,3}\s*[.、．)）:：]|[-•・●▪]\s*)\s*/, '');
   let qty = 1, price = null, m;
-  if((m = s.match(/(?:[*＊×xX]|留)\s*(\d{1,4})\s*[個瓶支盒組件條包入罐片份]?\s*$/))){ qty = +m[1]; s = s.slice(0, m.index); }   // *3、x3、留3 都當數量
+  if((m = s.match(/(?:[*＊×xX+＋]|留)\s*(\d{1,4})\s*[個瓶支盒組件條包入罐片份]?\s*$/))){ qty = +m[1]; s = s.slice(0, m.index); }   // *3、x3、+3、留3 都當數量
   else if((m = s.match(/\s(\d{1,4})\s*[個瓶支盒組件條包罐片份]\s*$/))){ qty = +m[1]; s = s.slice(0, m.index); }
   if((m = s.match(/(?:定價|售價|特價|原價|NT\$?|＄|\$)\s*(\d[\d,]*)\s*元?/i))){ price = +m[1].replace(/,/g, ''); s = s.slice(0, m.index) + ' ' + s.slice(m.index + m[0].length); }
   else if((m = s.match(/(\d[\d,]*)\s*元/))){ price = +m[1].replace(/,/g, ''); s = s.slice(0, m.index) + ' ' + s.slice(m.index + m[0].length); }
@@ -163,9 +164,9 @@ function parseText(txt){
       if(p.join('')) out.customer = p.join(' ');
       continue;
     }
-    const marks = line.match(/(?:[*＊×xX]|留)\s*\d+/g) || [];
+    const marks = line.match(/(?:[*＊×xX+＋]|留)\s*\d+/g) || [];
     const parts = marks.length > 1
-      ? (line.match(/.+?(?:[*＊×xX]|留)\s*\d+\s*[個瓶支盒組件條包入罐片份]?\s*(?:[（(]\s*已留\s*[)）])?/g) || [line]).map(p => p.replace(/^[、，,;；/／\s]+/, ''))
+      ? (line.match(/.+?(?:[*＊×xX+＋]|留)\s*\d+\s*[個瓶支盒組件條包入罐片份]?\s*(?:[（(]\s*已留\s*[)）])?/g) || [line]).map(p => p.replace(/^[、，,;；/／\s]+/, ''))
       : [line];
     for(const p of parts){ const it = parseItem(p); if(it) out.items.push(it); }
   }
@@ -193,7 +194,7 @@ function buildText(){
 
 // ---------- 畫面 ----------
 function renderSide(){
-  const all = Array.from(S.slips.values()).filter(s => hasContent(s) || s.id === S.curId);
+  const all = Array.from(S.slips.values()).filter(s => hasContent(s) || (s.id === S.curId && !S.closed));
   const drafts = all.filter(s => s.status !== 'done'), dones = all.filter(s => s.status === 'done');
   const left = s => s.items.filter(i => !i.reserved).length;   // 還沒勾「已留」的商品數
   // 還有沒撿完的單排最上面，同一組裡越新的越上面
@@ -259,6 +260,13 @@ function renderClosed(){
   $('pkMainWrap').classList.toggle('is-closed', S.closed);
   if(!S.closed) return;
   const s = cur();
+  const where = window.innerWidth <= 760 ? '上面' : '左邊';
+  if(S.idle){
+    $('pkClosed').innerHTML = `<div class="pk-closed-t" style="color:var(--ink)">請選一位客人</div>
+      <p class="pk-hint">點${where}的客人卡片開始撿貨，或開一張新的撿貨單。</p>
+      <div class="pk-row" style="justify-content:center"><button class="pk-b pri" type="button" data-pknew>＋ 新撿貨單</button></div>`;
+    return;
+  }
   $('pkClosed').innerHTML = `<div class="pk-closed-t">✓ 已暫存${s && s.customer ? '「' + esc(s.customer) + '」' : ''}</div>
     <p class="pk-hint">點${window.innerWidth <= 760 ? '上面' : '左邊'}的單子可以繼續編輯，或開一張新的。</p>
     <div class="pk-row" style="justify-content:center"><button class="pk-b" type="button" data-pkreopen>繼續編輯這張</button><button class="pk-b pri" type="button" data-pknew>＋ 新撿貨單</button></div>`;
@@ -285,9 +293,11 @@ function onSlips(list){
   if(editing()) { S.needRender = true; renderSide(); renderSum(); }
   else renderAll();
 }
+// 不選任何客人：放一張空白單當底，編輯區收起來，等使用者點客人或開新單
 function pickDefault(){
-  const d = Array.from(S.slips.values()).filter(s => s.status !== 'done' && hasContent(s)).sort((a, b) => b.updatedAt - a.updatedAt)[0];
-  if(d) S.curId = d.id; else { const n = newSlip(); S.slips.set(n.id, n); S.curId = n.id; }
+  const old = cur(); if(old && !hasContent(old) && !S.saved.has(old.id)) S.slips.delete(old.id);
+  const n = newSlip(); S.slips.set(n.id, n); S.curId = n.id;
+  S.closed = true; S.idle = true; S.confirmDel = null;
 }
 panel.addEventListener('focusout', () => setTimeout(() => { if(S.needRender && !editing()){ S.needRender = false; renderAll(); } }, 0));
 
@@ -309,14 +319,14 @@ $('pkSide').addEventListener('click', async e => {
   if(t.dataset.pktab){ S.tab = t.dataset.pktab; S.confirmDel = null; renderSide(); return; }
   if(t.dataset.pkopen){ const old = cur(); if(old && !hasContent(old) && !S.saved.has(old.id)) S.slips.delete(old.id);
     clearTimeout(saveT); if(old && hasContent(old)) saveNow(old);
-    S.curId = t.dataset.pkopen; S.closed = false; S.confirmDel = null; renderAll(); return; }
+    S.curId = t.dataset.pkopen; S.closed = false; S.idle = false; S.confirmDel = null; renderAll(); return; }
   if(t.dataset.pk === 'new'){ const old = cur(); clearTimeout(saveT); if(old && hasContent(old)) saveNow(old); else if(old && !S.saved.has(old.id)) S.slips.delete(old.id);
-    const n = newSlip(); S.slips.set(n.id, n); S.curId = n.id; S.closed = false; S.tab = 'draft'; S.confirmDel = null; renderAll(); $('pkCust').focus(); return; }
+    const n = newSlip(); S.slips.set(n.id, n); S.curId = n.id; S.closed = false; S.idle = false; S.tab = 'draft'; S.confirmDel = null; renderAll(); $('pkCust').focus(); return; }
   if(t.dataset.pk === 'del'){
     if(S.confirmDel !== S.curId){ S.confirmDel = S.curId; renderSide(); return; }
     const id = S.curId; S.confirmDel = null; clearTimeout(saveT);
     try{ if(S.saved.has(id)) await FB.deletePickslip(id); }catch(err){ toast('刪除失敗：' + (err.message || err)); return; }
-    S.slips.delete(id); S.saved.delete(id); S.closed = false; pickDefault(); renderAll(); toast('已刪除');
+    S.slips.delete(id); S.saved.delete(id); pickDefault(); renderAll(); toast('已刪除');
   }
 });
 $('pkCust').addEventListener('input', e => { cur().customer = e.target.value; renderGrade(); touch(); });
@@ -413,9 +423,9 @@ $('pkRuleForm').addEventListener('submit', e => { e.preventDefault(); const w = 
   $('pkRuleIn').value = ''; saveRules(); renderRules(); toast('已加入「' + w + '」'); });
 $('pkApplyRules').addEventListener('click', () => { let c = 0; cur().items.forEach(i => { const s = simplify(i.name); if(s !== i.name){ i.name = s; c++; } }); renderItems(); touch(); toast(c ? '簡化了 ' + c + ' 項' : '沒有需要簡化的'); });
 
-$('pkSave').addEventListener('click', async () => { if(!hasContent(cur())){ toast('這張單還是空的'); return; } clearTimeout(saveT); cur().updatedAt = Date.now(); await saveNow(); S.closed = true; S.confirmDel = null; $('pkOutSheet').style.display = 'none'; renderAll(); window.scrollTo({ top: 0, behavior: 'smooth' }); toast('已暫存'); });
+$('pkSave').addEventListener('click', async () => { if(!hasContent(cur())){ toast('這張單還是空的'); return; } clearTimeout(saveT); cur().updatedAt = Date.now(); await saveNow(); S.closed = true; S.idle = false; S.confirmDel = null; $('pkOutSheet').style.display = 'none'; renderAll(); window.scrollTo({ top: 0, behavior: 'smooth' }); toast('已暫存'); });
 $('pkClosed').addEventListener('click', e => {
-  if(e.target.closest('[data-pkreopen]')){ S.closed = false; renderAll(); }
+  if(e.target.closest('[data-pkreopen]')){ S.closed = false; S.idle = false; renderAll(); }
   if(e.target.closest('[data-pknew]')) $('pkSide').querySelector('[data-pk="new"]').click();
 });
 $('pkDone').addEventListener('click', async () => {
@@ -442,5 +452,12 @@ $('pkCopy').addEventListener('click', () => {
 
 // 一開始先放一張空白單，雲端資料到了再換成最近那張
 pickDefault(); renderAll();
+// 每次點進撿貨單分頁：先存好手上那張，畫面回到「請選一位客人」
+const pickTabBtn = document.querySelector('.tab-btn[data-tab="pick"]');
+if(pickTabBtn) pickTabBtn.addEventListener('click', () => {
+  if(panel.classList.contains('active')) return;   // 已經在撿貨單分頁就不動
+  const old = cur(); clearTimeout(saveT); if(old && hasContent(old)) saveNow(old);
+  pickDefault(); renderAll();
+}, true);
 if(window.FB && FB.currentUser && FB.currentUser()) Pick.start();
 })();
