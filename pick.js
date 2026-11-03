@@ -92,7 +92,15 @@ function toast(m){ const t = $('pkToast'); t.textContent = m; t.style.display = 
 
 // ---------- 資料 ----------
 function newSlip(){ const now = Date.now(); return { id: uid('p'), customer: '', location: '準備中', showPrice: false, status: 'draft', items: [], createdAt: now, updatedAt: now }; }
-function mkItem(o){ return { id: uid('i'), name: String(o.name || ''), qty: Math.max(1, parseInt(o.qty) || 1), price: o.price ? Number(o.price) : null, reserved: !!o.reserved, preorder: !!o.preorder }; }
+function mkItem(o){
+  const it = { id: uid('i'), name: String(o.name || ''), qty: Math.max(1, parseInt(o.qty) || 1), price: o.price ? Number(o.price) : null, reserved: false, kept: 0, preorder: !!o.preorder };
+  setKept(it, o.kept != null ? o.kept : (o.reserved ? it.qty : 0));
+  return it;
+}
+// 已留數量：kept 是留了幾個（0～數量），reserved＝全部留好。舊資料沒有 kept，就照 reserved 換算
+const kOf = it => it.kept == null ? (it.reserved ? it.qty : 0) : Math.min(it.kept, it.qty);
+function setKept(it, n){ it.kept = Math.max(0, Math.min(parseInt(n) || 0, it.qty)); it.reserved = it.kept >= it.qty; }
+const isPartial = it => { const k = kOf(it); return k > 0 && k < it.qty; };
 const normals = () => cur().items.filter(i => !i.preorder);
 const pres = () => cur().items.filter(i => i.preorder);
 const hasContent = s => s && (s.items.length || (s.customer || '').trim());
@@ -143,9 +151,10 @@ function learn(oldName, newName){
 }
 
 // ---------- 文字拆解 ----------
-const RE_KEPT = /[（(]\s*已留\s*[)）]/g, RE_PRE = /[（(]\s*預[訂定約購]\s*[)）]/g;
+const RE_KEPT = /[（(]\s*已留\s*(\d{0,4})\s*[)）]/g, RE_PRE = /[（(]\s*預[訂定約購]\s*[)）]/g;
 function parseItem(s){
-  const reserved = RE_KEPT.test(s); RE_KEPT.lastIndex = 0; s = s.replace(RE_KEPT, ' ');
+  let reserved = false, keptN = null;
+  s = s.replace(RE_KEPT, (_, d) => { reserved = true; if(d) keptN = +d; return ' '; });   // （已留）＝全留；（已留1）＝留了 1 個
   const preorder = RE_PRE.test(s); RE_PRE.lastIndex = 0; s = s.replace(RE_PRE, ' ');
   s = s.trim().replace(/^(?:\d{1,3}\s*[.、．)）:：]|[-•・●▪]\s*)\s*/, '');
   let qty = 1, price = null, m;
@@ -154,7 +163,7 @@ function parseItem(s){
   if((m = s.match(/(?:定價|售價|特價|原價|NT\$?|＄|\$)\s*(\d[\d,]*)\s*元?/i))){ price = +m[1].replace(/,/g, ''); s = s.slice(0, m.index) + ' ' + s.slice(m.index + m[0].length); }
   else if((m = s.match(/(\d[\d,]*)\s*元/))){ price = +m[1].replace(/,/g, ''); s = s.slice(0, m.index) + ' ' + s.slice(m.index + m[0].length); }
   const name = simplify(s.replace(/\s+/g, ' ').trim());
-  return name ? mkItem({ name, qty, price, reserved, preorder }) : null;
+  return name ? mkItem({ name, qty, price, reserved, kept: keptN, preorder }) : null;
 }
 function parseText(txt){
   const out = { customer: null, location: null, items: [] };
@@ -168,7 +177,7 @@ function parseText(txt){
     }
     const marks = line.match(/(?:[*＊×xX+＋]|留)\s*\d+/g) || [];
     const parts = marks.length > 1
-      ? (line.match(/.+?(?:[*＊×xX+＋]|留)\s*\d+\s*[個瓶支盒組件條包入罐片份]?\s*(?:[（(]\s*已留\s*[)）])?/g) || [line]).map(p => p.replace(/^[、，,;；/／\s]+/, ''))
+      ? (line.match(/.+?(?:[*＊×xX+＋]|留)\s*\d+\s*[個瓶支盒組件條包入罐片份]?\s*(?:[（(]\s*已留\s*\d{0,4}\s*[)）])?/g) || [line]).map(p => p.replace(/^[、，,;；/／\s]+/, ''))
       : [line];
     for(const p of parts){ const it = parseItem(p); if(it) out.items.push(it); }
   }
@@ -189,7 +198,7 @@ function buildText(){
   const s = cur();
   const name = (s.customer || '').trim();
   const head = '#' + s.location + (name ? ' （' + name + '）' : '');
-  const line = it => `${it.name}${s.showPrice && it.price ? ' ' + it.price : ''} *${it.qty}${it.reserved ? '（已留）' : ''}`;
+  const line = it => `${it.name}${s.showPrice && it.price ? ' ' + it.price : ''} *${it.qty}${it.reserved ? '（已留）' : isPartial(it) ? '（已留' + kOf(it) + '）' : ''}`;
   const n = normals().map((it, i) => `${i + 1}. ${line(it)}`), p = pres().map(it => '（預訂）' + line(it));
   let t = head + '\n\n' + n.join('\n');
   if(p.length) t += (n.length ? '\n\n' : '') + p.join('\n');
@@ -208,7 +217,7 @@ function keepDays(s){
 function renderSide(){
   const all = Array.from(S.slips.values()).filter(s => hasContent(s) || (s.id === S.curId && !S.closed));
   const drafts = all.filter(s => s.status !== 'done'), dones = all.filter(s => s.status === 'done');
-  const left = s => s.items.filter(i => !i.reserved).length;   // 還沒勾「已留」的商品數
+  const left = s => s.items.filter(i => kOf(i) < i.qty).length;   // 還沒留滿的商品數
   // 還有沒撿完的單排最上面，同一組裡越新的越上面
   const list = (S.tab === 'done' ? dones : drafts).sort((a, b) => ((left(b) > 0) - (left(a) > 0)) || (b.updatedAt - a.updatedAt));
   const ts = t => { const d = new Date(t), today = new Date(); const same = d.toDateString() === today.toDateString();
@@ -241,13 +250,13 @@ function renderCustList(){
 }
 function itemHTML(it, idx){
   const s = cur();
-  return `<li class="pk-it${it.reserved ? ' kept' : ''}" data-id="${it.id}">
+  return `<li class="pk-it${it.reserved ? ' kept' : isPartial(it) ? ' partial' : ''}" data-id="${it.id}">
     <span class="pk-grip" aria-label="拖曳">⠿</span>
     <button type="button" class="pk-sn${it.preorder ? ' pre' : ''}" data-act="pre" title="${it.preorder ? '改回一般' : '改成預訂'}">${it.preorder ? '預訂' : idx}</button>
     <input class="pk-nm" id="pkn-${it.id}" value="${esc(it.name)}" data-f="name" aria-label="品名">
     ${s.showPrice ? `<label class="pk-price">$<input id="pkp-${it.id}" inputmode="numeric" value="${it.price == null ? '' : it.price}" data-f="price" aria-label="金額" placeholder="—"></label>` : ''}
     <div class="qty-stepper"><button type="button" data-act="minus" aria-label="減一">−</button><input class="qty-num" id="pkq-${it.id}" inputmode="numeric" value="${it.qty}" data-f="qty" aria-label="數量"><button type="button" data-act="plus" aria-label="加一">＋</button></div>
-    <label class="pk-kp"><input type="checkbox" id="pkk-${it.id}" data-f="reserved" ${it.reserved ? 'checked' : ''} title="已留"><span class="kt">已留</span></label>
+    <span class="pk-kp"><label class="pk-kpc"><input type="checkbox" id="pkk-${it.id}" data-f="reserved" ${it.reserved ? 'checked' : ''} title="全部已留"><span class="kt">已留</span></label>${it.qty > 1 ? `<input class="pk-kn" id="pkkn-${it.id}" inputmode="numeric" data-f="kept" value="${kOf(it)}" aria-label="已留幾個" title="已留幾個"><span class="pk-kq">/${it.qty}</span>` : ''}</span>
     <button type="button" class="pk-del" data-act="del" aria-label="刪除">×</button>
   </li>`;
 }
@@ -353,8 +362,8 @@ const findItem = el => { const li = el.closest('.pk-it'); return li && cur().ite
     const b = e.target.closest('[data-act]'); if(!b) return; const it = findItem(b); if(!it) return;
     const s = cur(), a = b.dataset.act;
     if(a === 'del'){ s.items = s.items.filter(i => i !== it); toast('已刪除「' + it.name + '」'); }
-    if(a === 'plus') it.qty++;
-    if(a === 'minus') it.qty = Math.max(1, it.qty - 1);
+    if(a === 'plus'){ const k = kOf(it); it.qty++; setKept(it, k); }
+    if(a === 'minus'){ const k = kOf(it); it.qty = Math.max(1, it.qty - 1); setKept(it, k); }
     if(a === 'pre'){ s.items = s.items.filter(i => i !== it); it.preorder = !it.preorder; s.items = it.preorder ? s.items.concat(it) : normals().concat(it, pres()); }
     renderItems(); touch();
   });
@@ -362,8 +371,10 @@ const findItem = el => { const li = el.closest('.pk-it'); return li && cur().ite
     const f = e.target.dataset.f, it = findItem(e.target); if(!it || !f) return;
     if(f === 'name') it.name = e.target.value;
     if(f === 'price'){ const v = e.target.value.replace(/[^\d]/g, ''); it.price = v ? +v : null; }
-    if(f === 'qty'){ const v = parseInt(e.target.value); if(v > 0) it.qty = v; }
-    if(f === 'reserved'){ it.reserved = e.target.checked; e.target.closest('.pk-it').classList.toggle('kept', it.reserved); }
+    if(f === 'qty'){ const v = parseInt(e.target.value); if(v > 0){ const k = kOf(it); it.qty = v; setKept(it, k); } }
+    if(f === 'reserved'){ setKept(it, e.target.checked ? it.qty : 0); renderItems(); }
+    if(f === 'kept'){ const v = e.target.value.replace(/[^\d]/g, ''); if(v !== ''){ setKept(it, +v); const li = e.target.closest('.pk-it');
+      li.classList.toggle('kept', it.reserved); li.classList.toggle('partial', isPartial(it)); const cb = li.querySelector('[data-f="reserved"]'); if(cb) cb.checked = it.reserved; } }
     touch();
   });
   L.addEventListener('focusin', e => { if(e.target.dataset.f === 'name') e.target.dataset.orig = e.target.value; });
@@ -372,7 +383,7 @@ const findItem = el => { const li = el.closest('.pk-it'); return li && cur().ite
     if(e.target.dataset.f === 'name'){ const o = e.target.dataset.orig || '', n = e.target.value.trim();
       if(!n){ it.name = o; e.target.value = o; return; }
       it.name = n; if(o && n !== o) learn(o, n); e.target.dataset.orig = n; }
-    if(e.target.dataset.f === 'qty') e.target.value = it.qty;
+    if(e.target.dataset.f === 'qty' || e.target.dataset.f === 'kept') renderItems();
   });
 });
 function syncOrder(){

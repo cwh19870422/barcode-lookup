@@ -115,3 +115,13 @@ textarea.pk-in{min-height:76px; resize:vertical; line-height:1.6; flex:1 1 100%;
 /* 整張單的備註 */
 .pk-note-lbl{font-size:13px; font-weight:600; color:var(--secondary); margin:8px 2px 0;}
 textarea.pk-in.pk-note{min-height:52px;}
+
+/* 部分已留：例如要 2 個只留了 1 個 */
+.pk-it.partial{background:#FFF4E5;}
+.pk-kp{gap:4px;}
+.pk-kpc{display:flex; align-items:center; gap:3px; cursor:pointer;}
+.pk-kn{width:30px; height:26px; border:none; border-radius:6px; background:#fff; text-align:center; font:600 13px var(--sysfont); color:var(--ink); padding:0; font-variant-numeric:tabular-nums;}
+.pk-kn:focus{outline:none; box-shadow:inset 0 0 0 1.5px var(--blue);}
+.pk-kq{font-size:12px; color:var(--secondary); font-variant-numeric:tabular-nums;}
+.pk-it.partial .pk-kp{color:#B35C00; font-weight:700;}
+.pk-it.partial .pk-kn{color:#B35C00;}
