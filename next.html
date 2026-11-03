@@ -107,6 +107,12 @@
   .price-cell .val{padding-left:30px !important; padding-right:30px !important;}
   @media (max-width:520px){.price-cell .lbl{position:static; width:auto;} .price-cell .val{padding-left:2px !important; padding-right:2px !important;} .prices{grid-template-columns:repeat(5,minmax(0,1fr)); gap:5px;} body.staff .prices{grid-template-columns:repeat(4,minmax(0,1fr));} .price-cell{flex-direction:column;} .price-cell .lbl{padding:3px 0; font-size:12px; width:auto;} .price-cell .val{padding:8px 2px; font-size:15px !important;} header{padding:20px 16px 12px;} main{padding:12px 16px 60px;} .tabs{padding-left:16px; padding-right:16px;} .price-cell .val{font-size:17px;}}
   ::selection{background:rgba(0,122,255,0.25);}
+  /* 從搜尋加入商品：出貨清單那一列閃綠色＋提示 */
+  @keyframes justAdded{0%{background:rgba(52,199,89,0.45);} 100%{background:transparent;}}
+  .cart-table tr.just-added td{animation:justAdded 1.6s ease-out;}
+  .added-pill{position:fixed; left:50%; transform:translate(-50%,12px); z-index:120; background:var(--green); color:#fff; font-weight:700; font-size:14px; padding:9px 16px; border-radius:999px; box-shadow:0 4px 14px rgba(0,0,0,0.15); opacity:0; pointer-events:none; transition:opacity .2s, transform .25s; max-width:calc(100% - 32px); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+  .added-pill.show{opacity:1; transform:translate(-50%,0);}
+  @media (prefers-reduced-motion: reduce){ .cart-table tr.just-added td{animation-duration:.01s;} .added-pill{transition:none;} }
   /* 打單：商品搜尋列，捲不到時固定在畫面最下方 */
   .order-search-bar{position:sticky; bottom:0; z-index:45; background:var(--paper); margin:18px -10px 0; padding:10px 10px 8px; border-radius:14px 14px 0 0; box-shadow:0 -1px 0 var(--line), 0 -8px 18px rgba(0,0,0,0.06);}
   .order-search-bar .status-row{margin:8px 0 0;}
@@ -1213,6 +1219,28 @@ function doOrderSearch(){
   window._lastOrderMatches = matches;
   revealOrderResults();
 }
+// 從搜尋結果加入商品後：畫面滑到出貨清單裡那一列，閃一下綠色，讓人看到已經加進去了
+let addedFxTimer = null;
+function showAddedInCart(key, qty){
+  const idx = cart.findIndex(it => it.key === key);
+  const row = idx >= 0 && cartBody.querySelector(`tr[data-idx="${idx}"]`);
+  if(!row) return;
+  const bar = document.getElementById('orderSearchBar');
+  const barH = bar ? bar.offsetHeight : 0;
+  const r = row.getBoundingClientRect();
+  const visibleBottom = window.innerHeight - barH - (window.matchMedia('(max-width:640px)').matches ? 74 : 0);
+  const target = window.scrollY + r.top - (visibleBottom - r.height) * 0.6;
+  const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  window.scrollTo({ top: Math.max(0, target), behavior: reduce ? 'auto' : 'smooth' });
+  row.classList.remove('just-added'); void row.offsetWidth; row.classList.add('just-added');
+  let pill = document.getElementById('addedPill');
+  if(!pill){ pill = document.createElement('div'); pill.id = 'addedPill'; pill.className = 'added-pill'; document.body.appendChild(pill); }
+  const it = cart[idx];
+  pill.textContent = `✓ 已加入出貨清單：${it.name} × ${qty}`;
+  pill.style.bottom = (window.innerHeight - visibleBottom + 14) + 'px';
+  pill.classList.remove('show'); void pill.offsetWidth; pill.classList.add('show');
+  clearTimeout(addedFxTimer); addedFxTimer = setTimeout(()=> pill.classList.remove('show'), 1600);
+}
 // 搜尋結果在畫面下方看不到時，把畫面往下捲到搜尋列，結果接在下面
 function revealOrderResults(){
   const bar = document.getElementById('orderSearchBar');
@@ -1298,6 +1326,7 @@ orderResultsEl.addEventListener('click', (e)=>{
     const qty = readCardQty(card);
     delete pendingQty[key];   // 加入後忘掉這次的數量，下次搜尋同款商品會回到 1
     addToCart(r, qty);
+    showAddedInCart(key, qty);
     const btn = card.querySelector('.add-btn');
     const original = btn.textContent;
     btn.textContent = '✓ 已加入';
