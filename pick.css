@@ -1,19 +1,21 @@
 /* 撿貨單分頁（pick.js）— 沿用 POS 的 iOS 色票 */
 #tab-pick{--pk-green-soft:#E6F7EB; --pk-orange-soft:#FFF2DE;}
 .pk-grid{display:grid; grid-template-columns:240px minmax(0,1fr); gap:14px; align-items:start;}
-.pk-side{display:flex; flex-direction:column; gap:8px; position:sticky; top:calc(var(--tabs-h, 62px) + 8px); max-height:calc(100vh - var(--tabs-h, 62px) - 24px); overflow:auto; padding-bottom:4px;}
+.pk-side{display:flex; flex-direction:column; gap:6px; position:sticky; top:calc(var(--tabs-h, 62px) + 8px); max-height:calc(100vh - var(--tabs-h, 62px) - 24px); overflow:auto; padding-bottom:4px;}
 .pk-new{background:var(--blue); color:#fff; border:none; border-radius:12px; padding:11px; font:600 14px var(--sysfont); cursor:pointer;}
 .pk-seg{display:flex; background:var(--gray-fill); border-radius:9px; padding:2px;}
 .pk-seg button{flex:1; border:none; background:none; font:600 12.5px var(--sysfont); color:var(--secondary); padding:6px; border-radius:7px; cursor:pointer;}
 .pk-seg button.on{background:#fff; color:var(--ink); box-shadow:0 1px 2px rgba(0,0,0,.08);}
-.pk-ord{background:var(--card); border-radius:12px; padding:10px 12px; box-shadow:var(--shadow); border:2px solid transparent; cursor:pointer; display:flex; flex-direction:column; gap:2px; text-align:left; font-family:var(--sysfont); width:100%;}
+.pk-ord{background:var(--card); border-radius:10px; padding:7px 10px; box-shadow:var(--shadow); border:2px solid transparent; cursor:pointer; display:flex; flex-direction:column; gap:2px; text-align:left; font-family:var(--sysfont); width:100%;}
 .pk-ord.cur{border-color:var(--blue);}
-.pk-ord .t{font-size:15px; font-weight:700; color:var(--ink); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+.pk-ord .t{font-size:15px; font-weight:700; color:var(--ink); display:flex; align-items:center; gap:5px; min-width:0;}
+.pk-ord .t .nm{min-width:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+.pk-ord .t .pk-pill, .pk-ord .t .pk-left{flex-shrink:0; margin:0;}
 .pk-ord .m{font-size:12px; color:var(--secondary);}
 /* 還有商品沒勾「已留」的單：橘色標示、排在最上面 */
 .pk-ord.pending{background:#FFF4E5; box-shadow:inset 4px 0 0 var(--orange), var(--shadow);}
 .pk-ord.pending.cur{border-color:var(--blue);}
-.pk-left{align-self:flex-start; font-size:12px; font-weight:700; color:#B35C00; background:#FFE2BF; border-radius:999px; padding:1px 9px; margin:2px 0;}
+.pk-left{font-size:11px; font-weight:700; color:#B35C00; background:#FFE2BF; border-radius:999px; padding:1px 8px; white-space:nowrap;}
 .pk-left.ok{color:#1E8E3E; background:var(--pk-green-soft);}
 .pk-pill{display:inline-block; font-size:11px; font-weight:600; border-radius:999px; padding:1px 8px; background:rgba(0,122,255,.1); color:var(--blue); margin-left:6px; vertical-align:1px;}
 .pk-pill.done{background:var(--pk-green-soft); color:#1E8E3E;}
