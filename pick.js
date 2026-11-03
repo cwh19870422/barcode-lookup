@@ -62,7 +62,7 @@ panel.innerHTML = `
       <p class="pk-hint">數量可以寫成「*3」「x3」或「留3」。照片會先轉成文字放進上面的框，檢查一下錯字，再按「快速整理」。</p>
     </div>
 
-    <div class="pk-card">
+    <div class="pk-card" id="pkRulesCard" style="display:none">   <!-- 簡化詞庫：先隱藏，功能照常運作 -->
       <h4><span>簡化詞庫</span><button class="pk-b" id="pkApplyRules" type="button" style="font-size:12px;padding:4px 10px">套用到這張單</button></h4>
       <p class="pk-hint">在清單裡刪掉的字會記下來，同一個字刪 2 次就自動學會，之後匯入時自動刪掉。3 台電腦共用。</p>
       <div class="pk-rules" id="pkRules"></div>
@@ -195,14 +195,17 @@ function buildText(){
 function renderSide(){
   const all = Array.from(S.slips.values()).filter(s => hasContent(s) || s.id === S.curId);
   const drafts = all.filter(s => s.status !== 'done'), dones = all.filter(s => s.status === 'done');
-  const list = (S.tab === 'done' ? dones : drafts).sort((a, b) => b.updatedAt - a.updatedAt);
+  const left = s => s.items.filter(i => !i.reserved).length;   // 還沒勾「已留」的商品數
+  // 還有沒撿完的單排最上面，同一組裡越新的越上面
+  const list = (S.tab === 'done' ? dones : drafts).sort((a, b) => ((left(b) > 0) - (left(a) > 0)) || (b.updatedAt - a.updatedAt));
   const ts = t => { const d = new Date(t), today = new Date(); const same = d.toDateString() === today.toDateString();
     return (same ? '今天 ' : (d.getMonth() + 1) + '/' + d.getDate() + ' ') + two(d.getHours()) + ':' + two(d.getMinutes()); };
   $('pkSide').innerHTML = `
     <button class="pk-new" type="button" data-pk="new">＋ 新撿貨單</button>
     <div class="pk-seg"><button type="button" data-pktab="draft" class="${S.tab === 'draft' ? 'on' : ''}">進行中 ${drafts.filter(hasContent).length}</button><button type="button" data-pktab="done" class="${S.tab === 'done' ? 'on' : ''}">已完成 ${dones.length}</button></div>
-    ${list.length ? list.map(s => { const k = s.items.filter(i => i.reserved).length;
-      return `<button type="button" class="pk-ord${s.id === S.curId && !S.closed ? ' cur' : ''}" data-pkopen="${s.id}"><span class="t">${esc(s.customer || '（未填客戶）')}<span class="pk-pill">${esc(s.location)}</span>${s.status === 'done' ? '<span class="pk-pill done">已完成</span>' : ''}</span><span class="m">${s.items.length} 項 · 已留 ${k}/${s.items.length} · ${ts(s.updatedAt)}</span></button>`; }).join('')
+    ${list.length ? list.map(s => { const k = s.items.filter(i => i.reserved).length, n = left(s);
+      const tag = !s.items.length ? '' : n ? `<span class="pk-left">還有 ${n} 項未撿</span>` : '<span class="pk-left ok">✓ 全部撿好</span>';
+      return `<button type="button" class="pk-ord${n ? ' pending' : ''}${s.id === S.curId && !S.closed ? ' cur' : ''}" data-pkopen="${s.id}"><span class="t">${esc(s.customer || '（未填客戶）')}<span class="pk-pill">${esc(s.location)}</span>${s.status === 'done' ? '<span class="pk-pill done">已完成</span>' : ''}</span>${tag}<span class="m">${s.items.length} 項 · 已留 ${k}/${s.items.length} · ${ts(s.updatedAt)}</span></button>`; }).join('')
       : `<div class="pk-empty">${S.tab === 'done' ? '還沒有完成的單' : '沒有進行中的單'}</div>`}
     ${canDelete() && !S.closed && S.slips.has(S.curId) && hasContent(cur()) ? `<button class="pk-b ${S.confirmDel === S.curId ? 'red' : ''}" type="button" data-pk="del">${S.confirmDel === S.curId ? '確定刪除這張單？' : '刪除這張單'}</button>` : ''}
     <p class="pk-hint">單子 3 台電腦即時同步。</p>`;

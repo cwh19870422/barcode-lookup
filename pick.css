@@ -10,6 +10,11 @@
 .pk-ord.cur{border-color:var(--blue);}
 .pk-ord .t{font-size:15px; font-weight:700; color:var(--ink); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
 .pk-ord .m{font-size:12px; color:var(--secondary);}
+/* 還有商品沒勾「已留」的單：橘色標示、排在最上面 */
+.pk-ord.pending{background:#FFF4E5; box-shadow:inset 4px 0 0 var(--orange), var(--shadow);}
+.pk-ord.pending.cur{border-color:var(--blue);}
+.pk-left{align-self:flex-start; font-size:12px; font-weight:700; color:#B35C00; background:#FFE2BF; border-radius:999px; padding:1px 9px; margin:2px 0;}
+.pk-left.ok{color:#1E8E3E; background:var(--pk-green-soft);}
 .pk-pill{display:inline-block; font-size:11px; font-weight:600; border-radius:999px; padding:1px 8px; background:rgba(0,122,255,.1); color:var(--blue); margin-left:6px; vertical-align:1px;}
 .pk-pill.done{background:var(--pk-green-soft); color:#1E8E3E;}
 .pk-empty{color:var(--secondary); font-size:13px; text-align:center; padding:14px; border:1px dashed var(--line); border-radius:12px;}
