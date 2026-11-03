@@ -63,14 +63,15 @@
   .history-panel td{padding:5px 6px; border-top:1px solid var(--line); color:var(--ink);}
   .history-panel .hist-empty{color:var(--secondary); text-align:center; padding:8px;}
   .prices{display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); gap:8px;}
-  .price-cell{display:flex; align-items:stretch; border-radius:12px; overflow:hidden; cursor:pointer; user-select:none; -webkit-tap-highlight-color:transparent; transition:transform .1s;}
+  .price-cell{-webkit-touch-callout:none; -webkit-user-select:none; display:flex; align-items:stretch; border-radius:12px; overflow:hidden; cursor:pointer; user-select:none; -webkit-tap-highlight-color:transparent; transition:transform .1s;}
+  .price-cell.lp-armed{box-shadow:inset 0 0 0 3px #0071e3; transform:scale(.96);}
   .price-cell:active{transform:scale(0.96);}
   .price-cell.copied .val{color:var(--green) !important;}
   .price-cell{min-width:0; position:relative;} .price-cell .lbl{position:absolute; left:0; top:0; bottom:0; width:30px; padding-left:0 !important; padding-right:0 !important; background:var(--paper-alt); color:#6B6B6F; font-family:var(--sysfont); font-weight:600; font-size:13px; display:flex; align-items:center; justify-content:center; padding:0 9px; flex-shrink:0;}
   .price-cell .val{background:var(--paper-alt); font-family:var(--sysfont); font-size:19px; font-weight:800; color:var(--ink); letter-spacing:-0.01em; flex:1; display:flex; align-items:center; justify-content:center; padding:9px 4px; text-align:center;}
   .price-cell.cost .val{color:var(--red);}
   /* 員工模式：藏起搜尋分頁、本錢、管理連結 */
-  body.staff .price-cell.cost, body.staff .hp-sum, body.staff .txn-del, body.staff #topLink{display:none !important;}
+  body.staff #exportBackupBtn, body.staff #importBackupBtn, body.staff .price-cell.cost, body.staff .hp-sum, body.staff .txn-del, body.staff #topLink{display:none !important;}
   body.staff .prices{grid-template-columns:repeat(4,minmax(0,1fr));}
   .price-cell.sell .val{color:var(--blue);}
   .empty{text-align:center; padding:70px 20px; color:var(--secondary);}
@@ -156,7 +157,7 @@
   .order-card .card-top{margin-bottom:8px;}
 
   .cart-section{background:#fff; border-radius:16px; padding:18px 20px; box-shadow:var(--shadow); margin-top:20px;}
-  .cart-title-row{display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;}
+  .cart-title-row{display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; position:sticky; top:var(--ord-top, 62px); z-index:35; background:#fff; padding:10px 0; margin-top:-10px; border-bottom:1px solid var(--line);}
   .cart-title{font-size:17px; font-weight:700;}
   .cart-count{font-size:12px; color:var(--secondary);}
   .price-source-row{display:flex; align-items:center; gap:10px; background:var(--paper); border-radius:10px; padding:10px 12px; margin-bottom:14px; flex-wrap:wrap;}
@@ -173,11 +174,15 @@
   .cart-totals{display:flex; justify-content:flex-end; gap:26px; padding:14px 4px; border-top:1.5px solid var(--ink); margin-top:4px;}
   .cart-totals .tline{font-size:13px; color:var(--secondary);}
   .cart-totals .tline b{color:var(--ink); font-size:16px; margin-left:4px;}
-  .quick-fee-row{display:flex; align-items:center; gap:8px; margin-top:12px; flex-wrap:wrap;}
+  .quick-fee-row{display:grid; grid-template-columns:max-content repeat(6, minmax(0,112px)); justify-content:start; align-items:center; gap:8px; margin-top:12px;}
   .quick-fee-label{font-size:12px; color:var(--secondary); font-weight:600; margin-right:2px;}
-  .quick-fee-btn{border:1.5px solid #1d1d1f; background:#fff; color:var(--ink); font-weight:600; font-size:13.5px; padding:9px 16px; border-radius:999px; cursor:pointer; font-family:var(--sysfont);}
-  .quick-fee-btn.refund{color:var(--ink);}
-  .quick-fee-btn.disc-btn{color:var(--ink);}
+  .quick-fee-btn{border:1px solid #e3e3e8; background:#f7f7f9; color:#5f6570; font-weight:600; font-size:13.5px; height:40px; padding:0 6px; border-radius:10px; cursor:pointer; font-family:var(--sysfont); white-space:nowrap; display:flex; align-items:center; justify-content:center;}
+  .quick-fee-btn.refund, .quick-fee-btn.disc-btn{color:#5f6570;}
+  @media (max-width:640px){
+    .quick-fee-row{grid-template-columns:repeat(3, minmax(0,1fr)); gap:8px;}
+    .quick-fee-label{grid-column:1 / -1; margin:0;}
+    .quick-fee-btn{height:44px; font-size:13px; padding:0 2px;}
+  }
   td.cart-last{text-align:center; line-height:1.25;}
   .last-price{font-weight:700; font-size:13px;} .last-sub{font-size:10.5px; color:var(--secondary);} .last-none{color:var(--secondary);}
   .cart-hist-btn{border:none; background:var(--gray-fill); color:var(--blue); font-weight:600; font-size:11px; padding:5px 8px; border-radius:8px; cursor:pointer; font-family:var(--sysfont); white-space:nowrap;}
@@ -249,13 +254,27 @@
   .txn-detail td{padding:5px 4px; border-top:1px solid var(--line);}
   .txn-detail td.num, .txn-detail th.num{text-align:right;}
   .txn-detail .txn-actions{margin-top:8px; display:flex; justify-content:flex-end;}
-  .cart-title-left{display:flex; align-items:baseline; gap:10px;}
+  .cart-title-left{display:flex; align-items:center; gap:10px; flex-wrap:wrap;}
+  .op-sel{font:inherit; font-size:13px; font-weight:600; box-sizing:border-box; height:32px; min-width:112px; padding:0 8px; border:1.5px solid #1d1d1f; border-radius:8px; background:#fff; color:#1d1d1f;}
+  .cart-title-left{flex:1; min-width:0; margin-right:12px;}
+  .cart-cust-note{flex:1 1 160px; min-width:0; text-align:center; font-size:14px; font-weight:700; color:#c2410c; line-height:1.35; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; overflow-wrap:anywhere;}
+  .cart-cust-note:empty{display:none;}
+  @media (max-width:640px){
+    .cart-title-row{display:grid; grid-template-columns:max-content 1fr auto; column-gap:8px; row-gap:8px; align-items:center;}
+    .cart-title-left{display:contents;}
+    .cart-title-row .cart-title{grid-column:1; grid-row:1; white-space:nowrap;}
+    .cart-title-row .cart-count{grid-column:2; grid-row:1;}
+    .cart-title-row .op-sel{grid-column:1 / 3; grid-row:2; justify-self:start;}
+    .cart-title-row .cart-head-actions{grid-column:3; grid-row:2; justify-self:end;}
+    .cart-title-row .cart-cust-note{grid-column:1 / -1; grid-row:3; text-align:center; flex:none;}
+  }
+  .op-sel.empty{color:#8e8e93; border-color:#c7c7cc;}
   .cart-head-actions{display:flex; gap:8px; align-items:center;}
   .cart-head-actions button{border:none; font-weight:600; font-size:13px; padding:7px 14px; border-radius:10px; cursor:pointer; font-family:var(--sysfont); white-space:nowrap;}
   .cart-actions{display:flex; gap:10px; margin-top:14px; align-items:stretch; background:var(--paper-alt); border:1px solid var(--line); border-radius:16px; padding:10px;}
   .cart-actions .print-group{display:flex; gap:10px; flex:none;}
   .cart-actions button{border:none; font-weight:600; font-size:14px; padding:12px 16px; border-radius:12px; cursor:pointer; font-family:var(--sysfont); white-space:nowrap;}
-  .cart-actions .btn-save{flex:1; font-size:17px; min-height:48px;}
+  .cart-actions .btn-save{flex:1; font-size:15px; min-height:44px;}
   .btn-hold{background:#fff; color:#0071e3; box-shadow:inset 0 0 0 1.5px #0071e3;}
   .btn-clear{background:#fff; color:#ff3b30; box-shadow:inset 0 0 0 1.5px #ff3b30;}
   .btn-print{background:#fff; color:#0071e3; box-shadow:inset 0 0 0 1.5px #0071e3;}
@@ -276,9 +295,31 @@
   table.cust-list tr:last-child td{border-bottom:none;}
 
   #printArea{display:none;}
+  #ckAlert{display:none; position:fixed; inset:0; z-index:9500; background:rgba(0,0,0,.55); align-items:center; justify-content:center; padding:20px;}
+  #ckAlert.on{display:flex;}
+  #ubAlert{display:none; position:fixed; inset:0; z-index:9600; background:rgba(0,0,0,.55); align-items:center; justify-content:center; padding:20px;}
+  #ubAlert.on{display:flex;}
+  .ub-code{margin-top:16px; font-size:clamp(24px,5vw,40px); font-weight:800; color:#ff3b30; font-family:var(--monofont); word-break:break-all;}
+  .ub-sub{margin-top:10px; font-size:18px; color:#6e6e73; font-weight:600;}
+  .ck-card{background:#fff; border-radius:22px; padding:44px 48px 34px; text-align:center; box-shadow:0 18px 60px rgba(0,0,0,.4); max-width:92vw;}
+  .ck-name{font-size:22px; color:#6e6e73; font-weight:600; margin-bottom:14px;}
+  .ck-msg{font-size:clamp(30px,6vw,52px); font-weight:800; color:#1d1d1f; line-height:1.3;}
+  .ck-msg .ck-amt{color:#ff3b30;}
+  .ck-ok{margin-top:26px; border:none; background:#0071e3; color:#fff; font:inherit; font-size:20px; font-weight:700; padding:12px 44px; border-radius:14px; cursor:pointer;}
+  @page{size:A4; margin:0;}
+  #previewOverlay{display:none; position:fixed; inset:0; z-index:9000; background:rgba(0,0,0,.62); flex-direction:column;}
+  #previewOverlay.on{display:flex;}
+  .pv-bar{display:flex; align-items:center; gap:8px; padding:10px 14px; background:#1d1d1f; color:#fff; flex-wrap:wrap;}
+  .pv-bar button{border:none; border-radius:9px; padding:8px 14px; font:inherit; font-size:14px; font-weight:600; cursor:pointer; background:#fff; color:#1d1d1f;}
+  .pv-bar .pv-pct{min-width:52px; text-align:center; font-size:14px; font-weight:600;}
+  .pv-bar .pv-sp{flex:1;}
+  .pv-bar .pv-go{background:#0071e3; color:#fff;}
+  .pv-scroll{flex:1; overflow:auto; padding:18px; text-align:center;}
+  .pv-sheet{display:inline-block; width:210mm; min-height:297mm; background:#fff; text-align:left; box-shadow:0 6px 30px rgba(0,0,0,.4); box-sizing:border-box; vertical-align:top;}
   @media print{
     body > *{display:none !important;}
-    body > #printArea{display:block !important; position:static;}
+    body > #printArea{display:block !important; position:static; padding:10mm 8mm; box-sizing:border-box;}
+    body > #printArea.rc{padding:0;}
   }
 .cv-btn{margin-left:auto;font:inherit;font-size:13px;font-weight:600;box-sizing:border-box;height:32px;min-width:112px;padding:0 12px;border-radius:8px;border:1.5px solid #1d1d1f;background:#fff;color:#1d1d1f;cursor:pointer;white-space:nowrap}
 .cv-btn+.sort-sel{margin-left:8px}
@@ -290,6 +331,7 @@ body.cust-view .prices{grid-template-columns:minmax(0,1fr) !important; max-width
 <script>window.fbReady=new Promise(function(r){window.__fbResolve=r;});</script>
 <script type="module" src="./fb.js"></script>
 <link rel="stylesheet" href="./pick.css">
+<style>.order-search-sec{margin-top:18px;}</style>
 </head>
 <body class="locked staff">
 
@@ -347,7 +389,7 @@ body.cust-view .prices{grid-template-columns:minmax(0,1fr) !important; max-width
         <div class="cust-row">
           <div class="search-box">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-            <input id="custSearch" type="text" placeholder="搜尋客戶姓名或電話…" autocomplete="off">
+            <input id="custSearch" type="text" placeholder="搜尋客戶姓名、會員號碼或電話…" autocomplete="off">
           </div>
           <div class="price-src-slot" id="priceSrcSlotPicker"><label class="psl" for="priceSourceSelect">單價</label><select id="priceSourceSelect">
           <option value="grade">依會員等級</option>
@@ -397,27 +439,17 @@ body.cust-view .prices{grid-template-columns:minmax(0,1fr) !important; max-width
         <div class="price-src-slot" id="priceSrcSlotInfo"></div>
       </div>
 
-      <div style="display:flex; gap:8px; align-items:center; margin-top:6px;">
-        <div class="search-box" style="flex:1;">
-          <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><rect x="3" y="7" width="18" height="10" rx="1"/><line x1="7" y1="7" x2="7" y2="17"/><line x1="10" y1="7" x2="10" y2="17"/><line x1="14" y1="7" x2="14" y2="17"/><line x1="17" y1="7" x2="17" y2="17"/></svg>
-          <input id="orderSearchInput" type="text" placeholder="搜尋商品名稱／條碼，或用條碼槍掃描…" autocomplete="off">
-          <button class="clear-btn" id="orderClearBtn" title="清除">✕</button>
-        </div>
-      </div>
     </div>
 
     <div id="heldOrdersPanel" style="display:none; margin-top:4px;"></div>
 
-    <div class="status-row">
-      <span id="orderStatusText">請搜尋或掃描商品加入清單</span>
-      <button type="button" class="cv-btn" title="只顯示賣價，給客人看">顧客檢視</button>
-      <select class="sort-sel" title="排序方式"><option value="">排序：預設</option><option value="asc">賣價 低→高</option><option value="desc">賣價 高→低</option></select>
-    </div>
-    <div class="results" id="orderResults"></div>
 
     <div class="cart-section">
       <div class="cart-title-row">
-        <div class="cart-title-left"><div class="cart-title">出貨清單</div><div class="cart-count" id="cartCount">0 項</div></div>
+        <div class="cart-title-left"><div class="cart-title">出貨清單</div><div class="cart-count" id="cartCount">0 項</div>
+          <select id="operatorSel" class="op-sel" aria-label="打單人員"><option value="">打單人員</option><option>六六</option><option>宜惠</option><option>小豪</option><option>sam</option><option>文嘉</option><option>小蔚</option></select>
+          <span class="cart-cust-note" id="cartCustNote"></span>
+        </div>
         <div class="cart-head-actions">
           <button class="btn-hold" id="holdCartBtn">暫存訂單</button>
           <button class="btn-clear" id="clearCartBtn">全部刪除</button>
@@ -443,10 +475,27 @@ body.cust-view .prices{grid-template-columns:minmax(0,1fr) !important; max-width
         <div class="print-group">
           <button class="btn-print" id="printReceiptBtn">列印小張收據</button>
           <button class="btn-print" id="printBtn">列印A4帳單</button>
+          <button class="btn-print" id="previewBtn">預覽</button>
         </div>
         <button class="btn-save" id="checkoutBtn">結帳</button>
       </div>
       <div id="cloudStatus" class="cloud-status"></div>
+    </div>
+
+    <div class="order-search-sec" id="orderSearchSec">
+      <div style="display:flex; gap:8px; align-items:center; ">
+        <div class="search-box" style="flex:1;">
+          <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><rect x="3" y="7" width="18" height="10" rx="1"/><line x1="7" y1="7" x2="7" y2="17"/><line x1="10" y1="7" x2="10" y2="17"/><line x1="14" y1="7" x2="14" y2="17"/><line x1="17" y1="7" x2="17" y2="17"/></svg>
+          <input id="orderSearchInput" type="text" placeholder="搜尋商品名稱／條碼，或用條碼槍掃描…" autocomplete="off">
+          <button class="clear-btn" id="orderClearBtn" title="清除">✕</button>
+        </div>
+      </div>
+    <div class="status-row">
+      <span id="orderStatusText">請搜尋或掃描商品加入清單</span>
+      <button type="button" class="cv-btn" title="只顯示賣價，給客人看">顧客檢視</button>
+      <select class="sort-sel" title="排序方式"><option value="">排序：預設</option><option value="asc">賣價 低→高</option><option value="desc">賣價 高→低</option></select>
+    </div>
+    <div class="results" id="orderResults"></div>
     </div>
   </section>
 
@@ -460,7 +509,7 @@ body.cust-view .prices{grid-template-columns:minmax(0,1fr) !important; max-width
     </div>
     <div class="cust-table-wrap">
       <table class="cust-list">
-        <thead><tr><th>姓名</th><th>電話</th><th>地址</th><th>等級</th><th>統編</th><th>備註</th></tr></thead>
+        <thead><tr><th>姓名</th><th>會員號碼</th><th>電話</th><th>地址</th><th>等級</th><th>統編</th><th>備註</th></tr></thead>
         <tbody id="custListBody"></tbody>
       </table>
     </div>
@@ -471,6 +520,9 @@ body.cust-view .prices{grid-template-columns:minmax(0,1fr) !important; max-width
       <div class="txn-head">
         <b>☁ 雲端存檔</b>
         <span id="cloudBadge" class="cloud-badge">連線中…</span>
+        <button type="button" class="txn-small-btn" id="exportBackupBtn">匯出備份</button>
+        <button type="button" class="txn-small-btn" id="importBackupBtn" style="margin-left:0;">匯入備份</button>
+        <input type="file" id="importBackupFile" accept=".json,application/json" style="display:none;">
       </div>
       <div class="txn-hint">每筆交易按「列印A4帳單」或「儲存交易」時，會自動存進雲端資料庫（Firestore），多台電腦即時同步，不需要設定金鑰。畫面預設載入最近 12 個月，更早的紀錄按「⟳ 重新讀取」載入。</div>
     </div>
@@ -498,6 +550,20 @@ body.cust-view .prices{grid-template-columns:minmax(0,1fr) !important; max-width
 </main>
 
 <div id="printArea"></div>
+<div id="ubAlert"><div class="ck-card"><div class="ck-msg">⚠ 找不到這個條碼</div><div class="ub-code" id="ubCode"></div><div class="ub-sub">這個商品尚未建檔，請另外處理</div><button type="button" class="ck-ok" id="ubOk">確定</button></div></div>
+<div id="ckAlert"><div class="ck-card"><div class="ck-msg" id="ckMsg"></div><button type="button" class="ck-ok" id="ckOk">確定</button></div></div>
+<div id="previewOverlay">
+  <div class="pv-bar">
+    <button type="button" id="pvOut">－ 縮小</button>
+    <span class="pv-pct" id="pvPct">100%</span>
+    <button type="button" id="pvIn">＋ 放大</button>
+    <button type="button" id="pvFit">符合寬度</button>
+    <span class="pv-sp"></span>
+    <button type="button" class="pv-go" id="pvPrint">列印</button>
+    <button type="button" id="pvClose">關閉</button>
+  </div>
+  <div class="pv-scroll" id="pvScroll"><div class="pv-sheet" id="pvSheet"></div></div>
+</div>
 
 <script>
 let cats = [];
@@ -511,16 +577,35 @@ let legacyHistory = []; // 舊版 history.json 內容（若有）
 let heldOrders = []; // {id, customer, cart, priceMode, savedAt}
 const HELD_ORDERS_KEY = 'joeda_pos_held_orders_v1';
 
-function loadHeldOrdersFromStorage(){
+// 暫存訂單存在雲端（Firestore heldOrders），所有電腦即時共用。
+// 舊版存在這台瀏覽器的暫存單，第一次連線時會自動上傳一次，再清掉本機的。
+let unsubHeld = null;
+function readLocalHeld(){
+  try{ const raw = localStorage.getItem(HELD_ORDERS_KEY); return raw ? (JSON.parse(raw) || []) : []; }
+  catch(e){ return []; }
+}
+async function migrateLocalHeld(){
+  const local = readLocalHeld();
+  if(!local.length) return;
   try{
-    const raw = localStorage.getItem(HELD_ORDERS_KEY);
-    heldOrders = raw ? (JSON.parse(raw) || []) : [];
-  }catch(e){ heldOrders = []; }
+    await Promise.all(local.map(h => FB.saveHeld(h)));
+    try{ localStorage.removeItem(HELD_ORDERS_KEY); }catch(e){}
+  }catch(e){ /* 這次失敗就保留本機資料，下次登入再試 */ }
 }
-function saveHeldOrdersToStorage(){
-  try{ localStorage.setItem(HELD_ORDERS_KEY, JSON.stringify(heldOrders)); }
-  catch(e){ /* storage full or disabled — held orders still work for this session */ }
+function startHeld(){
+  stopHeld();
+  unsubHeld = FB.listenHeld(list => {
+    heldOrders = list.sort((a,b) => String(a.savedAt||'').localeCompare(String(b.savedAt||'')));
+    renderHeldOrders();
+  }, e => { /* 讀不到就先不顯示 */ });
+  migrateLocalHeld();
 }
+function stopHeld(){
+  if(unsubHeld){ try{ unsubHeld(); }catch(e){} unsubHeld = null; }
+  heldOrders = [];
+  try{ renderHeldOrders(); }catch(e){}
+}
+function heldErr(e){ alert('暫存訂單同步失敗：' + ((e && e.code === 'permission-denied') ? '沒有權限（請確認 Firestore 規則已更新）' : ((e && e.message) || e))); }
 
 const PRICE_IDX = {cost:5, A:6, B:7, C:8, D:9, sell:10};
 const GRADE_TO_IDX = {A:6, B:7, C:8, D:9};
@@ -551,6 +636,12 @@ function fmt(n){
   if(isNaN(num)) return '—';
   return num.toLocaleString('en-US', {maximumFractionDigits:0});
 }
+function fmtCost(n){
+  if(n===null || n===undefined || n==='' || (typeof n==='number' && isNaN(n))) return '—';
+  const num = Number(n);
+  if(isNaN(num)) return '—';
+  return num.toLocaleString('en-US', {maximumFractionDigits:1});
+}
 function fmtNum(n){
   const num = Number(n);
   return isNaN(num) ? 0 : num;
@@ -559,21 +650,62 @@ function catLabel(c){
   return (c && typeof c === 'object' && 'name' in c) ? c.name : c;
 }
 
-async function init(){
-  try{
-    const res = await fetch('./data.json?_=' + Date.now());
-    if(!res.ok) throw new Error('HTTP ' + res.status);
-    const data = await res.json();
-    cats = data.cats || [];
-    rows = data.rows || [];
-    document.getElementById('headerStats').textContent =
-      rows.length.toLocaleString() + ' 筆商品 · ' + cats.length + ' 個分類';
-    document.getElementById('statusText').textContent = '請輸入關鍵字開始搜尋';
-  }catch(e){
-    document.getElementById('statusText').textContent = '⚠ 無法載入 data.json（' + e.message + '）';
-    document.getElementById('headerStats').textContent = '資料載入失敗';
-  }
+// ── 商品資料：公開網站上只放加密檔，登入後依身分取鑰匙解密 ──
+let productsRole = null, productsLoading = null;
+function b64ToBytes(b64){ const bin = atob(b64); const u = new Uint8Array(bin.length); for(let i=0;i<bin.length;i++) u[i] = bin.charCodeAt(i); return u; }
+async function decryptPackage(pkg, keyB64){
+  const key = await crypto.subtle.importKey('raw', b64ToBytes(keyB64), 'AES-GCM', false, ['decrypt']);
+  const plain = await crypto.subtle.decrypt({ name:'AES-GCM', iv: b64ToBytes(pkg.iv) }, key, b64ToBytes(pkg.ct));
+  return JSON.parse(new TextDecoder().decode(plain));
+}
+function applyProducts(data, tag){
+  cats = data.cats || [];
+  rows = data.rows || [];
+  document.getElementById('headerStats').textContent =
+    rows.length.toLocaleString() + ' 筆商品 · ' + cats.length + ' 個分類' + (tag || '');
+  document.getElementById('statusText').textContent = '請輸入關鍵字開始搜尋';
+  if(input && input.value.trim()) input.dispatchEvent(new Event('input'));
+}
+function clearProducts(){
+  cats = []; rows = []; productsRole = null;
+  document.getElementById('headerStats').textContent = '';
+  document.getElementById('statusText').textContent = '請先登入';
+  try{ resultsEl.innerHTML = ''; }catch(e){}
+}
+async function loadProducts(role){
+  if(productsRole === role && rows.length) return;
+  if(productsLoading) return productsLoading;
+  productsLoading = (async ()=>{
+    document.getElementById('statusText').textContent = '載入商品資料中…';
+    let encErr = null;
+    try{
+      const file = role === 'boss' ? 'data.boss.enc' : 'data.staff.enc';
+      const [res, keyB64] = await Promise.all([
+        fetch('./' + file + '?_=' + Date.now()),
+        window.FB.getDataKey(role)
+      ]);
+      if(!res.ok) throw new Error(file + ' HTTP ' + res.status);
+      if(!keyB64) throw new Error('雲端找不到解密鑰匙');
+      applyProducts(await decryptPackage(await res.json(), keyB64), ' · 🔒');
+      productsRole = role;
+      return;
+    }catch(e){ encErr = e; }
+    // 過渡期備援：加密版還沒準備好時，讀舊的明碼 data.json
+    try{
+      const res = await fetch('./data.json?_=' + Date.now());
+      if(!res.ok) throw new Error('HTTP ' + res.status);
+      applyProducts(await res.json(), '');
+      productsRole = role;
+    }catch(e){
+      document.getElementById('statusText').textContent = '⚠ 無法載入商品資料（' + (encErr ? encErr.message : e.message) + '）';
+      document.getElementById('headerStats').textContent = '資料載入失敗';
+    }
+  })();
+  try{ await productsLoading; } finally { productsLoading = null; }
+}
 
+async function init(){
+  document.getElementById('statusText').textContent = '請先登入';
   try{
     const res3 = await fetch('./history.json?_=' + Date.now());
     if(res3.ok){
@@ -615,7 +747,7 @@ function priceCellsHtml(r, q){
       <div class="price-cell" data-name="${escapeHtml(name)}" data-value="${escapeHtml(fmt(priceB))}"><div class="lbl">2</div><div class="val">${fmt(priceB)}</div></div>
       <div class="price-cell" data-name="${escapeHtml(name)}" data-value="${escapeHtml(fmt(priceC))}"><div class="lbl">3</div><div class="val">${fmt(priceC)}</div></div>
       <div class="price-cell" data-name="${escapeHtml(name)}" data-value="${escapeHtml(fmt(priceD))}"><div class="lbl">4</div><div class="val">${fmt(priceD)}</div></div>
-      <div class="price-cell cost" data-name="${escapeHtml(name)}" data-value="${escapeHtml(fmt(cost))}"><div class="lbl">本</div><div class="val">${fmt(cost)}</div></div>
+      <div class="price-cell cost" data-name="${escapeHtml(name)}" data-value="${escapeHtml(fmtCost(cost))}"><div class="lbl">本</div><div class="val">${fmtCost(cost)}</div></div>
     </div>`;
 }
 
@@ -706,8 +838,39 @@ resultsEl.addEventListener('click', (e)=>{
   if(histBtn){ toggleHistoryPanel(histBtn); return; }
   const cell = e.target.closest('.price-cell');
   if(!cell) return;
+  if(Date.now() < suppressClickUntil){ e.preventDefault(); return; }   // 長按放開後瀏覽器補發的 click，忽略
   handlePriceCellCopy(cell, e);
 });
+
+// 手機／平板：長按價格格子 ＝ 加入連續複製（再長按同一格＝取消）；輕點＝單一複製
+// 長按滿 0.5 秒會震動並亮藍框，「放開手指」時才真正加入（這樣剪貼簿一定在手勢內寫入，iOS 也能用）
+let suppressClickUntil = 0;
+(function(){
+  let timer = null, armed = false, cellEl = null, sx = 0, sy = 0;
+  const clear = ()=>{ clearTimeout(timer); timer = null; if(cellEl) cellEl.classList.remove('lp-armed'); armed = false; cellEl = null; };
+  resultsEl.addEventListener('pointerdown', (e)=>{
+    if(e.pointerType === 'mouse') return;
+    const cell = e.target.closest('.price-cell'); if(!cell) return;
+    clear(); cellEl = cell; sx = e.clientX; sy = e.clientY;
+    timer = setTimeout(()=>{ armed = true; cell.classList.add('lp-armed'); try{ navigator.vibrate && navigator.vibrate(25); }catch(_){} }, 500);
+  });
+  resultsEl.addEventListener('pointermove', (e)=>{
+    if(!cellEl) return;
+    if(Math.abs(e.clientX - sx) > 10 || Math.abs(e.clientY - sy) > 10) clear();
+  });
+  resultsEl.addEventListener('pointerup', (e)=>{
+    if(!cellEl) return;
+    const cell = cellEl, wasArmed = armed;
+    clear();
+    if(wasArmed){
+      suppressClickUntil = Date.now() + 700;
+      e.preventDefault();
+      handlePriceCellCopy(cell, {ctrlKey:true, preventDefault(){}});
+    }
+  });
+  resultsEl.addEventListener('pointercancel', clear);
+  resultsEl.addEventListener('contextmenu', (e)=>{ if(e.target.closest('.price-cell')) e.preventDefault(); });
+})();
 
 // 價錢格子複製：一般點擊＝複製單一「商品 價錢」；按住 Ctrl（Mac 為 Cmd）點擊＝連續複製，
 // 每點一次就把累積的清單（一行一個商品）放進剪貼簿，貼上時會依序換行顯示
@@ -737,7 +900,7 @@ function handlePriceCellCopy(cell, e){
   };
   if(e && (e.ctrlKey || e.metaKey)){
     e.preventDefault();
-    const text = `${name} ${value}`;
+    const text = `${name} $${value}`;
     const i = multiCopy.findIndex(x => x.name === name);
     let label;
     if(i >= 0 && multiCopy[i].value === value){
@@ -753,7 +916,7 @@ function handlePriceCellCopy(cell, e){
     return;
   }
   multiCopy = []; updateMultiBar();
-  copyText(`${name} ${value}`, ()=>flash('已複製'));
+  copyText(`${name} $${value}`, ()=>flash('已複製'));
 }
 
 function toggleHistoryPanel(btn){
@@ -788,7 +951,7 @@ function toggleHistoryPanel(btn){
           <td>${dateStr}</td>
           <td>${fmt(h.qty)}</td>
           <td>${fmt(h.amount)}</td>
-          <td>${fmt(h.cost)}</td>
+          <td>${fmtCost(h.cost)}</td>
         </tr>`;
       });
       html += `</tbody></table>`;
@@ -814,7 +977,7 @@ function toggleHistoryPanel(btn){
         <td>${dateStr}</td>
         <td>${fmt(h.qty)}</td>
         <td>${fmt(h.amount)}</td>
-        <td>${fmt(h.cost)}</td>
+        <td>${fmtCost(h.cost)}</td>
       </tr>`;
     });
     html += `</tbody></table>`;
@@ -863,12 +1026,22 @@ function closeTempForm(){
   tempCustForm.style.display = 'none';
   ['tempCustName','tempCustPhone','tempCustAddress'].forEach(id=>{ document.getElementById(id).value=''; });
 }
+// 搜尋客戶：姓名、會員號碼、電話、電話2 都找得到（電話忽略橫線與空白）
+const digitsOnly = v => String(v||'').replace(/[\s\-()（）]/g,'');
+function custMatch(c, q){
+  const qd = digitsOnly(q);
+  return (c.name||'').toLowerCase().includes(q)
+    || (c.memberNo||'').toLowerCase().includes(q)
+    || (c.phone||'').includes(q) || (c.phone2||'').includes(q)
+    || (qd.length >= 3 && (digitsOnly(c.phone).includes(qd) || digitsOnly(c.phone2).includes(qd)));
+}
+function custPhones(c){ return [c.phone, c.phone2].filter(Boolean).join(' / '); }
 function renderCustDropdown(){
   const raw = custSearch.value.trim();
   const q = raw.toLowerCase();
   if(!q){ custDropdown.classList.remove('open'); custDropdown.innerHTML=''; closeTempForm(); return; }
   const matches = customers.filter(c =>
-    (c.name||'').toLowerCase().includes(q) || (c.phone||'').includes(q)
+    custMatch(c, q)
   ).slice(0, 10);
   if(!matches.length){
     custDropdown.classList.remove('open'); custDropdown.innerHTML='';
@@ -883,7 +1056,7 @@ function renderCustDropdown(){
       <div class="cust-opt" data-idx="${customers.indexOf(c)}">
         <div>
           <div class="co-name">${escapeHtml(c.name||'')}</div>
-          <div class="co-sub">${escapeHtml(c.phone||'')}</div>
+          <div class="co-sub">${escapeHtml([c.memberNo, custPhones(c)].filter(Boolean).join(' · '))}</div>
         </div>
         <span class="grade-badge grade-${escapeHtml(c.grade||'A')}">${escapeHtml(c.grade||'A')}</span>
       </div>
@@ -912,7 +1085,7 @@ function selectCustomer(c){
   badge.textContent = (c.grade||'A') + '級';
   badge.className = 'grade-badge grade-' + (c.grade||'A');
   document.getElementById('tempBadge').style.display = c.temp ? 'inline-block' : 'none';
-  document.getElementById('custPhone').textContent = c.phone ? ('電話 ' + c.phone) : '';
+  document.getElementById('custPhone').textContent = [c.memberNo ? ('會員 ' + c.memberNo) : '', custPhones(c) ? ('電話 ' + custPhones(c)) : ''].filter(Boolean).join('　');
   document.getElementById('custAddress').textContent = c.address ? ('地址 ' + c.address) : '';
   custInfoBar.style.display = 'block';
   custPickerWrap.style.display = 'none';
@@ -924,10 +1097,12 @@ function selectCustomer(c){
   const sel = document.getElementById('priceSourceSelect');
   if(!cart.length){ sel.value = 'grade'; }
   applyPriceSourceToCart();
+  updateCartNote();
 }
 
 document.getElementById('changeCustBtn').addEventListener('click', ()=>{
   selectedCustomer = null;
+  updateCartNote();
   custInfoBar.style.display = 'none';
   custPickerWrap.style.display = 'block'; document.querySelector('#custPickerWrap .cust-row').appendChild(document.getElementById('priceSrcSlotPicker'));
   custSearch.focus();
@@ -1046,7 +1221,12 @@ orderInput.addEventListener('keydown', (e)=>{
   const {qty: multQty, q} = parseQtyPrefix(raw);
   if(!q) return;
   const exact = rows.find(r => ((r[3]||'') === q) || ((r[2]||'') === q));
-  if(exact){ scanAddDirect(exact, multQty); }
+  if(exact){ scanAddDirect(exact, multQty); return; }
+  // 長得像條碼（英數、無空白、至少 5 碼）、又完全搜不到任何商品 → 跳出提醒
+  if(/^[A-Za-z0-9\-]{5,}$/.test(q) && !searchRows(q, 1).length){
+    e.preventDefault();
+    setTimeout(()=> showUnknownBarcode(q), 0);
+  }
 });
 
 orderClearBtn.addEventListener('click', ()=>{
@@ -1102,7 +1282,7 @@ orderResultsEl.addEventListener('click', (e)=>{
   }
   if(e.target.closest('.add-btn')){
     const qty = readCardQty(card);
-    pendingQty[key] = qty;
+    delete pendingQty[key];   // 加入後忘掉這次的數量，下次搜尋同款商品會回到 1
     addToCart(r, qty);
     const btn = card.querySelector('.add-btn');
     const original = btn.textContent;
@@ -1280,7 +1460,18 @@ function lastPurchaseCellHtml(it){
   return `<div class="last-price" title="${escapeHtml((h.customer || '未指定客戶') + ' · ' + ymd(h.date))}">${fmt(h.unitPrice)}</div><div class="last-sub">${sub}</div>`;
 }
 
+// 出貨清單標題列顯示目前客戶的備註（只顯示在畫面上，不印在帳單）
+function updateCartNote(){
+  const el = document.getElementById('cartCustNote');
+  if(!el) return;
+  const c = selectedCustomer;
+  const fresh = c && c.id ? customers.find(x => x.id === c.id) : null;
+  const note = String(((fresh || c || {}).note) || '').trim();
+  el.textContent = note ? ('📌 ' + note) : '';
+  el.title = note;
+}
 function renderCart(){
+  updateCartNote();
   updateEditBanner();
   document.getElementById('cartCount').textContent = cart.length + ' 項';
   if(!cart.length){
@@ -1386,15 +1577,16 @@ function holdCurrentOrder(){
     alert('目前沒有客戶或商品可以暫存');
     return false;
   }
-  heldOrders.push({
+  const held = {
     id: Date.now() + '-' + Math.random().toString(36).slice(2,7),
     customer: selectedCustomer ? {...selectedCustomer} : null,
     cart: cart.map(it => ({...it})),
     priceMode: document.getElementById('priceSourceSelect').value,
     txn: currentTxn,
     savedAt: new Date().toISOString()
-  });
-  saveHeldOrdersToStorage();
+  };
+  heldOrders.push(held);
+  FB.saveHeld(held).catch(heldErr);
   cart = [];
   currentTxn = null;
   selectedCustomer = null;
@@ -1414,7 +1606,7 @@ function resumeHeldOrder(id){
   }
   const target = heldOrders[idx];
   heldOrders.splice(idx, 1);
-  saveHeldOrdersToStorage();
+  FB.deleteHeld(id).catch(heldErr);
   cart = target.cart.map(it => ({...it}));
   if(target.customer){
     selectCustomer(target.customer);
@@ -1432,7 +1624,7 @@ function resumeHeldOrder(id){
 function deleteHeldOrder(id){
   if(!confirm('確定要刪除這筆暫存的訂單嗎？刪除後無法復原。')) return;
   heldOrders = heldOrders.filter(h => h.id !== id);
-  saveHeldOrdersToStorage();
+  FB.deleteHeld(id).catch(heldErr);
   renderHeldOrders();
 }
 
@@ -1475,6 +1667,35 @@ document.getElementById('clearCartBtn').addEventListener('click', ()=>{
   renderCart();
 });
 
+// A4 預覽：全螢幕顯示帳單，可放大縮小（方便截圖給客人確認）
+let pvZoom = 1;
+function pvApply(z){
+  pvZoom = Math.max(0.4, Math.min(3, z));
+  document.getElementById('pvSheet').style.zoom = pvZoom;
+  document.getElementById('pvPct').textContent = Math.round(pvZoom*100) + '%';
+}
+function pvFitWidth(){
+  const w = document.getElementById('pvScroll').clientWidth - 36;
+  pvApply(w / (210 / 25.4 * 96));
+}
+function openPreview(){
+  if(!cart.length){ alert('清單是空的，先加入商品再預覽'); return; }
+  document.getElementById('pvSheet').innerHTML =
+    renderOrderHtml({...snapshotCart(), date: (currentTxn && currentTxn.date) || new Date().toISOString(), operator: document.getElementById('operatorSel').value});
+  document.getElementById('previewOverlay').classList.add('on');
+  document.getElementById('pvScroll').scrollTop = 0;
+  pvFitWidth();
+}
+function closePreview(){ document.getElementById('previewOverlay').classList.remove('on'); }
+document.getElementById('previewBtn').addEventListener('click', openPreview);
+document.getElementById('pvClose').addEventListener('click', closePreview);
+document.getElementById('pvIn').addEventListener('click', ()=>pvApply(pvZoom + 0.1));
+document.getElementById('pvOut').addEventListener('click', ()=>pvApply(pvZoom - 0.1));
+document.getElementById('pvFit').addEventListener('click', pvFitWidth);
+document.getElementById('pvPrint').addEventListener('click', ()=>{ buildPrintArea(); window.print(); });
+document.addEventListener('keydown', e=>{ if(e.key==='Escape' && document.getElementById('previewOverlay').classList.contains('on')) closePreview(); });
+window.addEventListener('resize', ()=>{ if(document.getElementById('previewOverlay').classList.contains('on')) pvFitWidth(); });
+
 document.getElementById('printBtn').addEventListener('click', ()=>{
   if(!cart.length){ alert('清單是空的，先加入商品再列印'); return; }
   buildPrintArea();   // 列印不會儲存；要存進客人紀錄請按「結帳」
@@ -1486,6 +1707,49 @@ document.getElementById('printReceiptBtn').addEventListener('click', ()=>{
 });
 
 // 結帳：存進該客人的交易紀錄（編輯舊訂單時則覆蓋原訂單），存完清空準備下一張單
+// 打單人員：記住這台電腦上次選的人
+(function(){
+  const sel = document.getElementById('operatorSel');
+  const KEY = 'joeda_pos_operator';
+  const paint = ()=> sel.classList.toggle('empty', !sel.value);
+  try{ let v = localStorage.getItem(KEY); if(v === '文軒') v = 'sam'; if(v && Array.from(sel.options).some(o=>o.value===v)) sel.value = v; }catch(e){}
+  paint();
+  sel.addEventListener('change', ()=>{ paint(); if(opAppliedFor) return; try{ localStorage.setItem(KEY, sel.value); }catch(e){} });
+  window.paintOperator = paint;
+})();
+
+// 掃到沒建檔的條碼：螢幕中間跳出提醒
+function beepWarn(){
+  try{
+    const ac = new (window.AudioContext||window.webkitAudioContext)();
+    const o = ac.createOscillator(), g = ac.createGain();
+    o.type = 'square'; o.frequency.value = 320; g.gain.value = 0.08;
+    o.connect(g); g.connect(ac.destination); o.start(); o.stop(ac.currentTime + 0.35);
+    setTimeout(()=>ac.close(), 600);
+  }catch(e){}
+}
+function showUnknownBarcode(code){
+  document.getElementById('ubCode').textContent = code;
+  document.getElementById('ubAlert').classList.add('on');
+  document.getElementById('ubOk').focus();
+  beepWarn();
+}
+function closeUnknownBarcode(){
+  document.getElementById('ubAlert').classList.remove('on');
+  orderInput.value = ''; doOrderSearch(); orderInput.focus();
+}
+document.getElementById('ubOk').addEventListener('click', closeUnknownBarcode);
+document.addEventListener('keydown', e=>{ if((e.key==='Escape'||e.key==='Enter') && document.getElementById('ubAlert').classList.contains('on')){ e.preventDefault(); closeUnknownBarcode(); } });
+
+function showCheckoutAlert(name, total){
+  document.getElementById('ckMsg').innerHTML = '帳單金額 <span class="ck-amt">$' + fmt(total) + '</span> 請登記';
+  document.getElementById('ckAlert').classList.add('on');
+  document.getElementById('ckOk').focus();
+}
+function closeCheckoutAlert(){ document.getElementById('ckAlert').classList.remove('on'); }
+document.getElementById('ckOk').addEventListener('click', closeCheckoutAlert);
+document.addEventListener('keydown', e=>{ if((e.key==='Escape'||e.key==='Enter') && document.getElementById('ckAlert').classList.contains('on')){ e.preventDefault(); closeCheckoutAlert(); } });
+
 document.getElementById('checkoutBtn').addEventListener('click', ()=>{
   if(!cart.length){ alert('清單是空的，沒有可結帳的內容'); return; }
   const editing = !!currentTxn;
@@ -1497,10 +1761,16 @@ document.getElementById('checkoutBtn').addEventListener('click', ()=>{
   cart = []; currentTxn = null; selectedCartKey = null;
   resetOrderCustomerUI();
   renderCart(); updateEditBanner();
+  // 客戶若勾了「結帳提醒」，結帳後跳出提醒
+  const freshCust = snap.customer && snap.customer.id ? customers.find(c => c.id === snap.customer.id) : null;
+  if((freshCust || snap.customer) && (freshCust || snap.customer).checkoutAlert){
+    setTimeout(()=> showCheckoutAlert(snap.customer.name, snap.total), 80);
+  }
 });
 
 function resetOrderCustomerUI(){
   selectedCustomer = null;
+  updateCartNote();
   custInfoBar.style.display = 'none';
   custPickerWrap.style.display = 'block'; document.querySelector('#custPickerWrap .cust-row').appendChild(document.getElementById('priceSrcSlotPicker'));
 }
@@ -1510,7 +1780,27 @@ function switchTab(name){
   if(btn) btn.click();
 }
 
+function syncOperatorWithEdit(){
+  const sel = document.getElementById('operatorSel');
+  if(!sel) return;
+  if(currentTxn && opAppliedFor !== currentTxn.id){
+    opAppliedFor = currentTxn.id;
+    if(currentTxn.operator){
+      if(!Array.from(sel.options).some(o => o.value === currentTxn.operator)){   // 舊單的打單人員已不在選單內（例如改名前的「文軒」）：暫時加進去
+        const o = document.createElement('option'); o.value = o.textContent = currentTxn.operator; o.dataset.tmp = '1'; sel.appendChild(o);
+      }
+      sel.value = currentTxn.operator;
+    }
+  }else if(!currentTxn && opAppliedFor){
+    opAppliedFor = null;
+    sel.querySelectorAll('option[data-tmp]').forEach(o => o.remove());
+    let v = ''; try{ v = localStorage.getItem('joeda_pos_operator') || ''; }catch(e){}
+    sel.value = Array.from(sel.options).some(o => o.value === v) ? v : '';
+  }
+  if(window.paintOperator) window.paintOperator();
+}
 function updateEditBanner(){
+  syncOperatorWithEdit();
   const el = document.getElementById('editBanner');
   const btn = document.getElementById('checkoutBtn');
   if(currentTxn){
@@ -1558,7 +1848,7 @@ function startEditTxn(id){
   if(t.customer){ selectCustomer({...t.customer}); } else { resetOrderCustomerUI(); }
   document.getElementById('priceSourceSelect').value = t.priceMode || 'grade';
   cart = (t.lines || []).map(lineToCartItem);
-  currentTxn = {id:t.id, date:t.date};
+  currentTxn = {id:t.id, date:t.date, operator:t.operator};
   selectedCartKey = null;
   renderCart(); updateEditBanner();
   switchTab('order');
@@ -1604,10 +1894,10 @@ function renderOrderHtml(o){
       <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:16px;">
         <div>
           <h2 style="margin:0 0 4px;">${c ? escapeHtml(c.name||'') : ''}</h2>
-          <div style="font-size:12px; color:#555;">${new Date(o.date).toLocaleString('zh-TW')}</div>
+          <div style="font-size:12px; color:#555;">${new Date(o.date).toLocaleString('zh-TW')}${o.operator ? '　打單人員：' + escapeHtml(o.operator) : ''}</div>
         </div>
         ${c ? `<div style="font-size:13px; line-height:1.8; text-align:right;">
-          <div>${escapeHtml(c.phone||'—')}</div>
+          <div>${escapeHtml(custPhones(c)||'—')}</div>
           <div>${escapeHtml(c.address||'—')}</div>
         </div>` : ''}
       </div>
@@ -1671,7 +1961,9 @@ function renderReceiptHtml(o){
 
 // 列印：收據用 80mm 紙張尺寸（無邊界、長度自動），出貨單維持原本 A4 設定
 function printHtml(html, receipt){
-  document.getElementById('printArea').innerHTML = html;
+  const pa = document.getElementById('printArea');
+  pa.innerHTML = html;
+  pa.classList.toggle('rc', !!receipt);
   let st = null;
   if(receipt){
     st = document.createElement('style');
@@ -1684,7 +1976,7 @@ function printHtml(html, receipt){
 
 function buildPrintArea(){
   document.getElementById('printArea').innerHTML =
-    renderOrderHtml({...snapshotCart(), date: (currentTxn && currentTxn.date) || new Date().toISOString()});
+    renderOrderHtml({...snapshotCart(), date: (currentTxn && currentTxn.date) || new Date().toISOString(), operator: document.getElementById('operatorSel').value});
 }
 
 const custListSearch = document.getElementById('custListSearch');
@@ -1694,19 +1986,20 @@ const custListStatus = document.getElementById('custListStatus');
 function renderCustomerList(){
   const q = custListSearch.value.trim().toLowerCase();
   const list = customers.filter(c =>
-    !q || (c.name||'').toLowerCase().includes(q) || (c.phone||'').includes(q)
+    !q || custMatch(c, q)
   );
   custListStatus.textContent = customers.length
     ? `共 ${customers.length} 位客戶，顯示 ${list.length} 位`
     : '目前沒有客戶資料，請到「⚙ 管理客戶」新增或匯入';
   if(!list.length){
-    custListBody.innerHTML = `<tr><td colspan="6" style="text-align:center; color:#8E8E93; padding:20px;">沒有符合的客戶</td></tr>`;
+    custListBody.innerHTML = `<tr><td colspan="7" style="text-align:center; color:#8E8E93; padding:20px;">沒有符合的客戶</td></tr>`;
     return;
   }
   custListBody.innerHTML = list.map(c => `
     <tr>
       <td>${escapeHtml(c.name||'')}</td>
-      <td>${escapeHtml(c.phone||'')}</td>
+      <td>${escapeHtml(c.memberNo||'')}</td>
+      <td>${escapeHtml(custPhones(c))}</td>
       <td>${escapeHtml(c.address||'')}</td>
       <td><span class="grade-badge grade-${escapeHtml(c.grade||'A')}">${escapeHtml(c.grade||'')}</span></td>
       <td>${escapeHtml(c.taxId||'—')}</td>
@@ -1719,7 +2012,20 @@ custListSearch.addEventListener('input', renderCustomerList);
 function updateStickyOffset(){
   const h = window.matchMedia('(max-width:640px)').matches ? 0 : document.getElementById('tabsStickyWrap').offsetHeight;
   document.documentElement.style.setProperty('--tabs-h', h + 'px');
+  updateOrderTop();
 }
+// 出貨清單標題列（打單人員、暫存訂單…）固定在上方控制列的正下方
+function updateOrderTop(){
+  const oc = document.getElementById('orderStickyControls');
+  const tabsH = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--tabs-h')) || 0;
+  const ch = oc && oc.offsetParent !== null ? oc.offsetHeight : 0;
+  document.documentElement.style.setProperty('--ord-top', (tabsH + ch) + 'px');
+}
+(function(){
+  const oc = document.getElementById('orderStickyControls');
+  if(oc && window.ResizeObserver) new ResizeObserver(updateOrderTop).observe(oc);
+  document.querySelectorAll('.tab-btn').forEach(b => b.addEventListener('click', ()=> setTimeout(updateOrderTop, 50)));
+})();
 window.addEventListener('resize', updateStickyOffset);
 updateStickyOffset();
 if(window.matchMedia('(max-width:640px)').matches){ const oi = document.getElementById('orderSearchInput'); if(oi) oi.placeholder = '搜尋商品／條碼／掃描'; }
@@ -1729,6 +2035,7 @@ if(window.matchMedia('(max-width:640px)').matches){ const oi = document.getEleme
 // 雲端交易紀錄：存在 Firestore（transactions 集合），由 fb.js 連線；多台電腦即時同步
 // =====================================================================
 let allTxns = [];
+let opAppliedFor = null;  // 正在編輯的訂單 id：下拉暫時顯示那張單的打單人員，編輯結束後還原成這台電腦記住的人
 let currentTxn = null;      // 目前這張單的 {id, date}，同一張單重印/重存會覆蓋同一筆
 let saveChain = Promise.resolve();
 let txnsRecent = new Map(), txnsOlder = new Map();
@@ -1756,6 +2063,109 @@ function mergeAllTxns(){
   renderTxns();
 }
 
+// ===== 匯出備份（老闆專用）：客戶＋全部交易紀錄（含 12 個月以前）＋暫存訂單，輸出 JSON 與 Excel 各一份 =====
+function loadScriptOnce(src){
+  return new Promise((res, rej)=>{
+    const el = document.createElement('script'); el.src = src; el.onload = res; el.onerror = ()=>rej(new Error('載入失敗'));
+    document.head.appendChild(el);
+  });
+}
+function downloadBlob(blob, name){
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(()=>URL.revokeObjectURL(a.href), 4000);
+}
+function buildBackupWorkbook(custs, txns){
+  const wb = XLSX.utils.book_new();
+  const custRows = custs.map(c => ({ 客戶名稱:c.name||'', 等級:c.grade||'', 會員號碼:c.memberNo||'', 電話:c.phone||'', 電話2:c.phone2||'', 地址:c.address||'', 備註:c.note||'', 系統編號:c.id||'' }));
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(custRows.length ? custRows : [{客戶名稱:''}]), '客戶');
+  const sorted = txns.slice().sort((a,b)=>String(a.date||'').localeCompare(String(b.date||'')));
+  const head = sorted.map(t => ({
+    日期:t.date ? localDateStr(t.date) + ' ' + new Date(t.date).toTimeString().slice(0,5) : '',
+    打單人員:t.operator||'',
+    客戶:(t.customer && t.customer.name) || '', 等級:(t.customer && t.customer.grade) || '',
+    商品小計:t.goods ?? '', 運費:t.shipping ?? '', 前帳:t.prevBalance ?? '', 退費:t.refund ?? '', 稅金:t.tax ?? '',
+    總金額:t.total ?? '', 單號:t.id||''
+  }));
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(head.length ? head : [{日期:''}]), '交易總表');
+  const lines = [];
+  sorted.forEach(t => (t.lines||[]).forEach(l => lines.push({
+    日期:t.date ? localDateStr(t.date) : '', 客戶:(t.customer && t.customer.name) || '',
+    類型:l.type==='fee' ? l.kind : (l.type==='temp' ? '臨時商品' : '商品'),
+    代碼:l.code||'', 條碼:l.barcode||'', 品名:l.name||'', 單價:l.unitPrice ?? '', 數量:l.qty ?? '', 金額:l.amount ?? '',
+    成本:l.cost ?? '', 備註:l.note||'', 單號:t.id||''
+  })));
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(lines.length ? lines : [{日期:''}]), '交易明細');
+  return wb;
+}
+document.getElementById('exportBackupBtn').addEventListener('click', async ()=>{
+  const btn = document.getElementById('exportBackupBtn');
+  if(currentRole !== 'boss'){ alert('只有老闆帳號可以匯出備份'); return; }
+  const old = btn.textContent; btn.disabled = true; btn.textContent = '備份中…';
+  try{
+    const all = await FB.getAllTxns();            // 直接從雲端重新讀取全部（不只最近 12 個月）
+    const d = new Date();
+    const stamp = d.getFullYear() + pad2(d.getMonth()+1) + pad2(d.getDate()) + '_' + pad2(d.getHours()) + pad2(d.getMinutes());
+    const backup = { app:'喬大百貨 POS', exportedAt:d.toISOString(), counts:{customers:customers.length, transactions:all.length, heldOrders:heldOrders.length},
+                     customers, transactions:all, heldOrders };
+    downloadBlob(new Blob([JSON.stringify(backup, null, 1)], {type:'application/json'}), 'POS_backup_' + stamp + '.json');
+    let xlsxOk = true;
+    try{
+      if(!window.XLSX) await loadScriptOnce('https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js');
+      const out = XLSX.write(buildBackupWorkbook(customers, all), {bookType:'xlsx', type:'array'});
+      downloadBlob(new Blob([out], {type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'}), 'POS_backup_' + stamp + '.xlsx');
+    }catch(e){ xlsxOk = false; }
+    if(xlsxOk){ btn.textContent = '✓ 已匯出'; await sleep(2500); }
+    else alert('JSON 備份已匯出，但 Excel 檔載入失敗（請檢查網路後再按一次）');
+  }catch(e){
+    alert('匯出備份失敗：' + cloudErrMsg(e));
+  }finally{
+    btn.disabled = false; btn.textContent = old;
+  }
+});
+
+// ===== 匯入備份（老闆專用）：只補回「雲端沒有」的客戶與交易，雲端已有的不動 =====
+document.getElementById('importBackupBtn').addEventListener('click', ()=>{
+  if(currentRole !== 'boss'){ alert('只有老闆帳號可以匯入備份'); return; }
+  const f = document.getElementById('importBackupFile'); f.value = ''; f.click();
+});
+document.getElementById('importBackupFile').addEventListener('change', async (e)=>{
+  const file = e.target.files && e.target.files[0];
+  if(!file) return;
+  const btn = document.getElementById('importBackupBtn');
+  const old = btn.textContent; btn.disabled = true; btn.textContent = '讀取中…';
+  try{
+    let data;
+    try{ data = JSON.parse(await file.text()); }catch(err){ throw new Error('這不是有效的備份檔（JSON 格式錯誤）'); }
+    if(!data || !Array.isArray(data.customers) || !Array.isArray(data.transactions)) throw new Error('這個檔案不是 POS 備份檔（找不到客戶與交易資料）');
+    const cloudTxns = await FB.getAllTxns();
+    const haveTxn = new Set(cloudTxns.map(t => t.id));
+    const haveCust = new Set(customers.map(c => c.id));
+    const addC = data.customers.filter(c => c && c.id && !haveCust.has(c.id));
+    const addT = data.transactions.filter(t => t && t.id && !haveTxn.has(t.id));
+    if(!addC.length && !addT.length){
+      alert('備份檔裡的資料雲端都已經有了，沒有需要補回的。');
+      return;
+    }
+    const when = data.exportedAt ? new Date(data.exportedAt).toLocaleString() : '未知';
+    const msg = '備份時間：' + when + '\n'
+      + '備份檔：客戶 ' + data.customers.length + ' 筆、交易 ' + data.transactions.length + ' 筆\n\n'
+      + '雲端目前沒有、將補回：客戶 ' + addC.length + ' 筆、交易 ' + addT.length + ' 筆\n'
+      + '（雲端已有的資料一律不動，不會被覆蓋或刪除）\n\n確定要補回嗎？';
+    if(!confirm(msg)) return;
+    btn.textContent = '補回中…';
+    await FB.restoreMissing(addC, addT);
+    btn.textContent = '✓ 已補回';
+    await sleep(2500);
+    alert('已補回：客戶 ' + addC.length + ' 筆、交易 ' + addT.length + ' 筆。');
+    loadAllTxns();
+  }catch(err){
+    alert('匯入備份失敗：' + cloudErrMsg(err));
+  }finally{
+    btn.disabled = false; btn.textContent = old;
+  }
+});
+
 function cloudErrMsg(e){
   if(e && e.code === 'permission-denied') return '沒有權限，請重新登入';
   return (e && e.message) || String(e);
@@ -1775,9 +2185,11 @@ function startCloud(){
     mergeAllTxns();
     setCloudBadge('已連線', true);
   }, e => { setCloudBadge('讀取失敗', false); setCloudStatus('err', '⚠ 讀取交易紀錄失敗：' + cloudErrMsg(e)); });
+  startHeld();
   if(window.Pick) Pick.start();
 }
 function stopCloud(){
+  stopHeld();
   if(window.Pick) Pick.stop();
   if(unsubCust){ try{ unsubCust(); }catch(e){} unsubCust = null; }
   if(unsubTxns){ try{ unsubTxns(); }catch(e){} unsubTxns = null; }
@@ -1832,6 +2244,8 @@ function buildTxn(){
     currentTxn = {id: 'T' + Date.now().toString(36) + Math.random().toString(36).slice(2,5), date: new Date().toISOString()};
   }
   const t = {id: currentTxn.id, date: currentTxn.date, ...snapshotCart()};
+  const op = document.getElementById('operatorSel').value;   // 編輯舊單時，下拉會先帶入原本的人，可以改
+  if(op) t.operator = op;
   if(currentTxn.editedAt) t.editedAt = currentTxn.editedAt;
   return t;
 }
@@ -1954,7 +2368,7 @@ function renderTxns(){
     const when = d.toLocaleDateString('zh-TW') + ' ' + pad2(d.getHours()) + ':' + pad2(d.getMinutes());
     return `<div class="txn-item" data-id="${escapeHtml(t.id)}">
       <div class="txn-item-top">
-        <div class="txn-item-main"><div class="txn-item-name">${escapeHtml(txnCustName(t))}</div><div class="txn-item-sub">${when} · ${(t.lines||[]).length} 項${t.hasTax ? ' · 含稅' : ''}${t.editedAt ? ' · 已編輯' : ''}</div></div>
+        <div class="txn-item-main"><div class="txn-item-name">${escapeHtml(txnCustName(t))}</div><div class="txn-item-sub">${when} · ${(t.lines||[]).length} 項${t.hasTax ? ' · 含稅' : ''}${t.operator ? ' · 打單 ' + escapeHtml(t.operator) : ''}${t.editedAt ? ' · 已編輯' : ''}</div></div>
         <div class="txn-item-amt">$${fmt(t.total)}</div>
         <button type="button" class="txn-small-btn txn-toggle">看訂單</button>
       </div>
@@ -1962,8 +2376,8 @@ function renderTxns(){
         <div class="txn-order-wrap">${renderOrderHtml(t)}</div>
         <div class="txn-actions" style="gap:8px;">
           <button type="button" class="txn-small-btn txn-edit">編輯</button>
-          <button type="button" class="txn-small-btn txn-reprint">重新列印</button>
-          <button type="button" class="txn-small-btn txn-reprint-receipt">列印小張收據</button>
+          <button type="button" class="txn-small-btn txn-reprint">補印A4帳單</button>
+          <button type="button" class="txn-small-btn txn-reprint-receipt">補印小張收據</button>
           <button type="button" class="txn-small-btn danger txn-del">刪除</button>
         </div>
       </div>
@@ -2071,9 +2485,11 @@ window.fbReady.then(FBlib=>{
       document.body.classList.remove('locked');
       applyMode();
       startCloud();
+      loadProducts(u.role);
     }else{
       if(u) FBlib.logout();
       currentRole = null;
+      clearProducts();
       stopCloud();
       applyMode();
       showLock();
@@ -2082,7 +2498,6 @@ window.fbReady.then(FBlib=>{
 });
 setTimeout(()=>{ if(!window.FB && document.body.classList.contains('locked')) document.getElementById('lockMsg').textContent = '無法載入登入元件，請檢查網路後重新整理'; }, 10000);
 
-loadHeldOrdersFromStorage();
 renderHeldOrders();
 updateEditBanner();
 setTxnRange('month');
