@@ -177,6 +177,7 @@ function mergeParsed(r){
   if(r.customer && !s.customer){ s.customer = r.customer; $('pkCust').value = r.customer; renderGrade(); }
   if(r.location && LOCS.includes(r.location)){ s.location = r.location; renderLocs(); }
   if(r.items.some(i => i.price)) s.showPrice = true;
+  if(r.items.length && !s.items.length) s.firstAt = Date.now();   // 留貨天數從加進第一筆商品那天開始算
   s.items = normals().concat(r.items.filter(i => !i.preorder), pres(), r.items.filter(i => i.preorder));
   touch(); renderItems();
 }
@@ -184,7 +185,8 @@ function mergeParsed(r){
 // ---------- 輸出 ----------
 function buildText(){
   const s = cur();
-  const head = ('#' + s.location + ' ' + (s.customer || '')).trim();
+  const name = (s.customer || '').trim();
+  const head = '#' + s.location + (name ? ' （' + name + '）' : '');
   const line = it => `${it.name}${s.showPrice && it.price ? ' 定價' + it.price : ''} *${it.qty}${it.reserved ? '（已留）' : ''}`;
   const n = normals().map((it, i) => `${i + 1}. ${line(it)}`), p = pres().map(it => '（預訂）' + line(it));
   let t = head + '\n\n' + n.join('\n');
@@ -193,6 +195,12 @@ function buildText(){
 }
 
 // ---------- 畫面 ----------
+// 留貨天數：加進第一筆商品那天算第 1 天（舊的單沒有記錄，就用開單那天）
+function keepDays(s){
+  const d0 = new Date(s.firstAt || s.createdAt || Date.now()); d0.setHours(0, 0, 0, 0);
+  const d1 = new Date(); d1.setHours(0, 0, 0, 0);
+  return Math.max(0, Math.round((d1 - d0) / 86400000)) + 1;
+}
 function renderSide(){
   const all = Array.from(S.slips.values()).filter(s => hasContent(s) || (s.id === S.curId && !S.closed));
   const drafts = all.filter(s => s.status !== 'done'), dones = all.filter(s => s.status === 'done');
@@ -206,7 +214,7 @@ function renderSide(){
     <div class="pk-seg"><button type="button" data-pktab="draft" class="${S.tab === 'draft' ? 'on' : ''}">進行中 ${drafts.filter(hasContent).length}</button><button type="button" data-pktab="done" class="${S.tab === 'done' ? 'on' : ''}">已完成 ${dones.length}</button></div>
     ${list.length ? list.map(s => { const k = s.items.filter(i => i.reserved).length, n = left(s);
       const tag = !s.items.length ? '' : n ? `<span class="pk-left">${n} 項未撿</span>` : '<span class="pk-left ok">✓ 撿好</span>';
-      return `<button type="button" class="pk-ord${n ? ' pending' : ''}${s.id === S.curId && !S.closed ? ' cur' : ''}" data-pkopen="${s.id}"><span class="t"><span class="nm">${esc(s.customer || '（未填客戶）')}</span><span class="pk-pill">${esc(s.location)}</span>${tag}${s.status === 'done' ? '<span class="pk-pill done">已完成</span>' : ''}</span><span class="m">${s.items.length} 項 · 已留 ${k}/${s.items.length} · ${ts(s.updatedAt)}</span></button>`; }).join('')
+      return `<button type="button" class="pk-ord${n ? ' pending' : ''}${s.id === S.curId && !S.closed ? ' cur' : ''}" data-pkopen="${s.id}"><span class="t"><span class="nm">${esc(s.customer || '（未填客戶）')}</span><span class="pk-pill">${esc(s.location)}</span>${tag}${s.status === 'done' ? '<span class="pk-pill done">已完成</span>' : ''}</span><span class="m">${s.items.length} 項 · 已留 ${k}/${s.items.length}${s.items.length ? ' · 留貨第 ' + keepDays(s) + ' 天' : ''}</span></button>`; }).join('')
       : `<div class="pk-empty">${S.tab === 'done' ? '還沒有完成的單' : '沒有進行中的單'}</div>`}
     ${canDelete() && !S.closed && S.slips.has(S.curId) && hasContent(cur()) ? `<button class="pk-b ${S.confirmDel === S.curId ? 'red' : ''}" type="button" data-pk="del">${S.confirmDel === S.curId ? '確定刪除這張單？' : '刪除這張單'}</button>` : ''}
     <p class="pk-hint">單子 3 台電腦即時同步。</p>`;
