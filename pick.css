@@ -111,3 +111,7 @@ textarea.pk-in{min-height:76px; resize:vertical; line-height:1.6; flex:1 1 100%;
   .pk-bar .pk-b{flex:1;}
   .pk-toast{bottom:calc(200px + env(safe-area-inset-bottom));}
 }
+
+/* 整張單的備註 */
+.pk-note-lbl{font-size:13px; font-weight:600; color:var(--secondary); margin:8px 2px 0;}
+textarea.pk-in.pk-note{min-height:52px;}

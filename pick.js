@@ -47,6 +47,8 @@ panel.innerHTML = `
       <ul class="pk-list" id="pkPre"></ul>
       <form class="pk-add" id="pkAddForm"><input class="pk-in" id="pkAddIn" placeholder="單筆加入，例如：黑炫風 *25" autocomplete="off"><button class="pk-b" type="submit">加入</button></form>
       <p class="pk-hint">點號碼可切換成「預訂」（會移到最下面）。按住 ⠿ 拖曳調整順序。</p>
+      <label class="pk-note-lbl" for="pkNote">備註</label>
+      <textarea class="pk-in pk-note" id="pkNote" rows="2" placeholder="例如：週五來拿、要開發票…（輸出時會放在最下面）"></textarea>
     </div>
 
     <div class="pk-card">
@@ -191,6 +193,8 @@ function buildText(){
   const n = normals().map((it, i) => `${i + 1}. ${line(it)}`), p = pres().map(it => '（預訂）' + line(it));
   let t = head + '\n\n' + n.join('\n');
   if(p.length) t += (n.length ? '\n\n' : '') + p.join('\n');
+  const note = (s.note || '').trim();
+  if(note) t += '\n\n備註：' + note;   // 備註放最下面，上面空一行
   return t;
 }
 
@@ -282,6 +286,7 @@ function renderClosed(){
 function renderAll(){
   renderClosed();
   $('pkCust').value = cur().customer || '';
+  $('pkNote').value = cur().note || '';
   renderGrade(); renderLocs(); renderItems(); renderRules(); renderSide(); renderCustList();
 }
 function editing(){ const a = document.activeElement; return a && panel.contains(a) && a.matches('input,textarea'); }
@@ -338,6 +343,7 @@ $('pkSide').addEventListener('click', async e => {
   }
 });
 $('pkCust').addEventListener('input', e => { cur().customer = e.target.value; renderGrade(); touch(); });
+$('pkNote').addEventListener('input', e => { cur().note = e.target.value; touch(); });
 $('pkLocs').addEventListener('click', e => { const b = e.target.closest('[data-pkloc]'); if(!b) return; cur().location = b.dataset.pkloc; renderLocs(); touch(); });
 $('pkShowPrice').addEventListener('change', e => { cur().showPrice = e.target.checked; renderItems(); touch(); });
 
