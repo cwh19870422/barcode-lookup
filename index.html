@@ -333,6 +333,25 @@
   }
 .cv-btn{margin-left:auto;font:inherit;font-size:13px;font-weight:600;box-sizing:border-box;height:32px;min-width:112px;padding:0 12px;border-radius:8px;border:1.5px solid #1d1d1f;background:#fff;color:#1d1d1f;cursor:pointer;white-space:nowrap}
 .cv-btn+.sort-sel{margin-left:8px}
+.jy-btn{margin-left:auto;font:inherit;font-size:13px;font-weight:600;box-sizing:border-box;height:32px;min-width:112px;padding:0 12px;border-radius:8px;border:1.5px solid #1d1d1f;background:#fff;color:#1d1d1f;cursor:pointer;white-space:nowrap}
+.jy-btn+.cv-btn{margin-left:8px}
+@media (max-width:520px){
+  body:not(.staff) .status-row{flex-wrap:wrap; row-gap:8px}
+  body:not(.staff) .status-row > span:first-child{flex:1 0 100%}
+  body:not(.staff) .status-row .jy-btn{margin-left:0}
+  body:not(.staff) .status-row .jy-btn, body:not(.staff) .status-row .cv-btn, body:not(.staff) .status-row .sort-sel{flex:1 1 0; min-width:0}
+}
+body.staff .jy-btn{display:none !important}
+body.staff .jy-btn+.cv-btn{margin-left:auto}
+body.jy-view .jy-btn{background:#0071e3;border-color:#0071e3;color:#fff}
+.price-cell.jy{display:none}
+.price-cell.jy .val{color:#c2410c}
+body.jy-view .price-cell:not(.sell):not(.jy), body.jy-view .history-btn, body.jy-view .history-panel{display:none !important}
+body.jy-view .price-cell.jy{display:flex}
+body.jy-view .prices, body.staff.jy-view .prices{grid-template-columns:repeat(2,minmax(0,1fr)) !important; max-width:420px}
+body.jy-view .price-cell{flex-direction:row !important}
+body.jy-view .price-cell .lbl{position:static !important; width:auto !important; padding:0 10px !important; font-size:13px !important}
+body.jy-view .price-cell .val{padding-left:6px !important; padding-right:10px !important; font-size:19px !important}
 body.cust-view .cv-btn{background:#0071e3;border-color:#0071e3;color:#fff}
 body.cust-view .price-cell:not(.sell), body.cust-view .history-btn, body.cust-view .history-panel{display:none !important}
 body.cust-view .prices{grid-template-columns:minmax(0,1fr) !important; max-width:260px}
@@ -385,6 +404,7 @@ body.cust-view .prices{grid-template-columns:minmax(0,1fr) !important; max-width
     </div>
     <div class="status-row">
       <span id="statusText">載入中…</span>
+      <button type="button" class="jy-btn" title="只顯示今英價（本錢÷1.05×0.97）和賣價">今英結帳</button>
       <button type="button" class="cv-btn" title="只顯示賣價，給客人看">顧客檢視</button>
       <select class="sort-sel" title="排序方式"><option value="">排序：預設</option><option value="asc">賣價 低→高</option><option value="desc">賣價 高→低</option></select>
       <span id="dataDate"></span>
@@ -502,6 +522,7 @@ body.cust-view .prices{grid-template-columns:minmax(0,1fr) !important; max-width
       </div>
       <div class="status-row">
       <span id="orderStatusText">請搜尋或掃描商品加入清單</span>
+      <button type="button" class="jy-btn" title="只顯示今英價（本錢÷1.05×0.97）和賣價">今英結帳</button>
       <button type="button" class="cv-btn" title="只顯示賣價，給客人看">顧客檢視</button>
       <select class="sort-sel" title="排序方式"><option value="">排序：預設</option><option value="asc">賣價 低→高</option><option value="desc">賣價 高→低</option></select>
       </div>
@@ -758,6 +779,7 @@ function priceCellsHtml(r, q){
       <div class="price-cell" data-name="${escapeHtml(name)}" data-value="${escapeHtml(fmt(priceB))}"><div class="lbl">2</div><div class="val">${fmt(priceB)}</div></div>
       <div class="price-cell" data-name="${escapeHtml(name)}" data-value="${escapeHtml(fmt(priceC))}"><div class="lbl">3</div><div class="val">${fmt(priceC)}</div></div>
       <div class="price-cell" data-name="${escapeHtml(name)}" data-value="${escapeHtml(fmt(priceD))}"><div class="lbl">4</div><div class="val">${fmt(priceD)}</div></div>
+      ${(typeof cost==='number' && cost>0) ? `<div class="price-cell jy" data-name="${escapeHtml(name)}" data-value="${escapeHtml(fmtCost(cost/1.05*0.97))}"><div class="lbl">今英價</div><div class="val">${fmtCost(cost/1.05*0.97)}</div></div>` : `<div class="price-cell jy" data-name="${escapeHtml(name)}" data-value=""><div class="lbl">今英價</div><div class="val">—</div></div>`}
       <div class="price-cell cost" data-name="${escapeHtml(name)}" data-value="${escapeHtml(fmtCost(cost))}"><div class="lbl">本</div><div class="val">${fmtCost(cost)}</div></div>
     </div>`;
 }
@@ -790,10 +812,24 @@ function searchRows(q, limit){
   return matches;
 }
 let sortMode = '';
+function syncViewBtns(){
+  const cv = document.body.classList.contains('cust-view'), jy = document.body.classList.contains('jy-view');
+  document.querySelectorAll('.cv-btn').forEach(x=>{ x.textContent = cv ? '顧客檢視：開' : '顧客檢視'; });
+  document.querySelectorAll('.jy-btn').forEach(x=>{ x.textContent = jy ? '今英結帳：開' : '今英結帳'; });
+}
 document.querySelectorAll('.cv-btn').forEach(b=>{
   b.addEventListener('click', ()=>{
     const on = document.body.classList.toggle('cust-view');
-    document.querySelectorAll('.cv-btn').forEach(x=>{ x.textContent = on ? '顧客檢視：開' : '顧客檢視'; });
+    if(on) document.body.classList.remove('jy-view');
+    syncViewBtns();
+  });
+});
+document.querySelectorAll('.jy-btn').forEach(b=>{
+  b.addEventListener('click', ()=>{
+    if(!isBoss()) return;
+    const on = document.body.classList.toggle('jy-view');
+    if(on) document.body.classList.remove('cust-view');
+    syncViewBtns();
   });
 });
 document.querySelectorAll('.sort-sel').forEach(sel=>{
@@ -2482,6 +2518,7 @@ function isBoss(){ return currentRole === 'boss'; }
 function applyMode(){
   const boss = isBoss();
   document.body.classList.toggle('staff', !boss);
+  if(!boss && document.body.classList.contains('jy-view')){ document.body.classList.remove('jy-view'); if(typeof syncViewBtns==='function') syncViewBtns(); }
   const lb = document.getElementById('lockBtn');
   lb.innerHTML = boss ? '<span class="ico">🔓</span><span class="lbl">老闆（登出）</span>' : '<span class="ico">🔒</span><span class="lbl">員工（登出）</span>';
   const sel = document.getElementById('priceSourceSelect');
