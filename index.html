@@ -141,7 +141,9 @@
   .price-src-slot{display:flex; align-items:center; gap:6px; flex-shrink:0;}
   .price-src-slot .psl{font-size:12px; color:var(--secondary); font-weight:600;}
   .price-src-slot select{border:none; background:var(--gray-fill); border-radius:9px; padding:9px 8px; font-family:var(--sysfont); font-size:13px; font-weight:600; color:var(--ink); max-width:150px;}
-  .cust-info-bar .price-src-slot{margin-top:8px; justify-content:flex-end;}
+  .cust-info-row{display:flex; align-items:center; justify-content:space-between; gap:12px;}
+  .cust-info-row .cust-info-sub{flex:1; min-width:0;}
+  .cust-info-bar .price-src-slot{margin:0; justify-content:flex-end;}
   .cust-add-opt{padding:11px 14px; cursor:pointer; color:var(--blue); font-weight:600; font-size:13.5px; background:rgba(0,122,255,0.06);}
   .temp-cust-form{display:flex; flex-direction:column; gap:8px; margin-top:8px; background:#fff; border:1px solid rgba(0,122,255,0.35); border-radius:12px; padding:12px;}
   .temp-cust-form .tc-title{font-size:13px; font-weight:700; color:var(--blue);}
@@ -267,7 +269,7 @@
   .cart-title-left{display:flex; align-items:center; gap:10px; flex-wrap:wrap;}
   .op-sel{font:inherit; font-size:13px; font-weight:600; box-sizing:border-box; height:32px; min-width:112px; padding:0 8px; border:1.5px solid #1d1d1f; border-radius:8px; background:#fff; color:#1d1d1f;}
   .cart-title-left{flex:1; min-width:0; margin-right:12px;}
-  .cart-cust-note{flex:1 1 160px; min-width:0; text-align:center; font-size:14px; font-weight:700; color:#c2410c; line-height:1.35; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; overflow-wrap:anywhere;}
+  .cart-cust-note{flex:0 1 auto; margin:0 auto; min-width:0; max-width:100%; box-sizing:border-box; text-align:center; font-size:14px; font-weight:700; color:#854d0e; background:#fef08a; border:2px solid #eab308; border-radius:10px; padding:5px 14px; line-height:1.35; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; overflow-wrap:anywhere;}
   .cart-cust-note:empty{display:none;}
   @media (max-width:640px){
     .cart-title-row{display:grid; grid-template-columns:max-content 1fr auto; column-gap:8px; row-gap:8px; align-items:center;}
@@ -276,7 +278,7 @@
     .cart-title-row .cart-count{grid-column:2; grid-row:1;}
     .cart-title-row .op-sel{grid-column:1 / 3; grid-row:2; justify-self:start;}
     .cart-title-row .cart-head-actions{grid-column:3; grid-row:2; justify-self:end;}
-    .cart-title-row .cart-cust-note{grid-column:1 / -1; grid-row:3; text-align:center; flex:none;}
+    .cart-title-row .cart-cust-note{grid-column:1 / -1; grid-row:3; text-align:center; flex:none; justify-self:center; margin:0;}
   }
   .op-sel.empty{color:#8e8e93; border-color:#c7c7cc;}
   .cart-head-actions{display:flex; gap:8px; align-items:center;}
@@ -420,9 +422,8 @@ body.cust-view .prices{grid-template-columns:minmax(0,1fr) !important; max-width
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
             <input id="custSearch" type="text" placeholder="搜尋客戶姓名、會員號碼或電話…" autocomplete="off">
           </div>
-          <div class="price-src-slot" id="priceSrcSlotPicker"><label class="psl" for="priceSourceSelect">單價</label><select id="priceSourceSelect">
-          <option value="grade">依會員等級</option>
-          <option value="sell">定價 (SELLINGPRICE)</option>
+          <div class="price-src-slot" id="priceSrcSlotPicker"><label class="psl" for="priceSourceSelect">等級</label><select id="priceSourceSelect">
+          <option value="grade" hidden>會員等級</option>
           <option value="A">賣價 A</option>
           <option value="B">批價 B</option>
           <option value="C">批價 C(3)</option>
@@ -461,11 +462,13 @@ body.cust-view .prices{grid-template-columns:minmax(0,1fr) !important; max-width
           <button class="change-cust-btn" id="viewCustTxnsBtn" style="margin-left:auto;">查看紀錄</button>
           <button class="change-cust-btn" id="changeCustBtn" style="margin-left:8px;">換客戶</button>
         </div>
-        <div class="cust-info-sub">
-          <span id="custPhone"></span>
-          <span id="custAddress"></span>
+        <div class="cust-info-row">
+          <div class="cust-info-sub">
+            <span id="custPhone"></span>
+            <span id="custAddress"></span>
+          </div>
+          <div class="price-src-slot" id="priceSrcSlotInfo"></div>
         </div>
-        <div class="price-src-slot" id="priceSrcSlotInfo"></div>
       </div>
 
     </div>
@@ -1562,7 +1565,7 @@ function updateCartNote(){
   const c = selectedCustomer;
   const fresh = c && c.id ? customers.find(x => x.id === c.id) : null;
   const note = String(((fresh || c || {}).note) || '').trim();
-  el.textContent = note ? ('📌 ' + note) : '';
+  el.textContent = note;
   el.title = note;
 }
 function renderCart(){
@@ -1667,6 +1670,13 @@ document.getElementById('holdCartBtn').addEventListener('click', ()=>{
   holdCurrentOrder();
 });
 
+// 設定單價來源；舊資料若是已移除的選項（例如「定價」），就退回「會員等級」
+function setPriceMode(v){
+  const sel = document.getElementById('priceSourceSelect');
+  sel.value = v || 'grade';
+  if(sel.value !== (v || 'grade')) sel.value = 'grade';
+}
+
 function holdCurrentOrder(){
   if(!cart.length && !selectedCustomer){
     alert('目前沒有客戶或商品可以暫存');
@@ -1710,7 +1720,7 @@ function resumeHeldOrder(id){
     custInfoBar.style.display = 'none';
     custPickerWrap.style.display = 'block'; document.querySelector('#custPickerWrap .cust-row').appendChild(document.getElementById('priceSrcSlotPicker'));
   }
-  document.getElementById('priceSourceSelect').value = target.priceMode || 'grade';
+  setPriceMode(target.priceMode);
   currentTxn = target.txn || null;
   renderCart();
   renderHeldOrders();
@@ -1941,7 +1951,7 @@ function startEditTxn(id){
   }
   cart = [];
   if(t.customer){ selectCustomer({...t.customer}); } else { resetOrderCustomerUI(); }
-  document.getElementById('priceSourceSelect').value = t.priceMode || 'grade';
+  setPriceMode(t.priceMode);
   cart = (t.lines || []).map(lineToCartItem);
   currentTxn = {id:t.id, date:t.date, operator:t.operator};
   selectedCartKey = null;
