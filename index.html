@@ -1547,7 +1547,7 @@ function histPanelHtml(it){
       `</tbody></table>`;
   }
   return `<div class="hp-head"><b>${escapeHtml(it.name)}</b> 歷史價錢
-      ${nowCust ? `<label><input type="checkbox" class="hp-only" ${histOnlyCust ? 'checked' : ''}> 只看 ${escapeHtml(nowCust)}</label>` : ''}</div>${costDiffHtml(it)}${costChangeHtml(all, it.frozen || !it.base ? null : it.base[5])}${body}`;
+      ${nowCust ? `<label><input type="checkbox" class="hp-only" ${histOnlyCust ? 'checked' : ''}> 只看此客戶</label>` : ''}</div>${costDiffHtml(it)}${costChangeHtml(all, it.frozen || !it.base ? null : it.base[5])}${body}`;
 }
 
 function lastPurchaseCellHtml(it){
