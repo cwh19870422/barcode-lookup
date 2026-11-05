@@ -1981,7 +1981,7 @@ function renderOrderHtml(o){
   const rowsHtml = (o.lines || []).map(l => `
     <tr>
       <td style="${cell}">${escapeHtml(l.type === 'item' ? (l.code || l.barcode || '') : '')}</td>
-      <td style="${cell}">${escapeHtml(l.name || '')}${l.disc ? ` <span style="font-size:11px;">(${l.disc}折)</span>` : ''}</td>
+      <td style="${cell}">${escapeHtml(l.name || '')}${l.disc ? ` <span style="font-size:13px;">(${l.disc}折)</span>` : ''}</td>
       <td style="${cell} text-align:right;">${fmt(l.unitPrice)}</td>
       <td style="${cell} text-align:center;">${l.type === 'fee' ? '' : l.qty}</td>
       <td style="${cell} text-align:right;">${fmt(l.amount)}</td>
@@ -2012,15 +2012,15 @@ function renderOrderHtml(o){
     <div style="font-family:-apple-system,'PingFang TC',sans-serif; padding:24px; color:#000; min-width:520px;">
       <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:16px;">
         <div>
-          <h2 style="margin:0 0 4px;">${c ? escapeHtml(c.name||'') : ''}</h2>
-          <div style="font-size:12px; color:#555;">${new Date(o.date).toLocaleString('zh-TW')}${o.operator ? '　打單人員：' + escapeHtml(o.operator) : ''}</div>
+          <h2 style="margin:0 0 4px; font-size:26px;">${c ? escapeHtml(c.name||'') : ''}</h2>
+          <div style="font-size:14px; color:#555;">${new Date(o.date).toLocaleString('zh-TW')}${o.operator ? '　打單人員：' + escapeHtml(o.operator) : ''}</div>
         </div>
-        ${c ? `<div style="font-size:13px; line-height:1.8; text-align:right;">
+        ${c ? `<div style="font-size:15px; line-height:1.8; text-align:right;">
           <div>${escapeHtml(custPhones(c)||'—')}</div>
           <div>${escapeHtml(c.address||'—')}</div>
         </div>` : ''}
       </div>
-      <table style="width:100%; border-collapse:collapse; font-size:13px;">
+      <table style="width:100%; border-collapse:collapse; font-size:15px;">
         <thead><tr style="border-bottom:2px solid #000;">
           <th style="text-align:left; padding:6px 4px;">商品(服務)代碼</th>
           <th style="text-align:left; padding:6px 4px;">服務(產品)名稱</th>
