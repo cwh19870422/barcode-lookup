@@ -1211,7 +1211,8 @@ function scanAddDirect(r, qtyOverride){
   orderResultsEl.innerHTML = '';
   orderStatusEl.textContent = `已加入：${r[4]} × ${qty}`;
   orderClearBtn.style.visibility = 'hidden';
-  orderInput.focus();
+  orderInput.focus({preventScroll:true});
+  showAddedInCart(rowKey(r), qty);   // 掃描／Enter 直接加入時，也跳到出貨清單並閃一下確認
 }
 
 function doOrderSearch(){
@@ -1485,6 +1486,7 @@ document.getElementById('taxBtn').addEventListener('click', ()=>{
     cart.push({key:'fee-tax-'+Date.now(), code:'', barcode:'', name:'稅金 (5%)', base:null, qty:1, unitPrice:tax, note:'', special:'稅金'});
   }
   renderCart();
+  showAddedInCart(cart.find(it => it.special === '稅金').key, 1);
 });
 document.getElementById('priceSourceSelect').addEventListener('change', applyPriceSourceToCart);
 
