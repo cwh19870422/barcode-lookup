@@ -1688,6 +1688,7 @@ function holdCurrentOrder(){
     customer: selectedCustomer ? {...selectedCustomer} : null,
     cart: cart.map(it => ({...it})),
     priceMode: document.getElementById('priceSourceSelect').value,
+    operator: document.getElementById('operatorSel').value,
     txn: currentTxn,
     savedAt: new Date().toISOString()
   };
@@ -1695,6 +1696,7 @@ function holdCurrentOrder(){
   FB.saveHeld(held).catch(heldErr);
   cart = [];
   currentTxn = null;
+  window.clearOperator && window.clearOperator();
   selectedCustomer = null;
   custInfoBar.style.display = 'none';
   custPickerWrap.style.display = 'block'; document.querySelector('#custPickerWrap .cust-row').appendChild(document.getElementById('priceSrcSlotPicker'));
@@ -1724,6 +1726,7 @@ function resumeHeldOrder(id){
   setPriceMode(target.priceMode);
   currentTxn = target.txn || null;
   renderCart();
+  if(!currentTxn && target.operator){ const os = document.getElementById('operatorSel'); if(Array.from(os.options).some(o => o.value === target.operator)){ os.value = target.operator; if(window.paintOperator) window.paintOperator(); } }
   renderHeldOrders();
 }
 
@@ -1818,10 +1821,11 @@ document.getElementById('printReceiptBtn').addEventListener('click', ()=>{
   const sel = document.getElementById('operatorSel');
   const KEY = 'joeda_pos_operator';
   const paint = ()=> sel.classList.toggle('empty', !sel.value);
-  try{ let v = localStorage.getItem(KEY); if(v === '文軒') v = 'sam'; if(v && Array.from(sel.options).some(o=>o.value===v)) sel.value = v; }catch(e){}
+  try{ localStorage.removeItem(KEY); }catch(e){}   // 不再記住上次的人：每張新單都從「打單人員」未選開始
   paint();
-  sel.addEventListener('change', ()=>{ paint(); if(opAppliedFor) return; try{ localStorage.setItem(KEY, sel.value); }catch(e){} });
+  sel.addEventListener('change', paint);
   window.paintOperator = paint;
+  window.clearOperator = ()=>{ sel.querySelectorAll('option[data-tmp]').forEach(o => o.remove()); sel.value = ''; paint(); };
 })();
 
 // 掃到沒建檔的條碼：螢幕中間跳出提醒
@@ -1865,6 +1869,7 @@ document.getElementById('checkoutBtn').addEventListener('click', ()=>{
   if(editing) currentTxn.editedAt = new Date().toISOString();
   saveTransaction();
   cart = []; currentTxn = null; selectedCartKey = null;
+  window.clearOperator && window.clearOperator();
   resetOrderCustomerUI();
   renderCart(); updateEditBanner();
   // 客戶若勾了「結帳提醒」，結帳後跳出提醒
@@ -1900,8 +1905,7 @@ function syncOperatorWithEdit(){
   }else if(!currentTxn && opAppliedFor){
     opAppliedFor = null;
     sel.querySelectorAll('option[data-tmp]').forEach(o => o.remove());
-    let v = ''; try{ v = localStorage.getItem('joeda_pos_operator') || ''; }catch(e){}
-    sel.value = Array.from(sel.options).some(o => o.value === v) ? v : '';
+    sel.value = '';
   }
   if(window.paintOperator) window.paintOperator();
 }
