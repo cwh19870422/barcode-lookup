@@ -116,7 +116,16 @@
   /* 打單：商品搜尋列，捲不到時固定在畫面最下方 */
   .order-search-bar{position:sticky; bottom:0; z-index:45; background:var(--paper); margin:18px -10px 0; padding:10px 10px 8px; border-radius:14px 14px 0 0; box-shadow:0 -1px 0 var(--line), 0 -8px 18px rgba(0,0,0,0.06);}
   .order-search-bar .status-row{margin:8px 0 0;}
-  @media (max-width:640px){ .order-search-bar{bottom:calc(68px + env(safe-area-inset-bottom)); margin-left:-6px; margin-right:-6px; padding-left:6px; padding-right:6px;} }
+  /* 打單頁搜尋框：白底浮起樣式；客戶搜尋、等級選單、商品搜尋同高；底部搜尋列左右邊緣與出貨清單完全對齊 */
+  #tab-order{--sbh:50px;}
+  #tab-order .cust-row .search-box, #tab-order .order-search-bar .search-box{background:#fff; border-radius:14px; box-shadow:0 4px 14px rgba(0,0,0,.12); padding:0 8px 0 16px; min-height:var(--sbh); height:var(--sbh); box-sizing:border-box;}
+  #tab-order .cust-row .search-box svg, #tab-order .order-search-bar .search-box svg{color:var(--blue);}
+  #tab-order .cust-row .search-box input, #tab-order .order-search-bar .search-box input{padding:0 4px; height:100%; font-size:16px;}
+  #tab-order .cust-row .search-box input::placeholder, #tab-order .order-search-bar .search-box input::placeholder{color:#6e6e73;}
+  #tab-order .cust-row .price-src-slot select{height:var(--sbh); min-width:124px; padding:0 14px; background:#fff; border-radius:14px; box-shadow:0 4px 14px rgba(0,0,0,.12); font-size:15px; font-weight:700;}
+  .order-search-bar{margin-left:0; margin-right:0; padding-left:0; padding-right:0; padding-bottom:10px;}
+  @media (max-width:640px){ #tab-order{--sbh:46px;} .order-search-bar{margin-left:0; margin-right:0; padding-left:0; padding-right:0;} #tab-order .cust-row .price-src-slot select{min-width:140px;} }
+  @media (max-width:640px){ .order-search-bar{bottom:calc(68px + env(safe-area-inset-bottom));} }
 
   .qty-stepper{display:flex; align-items:center; background:var(--paper-alt); border-radius:8px; overflow:hidden; height:28px;}
   .qty-stepper button{width:26px; height:28px; border:none; background:transparent; color:var(--ink); font-size:16px; font-weight:600; display:flex; align-items:center; justify-content:center; line-height:1; padding:0; cursor:pointer;}
