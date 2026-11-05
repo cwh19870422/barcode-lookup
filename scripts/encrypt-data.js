@@ -9,7 +9,7 @@
  *
  * 輸出（寫進 <repo 資料夾>）：
  *   data.boss.enc   老闆版（含本錢、A~D 批價）
- *   data.staff.enc  員工版（本錢欄位已移除）
+ *   data.staff.enc  員工版（內容與老闆版相同，用另一把鑰匙；畫面上本錢只對老闆顯示，員工只看得到漲跌差額）
  *   data.meta.json  只有明碼資料的 sha256、筆數、時間；用來判斷資料有沒有變
  *
  * 程式最後一行會印出 CHANGED 或 UNCHANGED（資料沒變就不會寫任何檔案，避免無意義的 commit）。
@@ -21,7 +21,7 @@ const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
 
-const COST_IDX = 5;
+const FORMAT = 2; // 資料格式版本；改變輸出格式時調高，才會強制重新產生檔案
 
 function die(msg){ console.error('ERROR: ' + msg); process.exit(1); }
 
@@ -46,7 +46,7 @@ const staffPath = path.join(repoDir, 'data.staff.enc');
 if(fs.existsSync(metaPath) && fs.existsSync(bossPath) && fs.existsSync(staffPath)){
   try{
     const old = JSON.parse(fs.readFileSync(metaPath, 'utf8'));
-    if(old.sha256 === sha){ console.log('資料沒有變動。'); console.log('UNCHANGED'); process.exit(0); }
+    if(old.sha256 === sha && old.format === FORMAT){ console.log('資料沒有變動。'); console.log('UNCHANGED'); process.exit(0); }
   }catch(e){ /* meta 壞掉就重新產生 */ }
 }
 
@@ -57,7 +57,7 @@ function encrypt(obj, key){
   return JSON.stringify({ v: 1, iv: iv.toString('base64'), ct: ct.toString('base64') });
 }
 
-const staffData = { cats: data.cats, rows: data.rows.map(r => { const x = r.slice(); x[COST_IDX] = null; return x; }) };
+const staffData = data;
 
 // 先自我驗證：解得回來、員工版真的沒有本錢，才寫檔
 function decrypt(pkgText, key){
@@ -69,12 +69,11 @@ function decrypt(pkgText, key){
 const bossEnc = encrypt(data, bossKey), staffEnc = encrypt(staffData, staffKey);
 const b2 = decrypt(bossEnc, bossKey), s2 = decrypt(staffEnc, staffKey);
 if(b2.rows.length !== data.rows.length || s2.rows.length !== data.rows.length) die('自我驗證失敗：筆數不符');
-if(s2.rows.some(r => r[COST_IDX] !== null)) die('自我驗證失敗：員工版還有本錢');
 try{ decrypt(staffEnc, bossKey); die('自我驗證失敗：老闆鑰匙竟然能解開員工版'); }catch(e){ if(String(e.message).startsWith('ERROR')) throw e; }
 try{ decrypt(bossEnc, staffKey); die('自我驗證失敗：員工鑰匙竟然能解開老闆版'); }catch(e){ /* 預期會失敗 */ }
 
 fs.writeFileSync(bossPath, bossEnc);
 fs.writeFileSync(staffPath, staffEnc);
-fs.writeFileSync(metaPath, JSON.stringify({ sha256: sha, rows: data.rows.length, cats: data.cats.length, updatedAt: new Date().toISOString() }, null, 1) + '\n');
+fs.writeFileSync(metaPath, JSON.stringify({ format: FORMAT, sha256: sha, rows: data.rows.length, cats: data.cats.length, updatedAt: new Date().toISOString() }, null, 1) + '\n');
 console.log('已寫入 data.boss.enc / data.staff.enc / data.meta.json（' + data.rows.length + ' 筆商品）');
 console.log('CHANGED');

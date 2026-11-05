@@ -71,7 +71,7 @@
   .price-cell .val{background:var(--paper-alt); font-family:var(--sysfont); font-size:19px; font-weight:800; color:var(--ink); letter-spacing:-0.01em; flex:1; display:flex; align-items:center; justify-content:center; padding:9px 4px; text-align:center;}
   .price-cell.cost .val{color:var(--red);}
   /* 員工模式：藏起搜尋分頁、本錢、管理連結 */
-  body.staff #exportBackupBtn, body.staff #importBackupBtn, body.staff .price-cell.cost, body.staff .hp-sum, body.staff .txn-del, body.staff #topLink{display:none !important;}
+  body.staff #exportBackupBtn, body.staff #importBackupBtn, body.staff .price-cell.cost, body.staff .txn-del, body.staff #topLink{display:none !important;}
   body.staff .prices{grid-template-columns:repeat(4,minmax(0,1fr));}
   .price-cell.sell .val{color:var(--blue);}
   .empty{text-align:center; padding:70px 20px; color:var(--secondary);}
@@ -990,7 +990,8 @@ function toggleHistoryPanel(btn){
     if(!entries.length){
       panel.innerHTML = `<div class="hist-empty">${escapeHtml(selectedCustomer.name)} 沒有這項商品的歷史交易紀錄</div>`;
     }else{
-      let html = `<table><thead><tr><th>日期</th><th>數量</th><th>金額</th><th>當時本錢</th></tr></thead><tbody>`;
+      const showCost = isBoss();
+      let html = `<table><thead><tr><th>日期</th><th>數量</th><th>金額</th>${showCost ? '<th>當時本錢</th>' : ''}</tr></thead><tbody>`;
       entries.forEach(h=>{
         const d = new Date(h.date);
         const dateStr = isNaN(d) ? escapeHtml(h.date) : d.toLocaleDateString('zh-TW', {year:'numeric', month:'numeric', day:'numeric'});
@@ -998,11 +999,11 @@ function toggleHistoryPanel(btn){
           <td>${dateStr}</td>
           <td>${fmt(h.qty)}</td>
           <td>${fmt(h.amount)}</td>
-          <td>${fmtCost(h.cost)}</td>
+          ${showCost ? `<td>${fmtCost(h.cost)}</td>` : ''}
         </tr>`;
       });
       html += `</tbody></table>`;
-      panel.innerHTML = html;
+      panel.innerHTML = costChangeHtml(history.filter(h => h.barcode && h.barcode === barcode), (rows.find(r => r[3] === barcode) || [])[5]) + html;
     }
     panel.style.display = 'block';
     return;
@@ -1505,12 +1506,26 @@ function costDiffHtml(it){
   if(!list.length) return '';
   const last = list[list.length - 1];
   const cur = Number(it.base[5]), prev = Number(last.cost);
-  if(isNaN(cur) || isNaN(prev) || last.cost === null || last.cost === undefined) return '';
+  if(isNaN(cur) || isNaN(prev) || last.cost === null || last.cost === undefined || cur <= 0 || prev <= 0) return '';
   const d = cur - prev;
   const cls = Math.abs(d) < 0.005 ? 'same' : d > 0 ? 'up' : 'down';
   const tag = Math.abs(d) < 0.005 ? '<span class="hp-tag same">持平</span>'
     : d > 0 ? `<span class="hp-tag up">▲ 漲${fmtDelta(d)}</span>` : `<span class="hp-tag down">▼ 降${fmtDelta(d)}</span>`;
   return `<div class="hp-sum ${cls}">目前本錢與上次購買（${fmtWhenFull(last.date)}）相比：${tag}</div>`;
+}
+
+// 本錢變動紀錄：由這項商品的歷史購買紀錄推算「什麼時候本錢變了、漲跌多少」（只顯示差額，不顯示實際本錢）
+function costChangeHtml(entries, curCost){
+  const pts = entries.filter(h => h.cost !== null && h.cost !== undefined && h.cost !== '' && Number(h.cost) > 0)
+                     .sort((a,b) => new Date(a.date) - new Date(b.date));
+  const ch = []; let prev = null;
+  pts.forEach(h => { const c = Number(h.cost); if(prev !== null && Math.abs(c - prev) >= 0.005) ch.push({date:h.date, d:c - prev}); prev = c; });
+  const cur = Number(curCost);
+  if(prev !== null && cur > 0 && Math.abs(cur - prev) >= 0.005) ch.push({date:null, d:cur - prev});
+  if(!ch.length) return '';
+  const tag = d => d > 0 ? `<span class="hp-tag up">▲ 漲${fmtDelta(d)}</span>` : `<span class="hp-tag down">▼ 降${fmtDelta(d)}</span>`;
+  const items = ch.slice(-6).reverse().map(c => `<div>${c.date ? ymd(c.date) : '最新（相較最近一次購買）'}　${tag(c.d)}</div>`).join('');
+  return `<div class="hp-sum same"><b>本錢變動紀錄</b>${items}</div>`;
 }
 
 function histPanelHtml(it){
@@ -1529,7 +1544,7 @@ function histPanelHtml(it){
       `</tbody></table>`;
   }
   return `<div class="hp-head"><b>${escapeHtml(it.name)}</b> 歷史價錢
-      ${nowCust ? `<label><input type="checkbox" class="hp-only" ${histOnlyCust ? 'checked' : ''}> 只看 ${escapeHtml(nowCust)}</label>` : ''}</div>${costDiffHtml(it)}${body}`;
+      ${nowCust ? `<label><input type="checkbox" class="hp-only" ${histOnlyCust ? 'checked' : ''}> 只看 ${escapeHtml(nowCust)}</label>` : ''}</div>${costDiffHtml(it)}${costChangeHtml(all, it.frozen || !it.base ? null : it.base[5])}${body}`;
 }
 
 function lastPurchaseCellHtml(it){
