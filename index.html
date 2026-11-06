@@ -190,6 +190,8 @@
   table.cart-table td{padding:8px 4px; border-bottom:1px solid var(--line); font-size:13px; vertical-align:middle;}
   table.cart-table input{width:100%; border:none; background:var(--paper-alt); border-radius:6px; padding:6px 8px; font-family:var(--sysfont); font-size:13px; color:var(--ink);}
   table.cart-table input.cart-price, table.cart-table input.cart-qty{text-align:center; font-weight:600;}
+table.cart-table tr.ret-row input.cart-qty, table.cart-table tr.ret-row .cart-subtotal{color:#c0392b;}
+table.cart-table tr.ret-row .cart-name::before{content:'退貨 '; color:#c0392b; font-weight:700;}
   .cart-subtotal{font-weight:700; white-space:nowrap;}
   .cart-del{background:none; border:none; color:var(--red); font-size:16px; cursor:pointer; padding:4px;}
   .cart-totals{display:flex; justify-content:flex-end; gap:26px; padding:14px 4px; border-top:1.5px solid var(--ink); margin-top:4px;}
@@ -1197,22 +1199,23 @@ function getScanQty(){
 
 // 「數量*條碼」：輸入 3* 再掃描商品條碼 → 該商品加入數量 3（例如 3*4710088412345）
 function parseQtyPrefix(raw){
-  const m = /^(\d{1,4})\s*[*＊×]\s*(.*)$/.exec(raw);
+  const m = /^([-－−﹣]?\d{1,4})\s*[*＊×]\s*(.*)$/.exec(raw);
   if(!m) return {qty:null, q:raw};
-  const n = parseInt(m[1],10);
-  return {qty: n >= 1 ? n : null, q: m[2].trim()};
+  const neg = /^[-－−﹣]/.test(m[1]);
+  const n = parseInt(m[1].replace(/^[-－−﹣]/,''),10) * (neg ? -1 : 1);
+  return {qty: n !== 0 ? n : null, q: m[2].trim()};
 }
 
 function scanAddDirect(r, qtyOverride){
   clearTimeout(orderDebounce);
   const qty = qtyOverride || getScanQty();
-  addToCart(r, qty);
+  const addedKey = addToCart(r, qty);
   orderInput.value = '';
   orderResultsEl.innerHTML = '';
-  orderStatusEl.textContent = `已加入：${r[4]} × ${qty}`;
+  orderStatusEl.textContent = qty < 0 ? `已加入退貨：${r[4]} × ${qty}` : `已加入：${r[4]} × ${qty}`;
   orderClearBtn.style.visibility = 'hidden';
   orderInput.focus({preventScroll:true});
-  showAddedInCart(rowKey(r), qty);   // 掃描／Enter 直接加入時，也跳到出貨清單並閃一下確認
+  showAddedInCart(addedKey, qty);   // 掃描／Enter 直接加入時，也跳到出貨清單並閃一下確認
 }
 
 function doOrderSearch(){
@@ -1393,7 +1396,7 @@ orderResultsEl.addEventListener('click', (e)=>{
 });
 
 function addToCart(r, qty){
-  const key = rowKey(r);
+  const key = rowKey(r) + (qty < 0 ? '|ret' : '');   // 退貨（負數量）獨立一行，不與一般銷售合併
   const mode = document.getElementById('priceSourceSelect').value;
   const price = getPriceValue(r, mode, selectedCustomer ? selectedCustomer.grade : 'A');
   const existing = cart.find(it => it.key === key);
@@ -1406,6 +1409,7 @@ function addToCart(r, qty){
     });
   }
   renderCart();
+  return key;
 }
 
 function applyPriceSourceToCart(){
@@ -1595,13 +1599,13 @@ function renderCart(){
   cart.forEach((it,i)=>{
     const isFee = !!it.special;
     const shownPrice = it.special === '退費' ? Math.abs(it.unitPrice) : it.unitPrice;
-    const rowCls = (isFee ? 'fee-row' + (it.special==='退費' ? ' refund' : '') : '') + (it.temp ? ' temp-row' : '') + (it.key===selectedCartKey ? ' cart-sel' : '');
+    const rowCls = (it.qty < 0 && !isFee ? 'ret-row ' : '') + (isFee ? 'fee-row' + (it.special==='退費' ? ' refund' : '') : '') + (it.temp ? ' temp-row' : '') + (it.key===selectedCartKey ? ' cart-sel' : '');
     html += `<tr data-idx="${i}" class="${rowCls}">
       <td class="${isFee || it.temp ? '' : 'cart-name'}">${it.temp
         ? `<input type="text" class="cart-name-input" data-idx="${i}" value="${escapeHtml(it.name)}" placeholder="臨時商品名稱">`
         : escapeHtml(it.name) + (it.disc ? `<span class="disc-tag">${it.disc}折</span>` : '')}</td>
       <td><input type="number" inputmode="decimal" class="cart-price" data-idx="${i}" value="${shownPrice === 0 && isFee ? '' : shownPrice}" ${isFee ? 'placeholder="金額"' : ''}></td>
-      <td>${isFee ? '<span style="display:block;text-align:center;color:var(--secondary);">—</span>' : `<input type="number" class="cart-qty" data-idx="${i}" value="${it.qty}" min="1">`}</td>
+      <td>${isFee ? '<span style="display:block;text-align:center;color:var(--secondary);">—</span>' : `<input type="number" class="cart-qty" data-idx="${i}" value="${it.qty}" step="1">`}</td>
       <td class="cart-subtotal" id="subtotal-${i}">${fmt(it.unitPrice*it.qty)}</td>
       <td><input type="text" class="cart-note" data-idx="${i}" value="${escapeHtml(it.note)}" placeholder="備註…"></td>
       <td><button class="cart-del" data-idx="${i}">✕</button></td>
@@ -1644,7 +1648,8 @@ cartBody.addEventListener('input', (e)=>{
     // 退費：輸入正數即可，系統自動以負數計入
     cart[i].unitPrice = cart[i].special === '退費' ? -Math.abs(v) : v;
   }else if(e.target.classList.contains('cart-qty')){
-    cart[i].qty = Math.max(1, fmtNum(e.target.value)||1);
+    const q = Math.round(fmtNum(e.target.value));
+    if(q !== 0) cart[i].qty = q;   // 允許負數（退貨）；0 或空白暫不更新，離開欄位時還原
   }else if(e.target.classList.contains('cart-note')){
     cart[i].note = e.target.value;
   }
@@ -1654,6 +1659,19 @@ cartBody.addEventListener('input', (e)=>{
 });
 
 cartBody.addEventListener('change', (e)=>{
+  if(e.target.classList.contains('cart-qty')){
+    const i = parseInt(e.target.dataset.idx,10), it = cart[i];
+    if(it){
+      const base = String(it.key).replace(/\|ret$/,'');
+      const nk = base + (it.qty < 0 ? '|ret' : '');
+      if(nk !== it.key){
+        const dup = cart.find((c,j)=> j!==i && c.key===nk);   // 正負切換後若剛好和另一行同 key，就併成一行
+        if(dup && !it.special){ dup.qty += it.qty; cart.splice(i,1); } else it.key = nk;
+      }
+      renderCart();
+    }
+    return;
+  }
   if(e.target.classList.contains('hp-only')){ histOnlyCust = e.target.checked; renderCart(); }
 });
 
@@ -1952,7 +1970,7 @@ function lineToCartItem(l){
   }
   const found = rows.find(r => (l.barcode && r[3] === l.barcode) || (l.code && r[2] === l.code));
   const base = found || [0, '', l.code || '', l.barcode || '', l.name, l.cost ?? null, null, null, null, null, null];
-  const it = {key: rowKey(base) || ('item-' + uid), code:l.code || '', barcode:l.barcode || '', name:l.name, base,
+  const it = {key: (rowKey(base) || ('item-' + uid)) + (fmtNum(l.qty) < 0 ? '|ret' : ''), code:l.code || '', barcode:l.barcode || '', name:l.name, base,
               qty:l.qty, unitPrice:l.unitPrice, note:l.note || '', costSnap:l.cost, frozen:!found};
   if(l.disc) it.disc = l.disc;
   return it;
@@ -2374,7 +2392,7 @@ function buildTxn(){
 function rebuildHistory(){
   const fromTxns = [];
   allTxns.forEach(t => (t.lines || []).forEach(l => {
-    if(l.type !== 'item') return;
+    if(l.type !== 'item' || fmtNum(l.qty) <= 0) return;   // 退貨（負數量）不列入上次購買／歷史價錢
     fromTxns.push({txnId:t.id, date:t.date, customer:(t.customer && t.customer.name) || '', name:l.name, barcode:l.barcode, code:l.code, qty:l.qty, unitPrice:l.unitPrice, amount:l.amount, cost:l.cost});
   }));
   history = legacyHistory.concat(fromTxns);
