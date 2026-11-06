@@ -1812,6 +1812,7 @@ function resumeHeldOrder(id){
   const target = heldOrders[idx];
   heldOrders.splice(idx, 1);
   FB.deleteHeld(id).catch(heldErr);
+  const savedCart = target.cart.map(it => ({...it}));   // 取回後要保留暫存當時的單價（含手動改過的價錢）
   cart = target.cart.map(it => ({...it}));
   if(target.customer){
     selectCustomer(target.customer);
@@ -1821,6 +1822,7 @@ function resumeHeldOrder(id){
     custPickerWrap.style.display = 'block'; document.querySelector('#custPickerWrap .cust-row').appendChild(document.getElementById('priceSrcSlotPicker'));
   }
   setPriceMode(target.priceMode);
+  cart = savedCart;   // selectCustomer 會依等級重新帶價，這裡還原成暫存時的價錢
   currentTxn = target.txn || null;
   renderCart();
   if(!currentTxn && target.operator){ const os = document.getElementById('operatorSel'); if(Array.from(os.options).some(o => o.value === target.operator)){ os.value = target.operator; if(window.paintOperator) window.paintOperator(); } }
