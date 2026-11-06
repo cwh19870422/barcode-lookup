@@ -1501,13 +1501,31 @@ function applyPriceSourceToCart(){
   renderCart();
 }
 
+// 取代 prompt()：桌面版（Electron）不支援 window.prompt，所以用自己的輸入視窗；回傳字串，取消回傳 null
+function askText(msg, def){
+  return new Promise(resolve => {
+    const m = document.getElementById('qkMask');
+    document.getElementById('qkDlg').innerHTML = `<h3 style="white-space:pre-line;font-weight:600;font-size:15px;line-height:1.5">${escapeHtml(msg)}</h3>
+      <input type="text" id="askInp" value="${escapeHtml(def || '')}"><div class="qk-row"><button type="button" id="askNo">取消</button><button type="button" class="pri" id="askOk">確定</button></div>`;
+    m.classList.add('on');
+    const inp = document.getElementById('askInp');
+    setTimeout(() => { inp.focus(); inp.select(); }, 30);
+    const done = v => { m.classList.remove('on'); m.removeEventListener('click', bg); resolve(v); };
+    const bg = e => { if(e.target === m) done(null); };
+    m.addEventListener('click', bg);
+    document.getElementById('askOk').onclick = () => done(inp.value);
+    document.getElementById('askNo').onclick = () => done(null);
+    inp.addEventListener('keydown', e => { if(e.key === 'Enter'){ e.preventDefault(); done(inp.value); } else if(e.key === 'Escape') done(null); });
+  });
+}
+
 // 單品折數：先在清單點選一個商品（變橘色），再按「％ 折數」輸入折數
 // 單價 = 定價(SELLINGPRICE) × 折數，四捨五入；輸入 0 = 取消折扣（恢復單價依據）
-document.getElementById('discBtn').addEventListener('click', ()=>{
+document.getElementById('discBtn').addEventListener('click', async ()=>{
   const it = cart.find(c => c.key === selectedCartKey && !c.special && c.base);
   if(!it){ alert('請先在出貨清單點一下要打折的商品（品名那格），再按「折數」'); return; }
   const sell = fmtNum(getPriceValue(it.base, 'sell', 'A'));
-  const v = prompt(`「${it.name}」（定價 ${fmt(sell)}）\n輸入折數：85 = 85折、8.8 = 8.8折\n輸入 0 = 取消折扣`, '');
+  const v = await askText(`「${it.name}」（定價 ${fmt(sell)}）\n輸入折數：85 = 85折、8.8 = 8.8折\n輸入 0 = 取消折扣`, '');
   if(v === null) return;
   const n = parseFloat(v);
   if(isNaN(n) || n < 0 || n > 100){ alert('折數格式不正確'); return; }
@@ -2729,7 +2747,7 @@ function renderQK(){
     cells += `<button type="button" class="qk-key ${k.img ? 'img' : isF ? 'fold' : 'plain'}" data-s="${s}">${k.img ? `<img class="im" src="${k.img}" alt="" draggable="false">` : ''}<span class="nm">${escapeHtml(k.name || '')}</span>${isF ? '<span class="ar">▸</span>' : ''}</button>`;
   }
   document.getElementById('qkBody').innerHTML =
-    (qkEditing ? '<p class="qk-edit-tip">編輯中：點格子修改或新增，按住格子或分類可拖曳換位置；點目前的分類名稱可改名。</p>' : '') +
+    (qkEditing ? '<p class="qk-edit-tip">編輯中：點格子修改或新增，按住格子或分類可拖曳換位置；點目前選中的分類（或快速點兩下任一分類）可改名。</p>' : '') +
     `${crumb}<div class="qk-grid">${cells}</div>`;
 }
 function qkAdd(k, qty){
@@ -2857,11 +2875,19 @@ function qkEditDialog(pos){
     catch(e){ alert('刪除失敗：' + cloudErrMsg(e)); }
   };
 }
-async function qkRenameCat(i){
-  const v = prompt('分類名稱', qkCats[i]); if(v === null) return;
-  const n = v.trim(); if(!n) return;
-  const names = qkCats.slice(); names[i] = n;
-  try{ await FB.saveQuickKey('_cats', {names, order: qkOrder}); }catch(e){ alert('改名失敗：' + cloudErrMsg(e)); }
+function qkRenameCat(i){   // 不用 prompt()：桌面版（Electron）不支援，改用自己的視窗
+  qkOpenMask(`<h3>修改分類名稱</h3><label>分類名稱</label><input type="text" id="qkCatName" maxlength="10" value="${escapeHtml(qkCats[i])}">
+    <div class="qk-row"><button type="button" id="qkCatCancel">取消</button><button type="button" class="pri" id="qkCatOk">儲存</button></div>`);
+  const inp = document.getElementById('qkCatName');
+  setTimeout(() => { inp.focus(); inp.select(); }, 30);
+  const ok = async () => {
+    const n = inp.value.trim(); if(!n) return;
+    const names = qkCats.slice(); names[i] = n;
+    try{ await FB.saveQuickKey('_cats', {names, order: qkOrder}); qkCloseMask(); }catch(e){ alert('改名失敗：' + cloudErrMsg(e)); }
+  };
+  document.getElementById('qkCatOk').onclick = ok;
+  document.getElementById('qkCatCancel').onclick = qkCloseMask;
+  inp.addEventListener('keydown', e => { if(e.key === 'Enter'){ e.preventDefault(); ok(); } else if(e.key === 'Escape') qkCloseMask(); });
 }
 // 拖曳：格子 → 放到另一格（空格＝搬過去、有東西＝互換）；分類 → 插到目標位置
 async function qkMoveCell(from, to){
@@ -2884,6 +2910,7 @@ async function qkMoveCat(from, to){
   document.getElementById('qkFoldBtn').addEventListener('click', () => { qkFolded = !qkFolded; try{ localStorage.setItem('qkFolded', qkFolded ? '1' : '0'); }catch(e){} renderQK(); });
   document.getElementById('qkEditBtn').addEventListener('click', () => { if(!isBoss()) return; qkEditing = !qkEditing; renderQK(); });
   document.getElementById('qkMask').addEventListener('click', e => { if(e.target.id === 'qkMask') qkCloseMask(); });
+  panel.addEventListener('dblclick', e => { const tab = e.target.closest('.qk-tab'); if(tab && qkEditing){ qkRenameCat(+tab.dataset.c); } });
   let dragMoved = false;
   panel.addEventListener('click', e => {
     if(dragMoved){ dragMoved = false; return; }
