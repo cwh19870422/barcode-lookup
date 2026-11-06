@@ -555,7 +555,7 @@ body.cust-view .prices{grid-template-columns:minmax(0,1fr) !important; max-width
     </div>
     <div class="cust-table-wrap">
       <table class="cust-list">
-        <thead><tr><th>姓名</th><th>會員號碼</th><th>電話</th><th>地址</th><th>等級</th><th>統編</th><th>備註</th></tr></thead>
+        <thead><tr><th>姓名</th><th>會員號碼</th><th>電話</th><th>地址</th><th>等級</th><th>抬頭</th><th>統編</th><th>品名</th><th>備註</th></tr></thead>
         <tbody id="custListBody"></tbody>
       </table>
     </div>
@@ -1096,6 +1096,7 @@ function custMatch(c, q){
   const qd = digitsOnly(q);
   return (c.name||'').toLowerCase().includes(q)
     || (c.memberNo||'').toLowerCase().includes(q)
+    || (c.invoiceTitle||'').toLowerCase().includes(q) || (c.taxId||'').includes(q)
     || (c.phone||'').includes(q) || (c.phone2||'').includes(q)
     || (qd.length >= 3 && (digitsOnly(c.phone).includes(qd) || digitsOnly(c.phone2).includes(qd)));
 }
@@ -2029,6 +2030,10 @@ function renderOrderHtml(o){
         <td style="${f} text-align:right;">${fmt(o.total)}</td>
         <td></td>
       </tr>`;
+  // 抬頭／統編／品名：表格上方的框線橫條（沒填的欄位不顯示）
+  const infoCells = c ? [['抬頭', c.invoiceTitle, 2], ['統編', c.taxId, 1], ['品名', c.invoiceItem, 1]].filter(x => x[1]) : [];
+  const infoBox = infoCells.length ? `<div style="display:flex; border:1px solid #333; margin-bottom:12px; font-size:15px;">${
+    infoCells.map((x,k) => `<div style="flex:${x[2]}; padding:6px 10px; ${k < infoCells.length-1 ? 'border-right:1px solid #333;' : ''}">${x[0]}　${escapeHtml(x[1])}</div>`).join('')}</div>` : '';
   return `
     <div style="font-family:-apple-system,'PingFang TC',sans-serif; padding:24px; color:#000; min-width:520px;">
       <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:16px;">
@@ -2041,6 +2046,7 @@ function renderOrderHtml(o){
           <div>${escapeHtml(c.address||'—')}</div>
         </div>` : ''}
       </div>
+      ${infoBox}
       <table style="width:100%; border-collapse:collapse; font-size:15px;">
         <thead><tr style="border-bottom:2px solid #000;">
           <th style="text-align:left; padding:6px 4px;">商品(服務)代碼</th>
@@ -2132,7 +2138,7 @@ function renderCustomerList(){
     ? `共 ${customers.length} 位客戶，顯示 ${list.length} 位`
     : '目前沒有客戶資料，請到「⚙ 管理客戶」新增或匯入';
   if(!list.length){
-    custListBody.innerHTML = `<tr><td colspan="7" style="text-align:center; color:#8E8E93; padding:20px;">沒有符合的客戶</td></tr>`;
+    custListBody.innerHTML = `<tr><td colspan="9" style="text-align:center; color:#8E8E93; padding:20px;">沒有符合的客戶</td></tr>`;
     return;
   }
   custListBody.innerHTML = list.map(c => `
@@ -2142,7 +2148,9 @@ function renderCustomerList(){
       <td>${escapeHtml(custPhones(c))}</td>
       <td>${escapeHtml(c.address||'')}</td>
       <td><span class="grade-badge grade-${escapeHtml(c.grade||'A')}">${escapeHtml(c.grade||'')}</span></td>
+      <td>${escapeHtml(c.invoiceTitle||'—')}</td>
       <td>${escapeHtml(c.taxId||'—')}</td>
+      <td>${escapeHtml(c.invoiceItem||'—')}</td>
       <td>${escapeHtml(c.note||'—')}</td>
     </tr>
   `).join('');
@@ -2217,7 +2225,7 @@ function downloadBlob(blob, name){
 }
 function buildBackupWorkbook(custs, txns){
   const wb = XLSX.utils.book_new();
-  const custRows = custs.map(c => ({ 客戶名稱:c.name||'', 等級:c.grade||'', 會員號碼:c.memberNo||'', 電話:c.phone||'', 電話2:c.phone2||'', 地址:c.address||'', 備註:c.note||'', 系統編號:c.id||'' }));
+  const custRows = custs.map(c => ({ 客戶名稱:c.name||'', 等級:c.grade||'', 會員號碼:c.memberNo||'', 電話:c.phone||'', 電話2:c.phone2||'', 地址:c.address||'', 抬頭:c.invoiceTitle||'', 統編:c.taxId||'', 品名:c.invoiceItem||'', 備註:c.note||'', 系統編號:c.id||'' }));
   XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(custRows.length ? custRows : [{客戶名稱:''}]), '客戶');
   const sorted = txns.slice().sort((a,b)=>String(a.date||'').localeCompare(String(b.date||'')));
   const head = sorted.map(t => ({

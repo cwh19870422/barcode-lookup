@@ -96,7 +96,9 @@
         <option value="C">C 級</option>
         <option value="D">D 級</option>
       </select>
+      <input type="text" id="fTitle" placeholder="抬頭（選填）">
       <input type="text" id="fTaxId" placeholder="統一編號（選填）">
+      <input type="text" id="fItemName" placeholder="品名（選填）">
       <input type="text" id="fNote" class="span2" placeholder="備註（選填）">
       <label class="span2" style="font-size:13.5px; display:flex; align-items:center; gap:8px;"><input type="checkbox" id="fAlert" style="width:auto;"> 結帳時跳出提醒「帳單金額 XXX 請登記」</label>
     </div>
@@ -105,7 +107,7 @@
 
   <div class="step">
     <h3><span class="num">2</span>匯入 Excel（選填）</h3>
-    <p>欄位需包含：姓名；選填：會員號碼、電話、電話2、地址、會員等級（A/B/C/D）、統編、備註。可一次匯入多筆，會加到下方清單中。</p>
+    <p>欄位需包含：姓名；選填：會員號碼、電話、電話2、地址、會員等級（A/B/C/D）、抬頭、統編、品名、備註。可一次匯入多筆，會加到下方清單中。</p>
     <div class="drop-zone" id="dropZone">
       <div><strong>拖曳 Excel 檔案到這裡</strong>，或點擊選擇檔案</div>
       <div style="margin-top:4px;">支援 .xls / .xlsx</div>
@@ -195,12 +197,14 @@ document.getElementById('addBtn').addEventListener('click', ()=>{
     phone2: document.getElementById('fPhone2').value.trim(),
     address: document.getElementById('fAddress').value.trim(),
     grade: document.getElementById('fGrade').value,
+    invoiceTitle: document.getElementById('fTitle').value.trim(),
     taxId: document.getElementById('fTaxId').value.trim(),
+    invoiceItem: document.getElementById('fItemName').value.trim(),
     note: document.getElementById('fNote').value.trim(),
     checkoutAlert: document.getElementById('fAlert').checked,
   });
   document.getElementById('fAlert').checked = false;
-  ['fName','fMemberNo','fPhone','fPhone2','fAddress','fTaxId','fNote'].forEach(id => document.getElementById(id).value = '');
+  ['fName','fMemberNo','fPhone','fPhone2','fAddress','fTitle','fTaxId','fItemName','fNote'].forEach(id => document.getElementById(id).value = '');
   renderTable();
 });
 
@@ -257,6 +261,8 @@ async function handleFiles(fileList){
       const cAddress = findCol(lowerHeaders, ['地址','address']);
       const cGrade = findCol(lowerHeaders, ['會員等級','等級','grade']);
       const cTaxId = findCol(lowerHeaders, ['統編','統一編號','taxid']);
+      const cTitle = findCol(lowerHeaders, ['抬頭','發票抬頭','title']);
+      const cItemName = findCol(lowerHeaders, ['品名','發票品名','itemname']);
       const cNote = findCol(lowerHeaders, ['備註','note','remark']);
       const cAlert = findCol(lowerHeaders, ['結帳提醒','提醒']);
 
@@ -276,7 +282,9 @@ async function handleFiles(fileList){
           phone2: cPhone2>-1 ? String(r[cPhone2]||'').trim() : '',
           address: cAddress>-1 ? String(r[cAddress]||'').trim() : '',
           grade,
+          invoiceTitle: cTitle>-1 ? String(r[cTitle]||'').trim() : '',
           taxId: cTaxId>-1 ? String(r[cTaxId]||'').trim() : '',
+          invoiceItem: cItemName>-1 ? String(r[cItemName]||'').trim() : '',
           note: cNote>-1 ? String(r[cNote]||'').trim() : '',
           checkoutAlert: cAlert>-1 && /^(是|y|yes|v|1|true|✓|✔)$/i.test(String(r[cAlert]||'').trim()),
         });
@@ -298,7 +306,7 @@ const normKey = v => String(v||'').toLowerCase().replace(/[\s\-()（）]/g,'');
 function custMatches(c, q){
   if(!q) return true;
   const nq = normKey(q);
-  return [c.name, c.memberNo, c.phone, c.phone2, c.address, c.note, c.taxId].some(v => String(v||'').toLowerCase().includes(q) || (nq && normKey(v).includes(nq)));
+  return [c.name, c.memberNo, c.phone, c.phone2, c.address, c.note, c.taxId, c.invoiceTitle, c.invoiceItem].some(v => String(v||'').toLowerCase().includes(q) || (nq && normKey(v).includes(nq)));
 }
 function renderTable(){
   if(!customers.length){
@@ -314,7 +322,7 @@ function renderTable(){
     return;
   }
   let html = `<table class="cust-edit"><thead><tr>
-    <th>姓名</th><th>會員號碼</th><th>電話</th><th>電話2</th><th>地址</th><th style="width:64px;">等級</th><th>統編</th><th>備註</th><th style="width:54px;">結帳提醒</th><th style="width:24px;"></th>
+    <th>姓名</th><th>會員號碼</th><th>電話</th><th>電話2</th><th>地址</th><th style="width:64px;">等級</th><th>抬頭</th><th>統編</th><th>品名</th><th>備註</th><th style="width:54px;">結帳提醒</th><th style="width:24px;"></th>
   </tr></thead><tbody>`;
   shown.forEach(({c,i})=>{
     html += `<tr data-idx="${i}">
@@ -328,7 +336,9 @@ function renderTable(){
           ${['A','B','C','D'].map(g=>`<option value="${g}" ${c.grade===g?'selected':''}>${g}</option>`).join('')}
         </select>
       </td>
+      <td><input type="text" class="c-title" data-idx="${i}" value="${escapeHtml(c.invoiceTitle)}"></td>
       <td><input type="text" class="c-taxid" data-idx="${i}" value="${escapeHtml(c.taxId)}"></td>
+      <td><input type="text" class="c-itemname" data-idx="${i}" value="${escapeHtml(c.invoiceItem)}"></td>
       <td><input type="text" class="c-note" data-idx="${i}" value="${escapeHtml(c.note)}"></td>
       <td style="text-align:center;"><input type="checkbox" class="c-alert" data-idx="${i}" style="width:auto;" ${c.checkoutAlert ? 'checked' : ''}></td>
       <td><button class="row-del" data-idx="${i}">✕</button></td>
@@ -349,7 +359,9 @@ custTableWrap.addEventListener('input', (e)=>{
   else if(e.target.classList.contains('c-phone')) customers[i].phone = e.target.value;
   else if(e.target.classList.contains('c-address')) customers[i].address = e.target.value;
   else if(e.target.classList.contains('c-grade')) customers[i].grade = e.target.value;
+  else if(e.target.classList.contains('c-title')) customers[i].invoiceTitle = e.target.value;
   else if(e.target.classList.contains('c-taxid')) customers[i].taxId = e.target.value;
+  else if(e.target.classList.contains('c-itemname')) customers[i].invoiceItem = e.target.value;
   else if(e.target.classList.contains('c-note')) customers[i].note = e.target.value;
   else if(e.target.classList.contains('c-alert')) customers[i].checkoutAlert = e.target.checked;
 });
@@ -390,7 +402,7 @@ document.getElementById('exportExcelBtn').addEventListener('click', ()=>{
   if(!customers.length){ alert('目前沒有客戶資料可匯出'); return; }
   const data = customers.map(c => ({
     '姓名': c.name, '會員號碼': c.memberNo || '', '電話': c.phone, '電話2': c.phone2 || '', '地址': c.address,
-    '會員等級': c.grade, '統編': c.taxId, '備註': c.note, '結帳提醒': c.checkoutAlert ? '是' : ''
+    '會員等級': c.grade, '抬頭': c.invoiceTitle || '', '統編': c.taxId, '品名': c.invoiceItem || '', '備註': c.note, '結帳提醒': c.checkoutAlert ? '是' : ''
   }));
   const ws = XLSX.utils.json_to_sheet(data);
   const wb = XLSX.utils.book_new();
