@@ -119,6 +119,13 @@
   /* 打單頁搜尋框：白底浮起樣式；客戶搜尋、等級選單、商品搜尋同高；底部搜尋列左右邊緣與出貨清單完全對齊 */
   #tab-order{--sbh:50px;}
   #tab-order .cust-row .search-box, #tab-order .order-search-bar .search-box{background:#fff; border-radius:14px; box-shadow:0 4px 14px rgba(0,0,0,.12); padding:0 8px 0 16px; min-height:var(--sbh); height:var(--sbh); box-sizing:border-box;}
+  /* 搜尋頁搜尋框：與打單頁同樣的白底浮起樣式 */
+  #tab-search{--sbh:50px;}
+  #tab-search .search-box{background:#fff; border-radius:14px; box-shadow:0 4px 14px rgba(0,0,0,.12); padding:0 8px 0 16px; min-height:var(--sbh); height:var(--sbh); box-sizing:border-box;}
+  #tab-search .search-box svg{color:var(--blue);}
+  #tab-search .search-box input{padding:0 4px; height:100%; font-size:16px;}
+  #tab-search .search-box input::placeholder{color:#6e6e73;}
+  @media (max-width:640px){ #tab-search{--sbh:46px;} }
   #tab-order .cust-row .search-box svg, #tab-order .order-search-bar .search-box svg{color:var(--blue);}
   #tab-order .cust-row .search-box input, #tab-order .order-search-bar .search-box input{padding:0 4px; height:100%; font-size:16px;}
   #tab-order .cust-row .search-box input::placeholder, #tab-order .order-search-bar .search-box input::placeholder{color:#6e6e73;}
