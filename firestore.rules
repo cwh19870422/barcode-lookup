@@ -34,6 +34,12 @@ service cloud.firestore {
       allow read, write: if signedIn();
     }
 
+    // 打單快捷鍵：老闆、員工都能讀；只有老闆能新增、修改、刪除
+    match /quickkeys/{id} {
+      allow read: if signedIn();
+      allow write: if isBoss();
+    }
+
     // 暫存訂單：老闆、員工都能讀、新增、修改、刪除（取回訂單時會刪除）
     match /heldOrders/{id} {
       allow read, write: if signedIn();

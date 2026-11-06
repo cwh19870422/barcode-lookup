@@ -184,6 +184,55 @@
 
   .order-card .card-top{margin-bottom:8px;}
 
+
+  /* ===== 打單快捷鍵 ===== */
+  .qk{background:#fff; border-radius:16px; box-shadow:var(--shadow); padding:12px 14px; margin-top:20px;}
+  .qk-h{display:flex; align-items:center; gap:8px; min-height:30px;}
+  .qk-h b{font-size:15px;}
+  .qk-h .sp{flex:1;}
+  .qk-hbtn{border:0; background:#f2f2f7; color:#5f6570; border-radius:9px; padding:6px 12px; font:600 13px var(--sysfont); cursor:pointer;}
+  .qk-hbtn.on{background:var(--blue); color:#fff;}
+  .staff .qk-hbtn.qk-edit{display:none;}
+  .qk-body{margin-top:8px;}
+  .qk.collapsed .qk-body{display:none;}
+  .qk-tabs{display:flex; gap:6px; overflow-x:auto; padding-bottom:6px; scrollbar-width:thin;}
+  .qk-tab{flex:0 0 auto; border:0; background:#f2f2f7; color:#333; border-radius:18px; padding:7px 14px; font:700 14px var(--sysfont); cursor:pointer;}
+  .qk-tab.on{background:var(--blue); color:#fff;}
+  .qk-crumb{display:flex; align-items:center; gap:8px; font-weight:700; font-size:14px; margin:2px 0 8px;}
+  .qk-back{border:0; background:#e5e5ea; border-radius:9px; padding:6px 12px; font:700 13px var(--sysfont); cursor:pointer;}
+  .qk-grid{display:grid; grid-template-columns:repeat(6,minmax(0,1fr)); gap:8px;}
+  .qk-key{position:relative; border:0; border-radius:11px; background:#fffbe6; box-shadow:0 1px 3px rgba(0,0,0,.18); height:50px; padding:0 40px; font:700 14px/1.2 var(--sysfont); color:#222; cursor:pointer; display:flex; align-items:center; justify-content:center; text-align:center; user-select:none; -webkit-user-select:none; touch-action:manipulation; overflow:hidden;}
+  .qk-key.plain{padding:0 8px;}
+  .qk-key.fold{padding:0 24px;}
+  .qk-key.img{padding:0 44px;}
+  .qk-key:active{transform:scale(.97);}
+  .qk-key .nm{display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; word-break:break-all;}
+  .qk-key .im{position:absolute; left:6px; top:50%; transform:translateY(-50%); width:36px; height:36px; border-radius:8px; object-fit:cover; background:#fff;}
+  .qk-key .ar{position:absolute; right:9px; top:50%; transform:translateY(-50%); font-size:12px; color:#555; line-height:1;}
+  .qk-key.empty{background:#f6f6f8; box-shadow:none; color:#c3c3c8; cursor:default;}
+  .qk.editing .qk-key.empty{cursor:pointer; color:#8e8e93; background:#eef3fb;}
+  .qk.editing .qk-key{outline:2px dashed #9bbcf5; outline-offset:-3px;}
+  .qk-edit-tip{font-size:12px; color:#6e6e73; margin:0 0 8px;}
+  @media (max-width:700px){ .qk-grid{grid-template-columns:repeat(3,minmax(0,1fr));} }
+  @media (max-width:520px){ .qk-grid{grid-template-columns:repeat(2,minmax(0,1fr));} }
+  .qk-mask{position:fixed; inset:0; background:rgba(0,0,0,.4); display:none; align-items:center; justify-content:center; z-index:2000; padding:16px;}
+  .qk-mask.on{display:flex;}
+  .qk-dlg{background:#fff; border-radius:16px; padding:16px; width:100%; max-width:380px; max-height:90vh; overflow:auto;}
+  .qk-dlg h3{margin:0 0 10px; font-size:16px;}
+  .qk-dlg label{display:block; font-size:12px; color:#6e6e73; margin:8px 0 3px;}
+  .qk-dlg input[type=text], .qk-dlg input[type=number]{width:100%; border:1px solid #e0e0e5; border-radius:9px; padding:9px 10px; font:15px var(--sysfont); background:#f7f7f9;}
+  .qk-prices{display:grid; grid-template-columns:repeat(4,1fr); gap:6px;}
+  .qk-prices label{margin:0 0 3px; text-align:center;}
+  .qk-row{display:flex; gap:8px; margin-top:14px;}
+  .qk-row button{flex:1; border:0; border-radius:10px; padding:11px 0; font:700 15px var(--sysfont); cursor:pointer; background:#f2f2f7; color:#333;}
+  .qk-row .pri{background:var(--blue); color:#fff;} .qk-row .del{background:#ffe5e3; color:#d70015;}
+  .qk-type{display:flex; gap:6px;} .qk-type button{flex:1; border:0; border-radius:9px; padding:8px 0; background:#f2f2f7; font:600 14px var(--sysfont); cursor:pointer;} .qk-type button.on{background:var(--blue); color:#fff;}
+  .qk-img-row{display:flex; align-items:center; gap:10px;}
+  .qk-img-prev{width:44px; height:44px; border-radius:9px; background:#f2f2f7; object-fit:cover; flex:0 0 44px;}
+  .qk-pad .d{font-size:15px; text-align:center; color:#555; margin-bottom:4px;}
+  .qk-pad .v{font-size:30px; font-weight:800; text-align:center; min-height:40px; margin-bottom:8px;}
+  .qk-pad .g{display:grid; grid-template-columns:repeat(3,1fr); gap:6px;}
+  .qk-pad .g button{height:48px; border:0; border-radius:10px; background:#f2f2f7; font:700 20px var(--sysfont); cursor:pointer;}
   .cart-section{background:#fff; border-radius:16px; padding:18px 20px; box-shadow:var(--shadow); margin-top:20px;}
   .cart-title-row{display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; position:sticky; top:var(--ord-top, 62px); z-index:35; background:#fff; padding:10px 0; margin-top:-10px; border-bottom:1px solid var(--line);}
   .cart-title{font-size:17px; font-weight:700;}
@@ -199,6 +248,7 @@
   table.cart-table input.cart-price, table.cart-table input.cart-qty{text-align:center; font-weight:600;}
 table.cart-table tr.ret-row input.cart-qty, table.cart-table tr.ret-row .cart-subtotal{color:#c0392b;}
 table.cart-table tr.ret-row .cart-name::before{content:'退貨 '; color:#c0392b; font-weight:700;}
+@media (max-width:640px){ table.cart-table tr.ret-row .cart-name::before{content:none;} }
   .cart-subtotal{font-weight:700; white-space:nowrap;}
   .cart-del{background:none; border:none; color:var(--red); font-size:16px; cursor:pointer; padding:4px;}
   .cart-totals{display:flex; justify-content:flex-end; gap:26px; padding:14px 4px; border-top:1.5px solid var(--ink); margin-top:4px;}
@@ -494,6 +544,14 @@ body.cust-view .prices{grid-template-columns:minmax(0,1fr) !important; max-width
 
     <div id="heldOrdersPanel" style="display:none; margin-top:4px;"></div>
 
+
+    <div class="qk" id="qkPanel">
+      <div class="qk-h"><b>⚡ 快捷鍵</b><span class="sp"></span>
+        <button type="button" class="qk-hbtn qk-edit" id="qkEditBtn">編輯</button>
+        <button type="button" class="qk-hbtn" id="qkFoldBtn">收合 ▴</button></div>
+      <div class="qk-body" id="qkBody"></div>
+    </div>
+    <div class="qk-mask" id="qkMask"><div class="qk-dlg" id="qkDlg"></div></div>
 
     <div class="cart-section">
       <div class="cart-title-row">
@@ -1424,6 +1482,7 @@ function addToCart(r, qty){
 function applyPriceSourceToCart(){
   const mode = document.getElementById('priceSourceSelect').value;
   cart.forEach(it=>{
+    if(it.qk){ it.unitPrice = qkPrice(it.qk); it.disc = null; return; }   // 快捷鍵品項：依等級重新帶價
     if(it.special || !it.base || it.frozen) return; // 運費/前帳/退費/臨時商品/已不在商品檔的舊訂單商品 不受單價依據影響
     it.unitPrice = fmtNum(getPriceValue(it.base, mode, selectedCustomer ? selectedCustomer.grade : 'A'));
     it.disc = null;
@@ -2341,10 +2400,12 @@ function startCloud(){
     setCloudBadge('已連線', true);
   }, e => { setCloudBadge('讀取失敗', false); setCloudStatus('err', '⚠ 讀取交易紀錄失敗：' + cloudErrMsg(e)); });
   startHeld();
+  startQK();
   if(window.Pick) Pick.start();
 }
 function stopCloud(){
   stopHeld();
+  stopQK();
   if(window.Pick) Pick.stop();
   if(unsubCust){ try{ unsubCust(); }catch(e){} unsubCust = null; }
   if(unsubTxns){ try{ unsubTxns(); }catch(e){} unsubTxns = null; }
@@ -2374,7 +2435,11 @@ function snapshotCart(){
     const qty = fmtNum(it.qty), unit = fmtNum(it.unitPrice);
     const base = {name: it.name || '', qty, unitPrice: unit, amount: unit*qty};
     if(it.special) return {...base, type:'fee', kind: it.special};
-    if(it.temp || !it.base) return {...base, type:'temp', note: it.note || ''};
+    if(it.temp || !it.base){
+      const l = {...base, type:'temp', note: it.note || ''};
+      if(it.qk && it.qk.cost !== undefined && it.qk.cost !== null && it.qk.cost !== '') l.cost = fmtNum(it.qk.cost);   // 快捷鍵品項若有填本錢才記
+      return l;
+    }
     const cost = (it.costSnap !== undefined && it.costSnap !== null) ? fmtNum(it.costSnap) : fmtNum(it.base[5]);
     const l = {...base, type:'item', code: it.code, barcode: it.barcode, cost, note: it.note || ''};
     if(it.disc) l.disc = it.disc;
@@ -2588,11 +2653,200 @@ document.getElementById('viewCustTxnsBtn').addEventListener('click', ()=>{
   txnCustEl.value = selectedCustomer.name || '';
   setTxnRange('all');
 });
+
+// ===== 打單快捷鍵 =====
+// 資料：Firestore quickkeys 集合；_cats 存 10 個分類名稱；c{分類}_{格} = 第2層；c{分類}_{格}_{子格} = 第3層（資料夾內）
+const QK_DEFAULT_CATS = ['常用','工具','包材','運費','配件','試用品','贈品','服務','雜項','其他'];
+let qkDocs = new Map(), qkCats = QK_DEFAULT_CATS.slice(), qkCat = 0, qkFolder = null, qkEditing = false, unsubQK = null;
+let qkFolded = false; try{ qkFolded = localStorage.getItem('qkFolded') === '1'; }catch(e){}
+function startQK(){
+  stopQK();
+  unsubQK = FB.listenQuickKeys(list => {
+    qkDocs = new Map(list.map(d => [d.id, d]));
+    const c = qkDocs.get('_cats');
+    qkCats = (c && Array.isArray(c.names) && c.names.length === 10) ? c.names : QK_DEFAULT_CATS.slice();
+    renderQK();
+  }, e => { const b = document.getElementById('qkBody'); if(b) b.innerHTML = '<div class="qk-edit-tip">⚠ 讀取快捷鍵失敗：' + escapeHtml(cloudErrMsg(e)) + '（若是剛更新，請先到 Firebase 更新規則）</div>'; });
+}
+function stopQK(){
+  if(unsubQK){ try{ unsubQK(); }catch(e){} unsubQK = null; }
+  qkDocs = new Map(); qkFolder = null; qkEditing = false;
+  try{ renderQK(); }catch(e){}
+}
+function qkId(slot){ return qkFolder === null ? `c${qkCat}_${slot}` : `c${qkCat}_${qkFolder}_${slot}`; }
+function qkPrice(k){
+  const mode = document.getElementById('priceSourceSelect').value;
+  const pr = k.prices || {};
+  const grade = ['A','B','C','D'].includes(mode) ? mode : (selectedCustomer && selectedCustomer.grade) || 'A';
+  if(mode === 'cost' && isBoss() && k.cost !== undefined && k.cost !== '' && k.cost !== null) return fmtNum(k.cost);
+  for(const g of [grade,'D','C','B','A']){ if(pr[g] !== undefined && pr[g] !== '' && pr[g] !== null) return fmtNum(pr[g]); }
+  return 0;
+}
+function renderQK(){
+  const panel = document.getElementById('qkPanel'); if(!panel) return;
+  const boss = isBoss();
+  if(!boss) qkEditing = false;
+  panel.classList.toggle('collapsed', qkFolded);
+  panel.classList.toggle('editing', qkEditing);
+  document.getElementById('qkFoldBtn').textContent = qkFolded ? '展開 ▾' : '收合 ▴';
+  const eb = document.getElementById('qkEditBtn'); eb.classList.toggle('on', qkEditing); eb.textContent = qkEditing ? '完成編輯' : '編輯';
+  const tabs = qkCats.map((c,i) => `<button type="button" class="qk-tab ${i===qkCat?'on':''}" data-c="${i}">${escapeHtml(c)}</button>`).join('');
+  const crumb = qkFolder === null ? '' : `<div class="qk-crumb"><button type="button" class="qk-back" id="qkBack">← 返回</button>${escapeHtml(qkCats[qkCat])} ／ ${escapeHtml((qkDocs.get(`c${qkCat}_${qkFolder}`)||{}).name || '')}</div>`;
+  let cells = '';
+  for(let s = 0; s < 12; s++){
+    const k = qkDocs.get(qkId(s));
+    if(!k){ cells += `<button type="button" class="qk-key empty" data-s="${s}">${qkEditing ? '＋' : ''}</button>`; continue; }
+    const isF = !!k.folder && qkFolder === null;
+    cells += `<button type="button" class="qk-key ${k.img ? 'img' : isF ? 'fold' : 'plain'}" data-s="${s}">${k.img ? `<img class="im" src="${k.img}" alt="">` : ''}<span class="nm">${escapeHtml(k.name || '')}</span>${isF ? '<span class="ar">▸</span>' : ''}</button>`;
+  }
+  document.getElementById('qkBody').innerHTML =
+    (qkEditing ? '<p class="qk-edit-tip">編輯中：點格子可修改或新增；點分類名稱 2 次可改名。</p>' : '') +
+    `<div class="qk-tabs">${tabs}</div>${crumb}<div class="qk-grid">${cells}</div>`;
+}
+function qkAdd(k, qty){
+  const key = 'qk-' + k.id + (qty < 0 ? '|ret' : '');
+  const price = qkPrice(k);
+  const ex = cart.find(it => it.key === key);
+  if(ex) ex.qty += qty;
+  else cart.push({key, code:'', barcode:'', name:k.name || '', base:null, qty, unitPrice:price, note:'', qk:{prices:k.prices || {}, cost:k.cost}});
+  renderCart();
+  orderStatusEl.textContent = qty < 0 ? `已加入退貨：${k.name} × ${qty}` : `已加入：${k.name} × ${qty}`;
+  showAddedInCart(key, qty);
+}
+function qkOpenMask(html){ const m = document.getElementById('qkMask'); document.getElementById('qkDlg').innerHTML = html; m.classList.add('on'); return m; }
+function qkCloseMask(){ document.getElementById('qkMask').classList.remove('on'); }
+function qkNumPad(k){
+  let v = '';
+  qkOpenMask(`<div class="qk-pad"><div class="d">${escapeHtml(k.name)}　數量（可負數＝退貨）</div><div class="v" id="qkPv">&nbsp;</div>
+    <div class="g">${['7','8','9','4','5','6','1','2','3','－','0','⌫'].map(x=>`<button type="button" data-k="${x}">${x}</button>`).join('')}</div>
+    <div class="qk-row"><button type="button" id="qkPc">取消</button><button type="button" class="pri" id="qkPo">加入</button></div></div>`);
+  const show = () => { document.getElementById('qkPv').textContent = v || ' '; };
+  document.getElementById('qkDlg').querySelectorAll('[data-k]').forEach(b => b.onclick = () => {
+    const x = b.dataset.k;
+    if(x === '⌫') v = v.slice(0,-1); else if(x === '－') v = v.startsWith('-') ? v.slice(1) : '-' + v; else if(v.replace('-','').length < 4) v += x;
+    show();
+  });
+  document.getElementById('qkPc').onclick = qkCloseMask;
+  document.getElementById('qkPo').onclick = () => { const q = parseInt(v,10); qkCloseMask(); if(q) qkAdd(k, q); };
+}
+function qkResizeImage(file){
+  return new Promise((res, rej) => {
+    const fr = new FileReader();
+    fr.onerror = () => rej(new Error('讀取圖片失敗'));
+    fr.onload = () => {
+      const img = new Image();
+      img.onerror = () => rej(new Error('不是有效的圖片'));
+      img.onload = () => {
+        const S = 96, c = document.createElement('canvas'); c.width = c.height = S;
+        const g = c.getContext('2d'); const m = Math.min(img.width, img.height);
+        g.fillStyle = '#fff'; g.fillRect(0,0,S,S);
+        g.drawImage(img, (img.width-m)/2, (img.height-m)/2, m, m, 0, 0, S, S);
+        res(c.toDataURL('image/jpeg', 0.72));
+      };
+      img.src = fr.result;
+    };
+    fr.readAsDataURL(file);
+  });
+}
+function qkEditDialog(slot){
+  const id = qkId(slot), old = qkDocs.get(id) || null;
+  const inFolder = qkFolder !== null;
+  let isFolder = !!(old && old.folder), img = (old && old.img) || '';
+  const pr = (old && old.prices) || {};
+  qkOpenMask(`<h3>${old ? '修改' : '新增'}快捷鍵</h3>
+    <label>名稱</label><input type="text" id="qkName" maxlength="20" value="${escapeHtml((old && old.name) || '')}">
+    ${inFolder ? '' : `<label>類型</label><div class="qk-type"><button type="button" data-t="0" class="${isFolder?'':'on'}">直接加入出貨清單</button><button type="button" data-t="1" class="${isFolder?'on':''}">資料夾（再進一層）</button></div>`}
+    <div id="qkPriceBox" style="${isFolder?'display:none':''}">
+      <label>價格（沒填的等級會用 D 級價，再沒有就往 C、B、A 找）</label>
+      <div class="qk-prices">${['A','B','C','D'].map(g=>`<div><label>${g}</label><input type="number" inputmode="decimal" id="qkP${g}" value="${pr[g] ?? ''}"></div>`).join('')}</div>
+      <label>本錢（選填，沒填就不記）</label><input type="number" inputmode="decimal" id="qkCost" value="${(old && old.cost !== undefined && old.cost !== null) ? old.cost : ''}">
+    </div>
+    <label>圖片（選填，名稱容易搞錯時可放）</label>
+    <div class="qk-img-row"><img class="qk-img-prev" id="qkImgPrev" ${img ? `src="${img}"` : ''} alt=""><input type="file" id="qkFile" accept="image/*" style="display:none">
+      <button type="button" class="qk-hbtn" id="qkPick">選擇圖片</button><button type="button" class="qk-hbtn" id="qkNoImg">移除圖片</button></div>
+    <div class="qk-row">${old ? '<button type="button" class="del" id="qkDel">刪除</button>' : ''}<button type="button" id="qkCancel">取消</button><button type="button" class="pri" id="qkSave">儲存</button></div>`);
+  const dlg = document.getElementById('qkDlg');
+  dlg.querySelectorAll('[data-t]').forEach(b => b.onclick = () => {
+    isFolder = b.dataset.t === '1';
+    dlg.querySelectorAll('[data-t]').forEach(x => x.classList.toggle('on', x === b));
+    document.getElementById('qkPriceBox').style.display = isFolder ? 'none' : '';
+  });
+  document.getElementById('qkPick').onclick = () => document.getElementById('qkFile').click();
+  document.getElementById('qkFile').onchange = async (e) => {
+    const f = e.target.files[0]; if(!f) return;
+    try{ img = await qkResizeImage(f); document.getElementById('qkImgPrev').src = img; }catch(err){ alert(err.message); }
+  };
+  document.getElementById('qkNoImg').onclick = () => { img = ''; document.getElementById('qkImgPrev').removeAttribute('src'); };
+  document.getElementById('qkCancel').onclick = qkCloseMask;
+  document.getElementById('qkSave').onclick = async () => {
+    const name = document.getElementById('qkName').value.trim();
+    if(!name){ alert('請輸入名稱'); return; }
+    const d = {name, folder: isFolder, img};
+    if(!isFolder){
+      d.prices = {};
+      ['A','B','C','D'].forEach(g => { const v = document.getElementById('qkP'+g).value.trim(); if(v !== '') d.prices[g] = fmtNum(v); });
+      const c = document.getElementById('qkCost').value.trim(); if(c !== '') d.cost = fmtNum(c);
+    }
+    try{ await FB.saveQuickKey(id, d); qkCloseMask(); }
+    catch(e){ alert('儲存失敗：' + cloudErrMsg(e) + ((e && e.code === 'permission-denied') ? '（請先到 Firebase 更新規則）' : '')); }
+  };
+  const del = document.getElementById('qkDel');
+  if(del) del.onclick = async () => {
+    const kids = (old.folder && !inFolder) ? [...qkDocs.keys()].filter(x => x.startsWith(id + '_')) : [];
+    if(!confirm(`確定刪除「${old.name}」？` + (kids.length ? `\n資料夾裡的 ${kids.length} 個品項也會一起刪除。` : ''))) return;
+    try{ for(const x of kids) await FB.deleteQuickKey(x); await FB.deleteQuickKey(id); qkCloseMask(); }
+    catch(e){ alert('刪除失敗：' + cloudErrMsg(e)); }
+  };
+}
+async function qkRenameCat(i){
+  const v = prompt('分類名稱', qkCats[i]); if(v === null) return;
+  const n = v.trim(); if(!n) return;
+  const names = qkCats.slice(); names[i] = n;
+  try{ await FB.saveQuickKey('_cats', {names}); }catch(e){ alert('改名失敗：' + cloudErrMsg(e)); }
+}
+(function initQK(){
+  const body = document.getElementById('qkBody'), panel = document.getElementById('qkPanel');
+  document.getElementById('qkFoldBtn').addEventListener('click', () => { qkFolded = !qkFolded; try{ localStorage.setItem('qkFolded', qkFolded ? '1' : '0'); }catch(e){} renderQK(); });
+  document.getElementById('qkEditBtn').addEventListener('click', () => { if(!isBoss()) return; qkEditing = !qkEditing; renderQK(); });
+  document.getElementById('qkMask').addEventListener('click', e => { if(e.target.id === 'qkMask') qkCloseMask(); });
+  body.addEventListener('click', e => {
+    const tab = e.target.closest('.qk-tab');
+    if(tab){
+      const i = +tab.dataset.c;
+      if(qkEditing && i === qkCat){ qkRenameCat(i); return; }
+      qkCat = i; qkFolder = null; renderQK(); return;
+    }
+    if(e.target.closest('#qkBack')){ qkFolder = null; renderQK(); return; }
+    const key = e.target.closest('.qk-key'); if(!key) return;
+    if(key._longFired){ key._longFired = false; return; }
+    const slot = +key.dataset.s, k = qkDocs.get(qkId(slot));
+    if(qkEditing){ qkEditDialog(slot); return; }
+    if(!k) return;
+    if(k.folder && qkFolder === null){ qkFolder = slot; renderQK(); return; }
+    qkAdd(k, 1);
+  });
+  // 長按（電腦：右鍵）→ 輸入數量
+  let t = null;
+  body.addEventListener('pointerdown', e => {
+    const key = e.target.closest('.qk-key'); if(!key || qkEditing) return;
+    const k = qkDocs.get(qkId(+key.dataset.s)); if(!k || k.folder) return;
+    clearTimeout(t); t = setTimeout(() => { key._longFired = true; k.id = qkId(+key.dataset.s); qkNumPad(k); }, 450);
+  });
+  ['pointerup','pointerleave','pointercancel'].forEach(ev => body.addEventListener(ev, () => clearTimeout(t)));
+  body.addEventListener('contextmenu', e => {
+    const key = e.target.closest('.qk-key'); if(!key) return;
+    e.preventDefault(); if(qkEditing) return;
+    const k = qkDocs.get(qkId(+key.dataset.s)); if(!k || k.folder) return;
+    k.id = qkId(+key.dataset.s); qkNumPad(k);
+  });
+})();
+
 // ===== 登入：Firebase Authentication（密碼由 Google 伺服器驗證；老闆/員工由帳號決定）=====
 let currentRole = null;   // 'staff' | 'boss'；登入後這台電腦會記住，除非按右上角登出
 function isBoss(){ return currentRole === 'boss'; }
 function applyMode(){
   const boss = isBoss();
+  try{ renderQK(); }catch(e){}
   document.body.classList.toggle('staff', !boss);
   if(!boss && document.body.classList.contains('jy-view')){ document.body.classList.remove('jy-view'); if(typeof syncViewBtns==='function') syncViewBtns(); }
   const lb = document.getElementById('lockBtn');

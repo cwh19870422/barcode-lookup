@@ -124,6 +124,13 @@ const FB = {
   },
   savePickRules(r) { return setDoc(doc(db, 'pickrules', 'main'), clean(r)); },
 
+  // ---- 打單快捷鍵（quickkeys）：每一格一份文件；_cats 存分類名稱 ----
+  listenQuickKeys(cb, onErr) {
+    return onSnapshot(collection(db, 'quickkeys'), snap => cb(snap.docs.map(d => ({ ...d.data(), id: d.id }))), e => onErr && onErr(e));
+  },
+  saveQuickKey(id, data) { return setDoc(doc(db, 'quickkeys', id), clean(data)); },
+  deleteQuickKey(id) { return deleteDoc(doc(db, 'quickkeys', id)); },
+
   // ---- 暫存訂單（heldOrders）：所有電腦共用 ----
   listenHeld(cb, onErr) {
     return onSnapshot(collection(db, 'heldOrders'), snap => cb(snap.docs.map(d => ({ ...d.data(), id: d.id }))), e => onErr && onErr(e));
