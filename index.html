@@ -1605,10 +1605,10 @@ function itemHistory(it){
                 .sort((a,b) => new Date(a.date) - new Date(b.date));
 }
 
-// 上次購買：有選客人 → 該客人上次買的單價；沒選客人 → 任何人最近一次
+// 上次購買：只看目前這位客人上次買的單價；沒選客人就不顯示（別人的買價看「歷史價錢」）
 function lastPurchase(it){
-  let list = itemHistory(it);
-  if(selectedCustomer) list = list.filter(h => h.customer === selectedCustomer.name);
+  if(!selectedCustomer) return null;
+  const list = itemHistory(it).filter(h => h.customer === selectedCustomer.name);
   return list.length ? list[list.length - 1] : null;
 }
 
@@ -1665,9 +1665,9 @@ function histPanelHtml(it){
 
 function lastPurchaseCellHtml(it){
   const h = lastPurchase(it);
-  if(!h) return '<span class="last-none" title="還沒有購買紀錄">—</span>';
+  if(!h) return `<span class="last-none" title="${selectedCustomer ? '這位客人還沒買過' : '請先選客人'}">—</span>`;
   const d = new Date(h.date);
-  const sub = pad2(d.getMonth()+1) + '/' + pad2(d.getDate()) + (selectedCustomer ? '' : ' ' + escapeHtml(h.customer || ''));
+  const sub = pad2(d.getMonth()+1) + '/' + pad2(d.getDate());
   return `<div class="last-price" title="${escapeHtml((h.customer || '未指定客戶') + ' · ' + ymd(h.date))}">${fmt(h.unitPrice)}</div><div class="last-sub">${sub}</div>`;
 }
 
