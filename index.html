@@ -189,13 +189,23 @@
   .qk{background:#fff; border-radius:16px; box-shadow:var(--shadow); padding:12px 14px; margin-top:20px;}
   .qk-h{display:flex; align-items:center; gap:8px; min-height:30px;}
   .qk-h b{font-size:15px;}
-  .qk-h .sp{flex:1;}
+  .qk-hl{flex:1; min-width:0; display:flex; align-items:center;}
+  .qk-hl .qk-tabs{padding-bottom:0; flex:1; min-width:0;}
   .qk-hbtn{border:0; background:#f2f2f7; color:#5f6570; border-radius:9px; padding:6px 12px; font:600 13px var(--sysfont); cursor:pointer;}
   .qk-hbtn.on{background:var(--blue); color:#fff;}
   .staff .qk-hbtn.qk-edit{display:none;}
   .qk-body{margin-top:8px;}
+  .qk-drag-src{opacity:.35;}
+  .qk-ghost{position:fixed; z-index:3000; pointer-events:none; opacity:.9; box-shadow:0 6px 18px rgba(0,0,0,.3); transform:translate(-50%,-50%);}
+  .qk-over{outline:3px solid var(--blue)!important; outline-offset:-3px;}
+  .qk.editing .qk-key, .qk.editing .qk-tab{touch-action:none; cursor:grab;}
+  .qk-res{border:1px solid #e0e0e5; border-radius:9px; margin-top:6px; max-height:190px; overflow:auto;}
+  .qk-res button{display:block; width:100%; text-align:left; border:0; border-bottom:1px solid #f0f0f3; background:#fff; padding:8px 10px; font:13px/1.35 var(--sysfont); cursor:pointer;}
+  .qk-res button:hover{background:#f0f6ff;}
+  .qk-res small{color:#8e8e93;}
+  .qk-sel{font-size:12px; color:#0a4fa8; background:#eaf2ff; border-radius:8px; padding:6px 8px; margin-top:6px; word-break:break-all;}
   .qk.collapsed .qk-body{display:none;}
-  .qk-tabs{display:flex; gap:6px; overflow-x:auto; padding-bottom:6px; scrollbar-width:thin;}
+  .qk-tabs{display:flex; gap:6px; overflow-x:auto; padding-bottom:6px; scrollbar-width:none;}
   .qk-tab{flex:0 0 auto; border:0; background:#f2f2f7; color:#333; border-radius:18px; padding:7px 14px; font:700 14px var(--sysfont); cursor:pointer;}
   .qk-tab.on{background:var(--blue); color:#fff;}
   .qk-crumb{display:flex; align-items:center; gap:8px; font-weight:700; font-size:14px; margin:2px 0 8px;}
@@ -215,6 +225,7 @@
   .qk-edit-tip{font-size:12px; color:#6e6e73; margin:0 0 8px;}
   @media (max-width:700px){ .qk-grid{grid-template-columns:repeat(3,minmax(0,1fr));} }
   @media (max-width:520px){ .qk-grid{grid-template-columns:repeat(2,minmax(0,1fr));} }
+  .qk-title{font-size:15px; font-weight:700;}
   .qk-mask{position:fixed; inset:0; background:rgba(0,0,0,.4); display:none; align-items:center; justify-content:center; z-index:2000; padding:16px;}
   .qk-mask.on{display:flex;}
   .qk-dlg{background:#fff; border-radius:16px; padding:16px; width:100%; max-width:380px; max-height:90vh; overflow:auto;}
@@ -546,7 +557,7 @@ body.cust-view .prices{grid-template-columns:minmax(0,1fr) !important; max-width
 
 
     <div class="qk" id="qkPanel">
-      <div class="qk-h"><b>⚡ 快捷鍵</b><span class="sp"></span>
+      <div class="qk-h" id="qkHead"><div class="qk-hl" id="qkHeadL"></div>
         <button type="button" class="qk-hbtn qk-edit" id="qkEditBtn">編輯</button>
         <button type="button" class="qk-hbtn" id="qkFoldBtn">收合 ▴</button></div>
       <div class="qk-body" id="qkBody"></div>
@@ -2657,16 +2668,24 @@ document.getElementById('viewCustTxnsBtn').addEventListener('click', ()=>{
 });
 
 // ===== 打單快捷鍵 =====
-// 資料：Firestore quickkeys 集合；_cats 存 10 個分類名稱；c{分類}_{格} = 第2層；c{分類}_{格}_{子格} = 第3層（資料夾內）
+// Firestore quickkeys：_cats = {names:[10], order:[0..9]}；每一格一份文件 {cat, parent(資料夾文件id或null), pos(0-11), name(顯示用簡稱), folder, img,
+//   ref(商品資料庫的條碼或品名)+refName，或自訂品項的 prices/cost}。移動格子只改 pos，不改文件 id。
 const QK_DEFAULT_CATS = ['常用','工具','包材','運費','配件','試用品','贈品','服務','雜項','其他'];
-let qkDocs = new Map(), qkCats = QK_DEFAULT_CATS.slice(), qkCat = 0, qkFolder = null, qkEditing = false, unsubQK = null;
+let qkDocs = new Map(), qkCats = QK_DEFAULT_CATS.slice(), qkOrder = [0,1,2,3,4,5,6,7,8,9], qkCat = 0, qkFolder = null, qkEditing = false, unsubQK = null;
 let qkFolded = false; try{ qkFolded = localStorage.getItem('qkFolded') === '1'; }catch(e){}
+function qkNorm(d){   // 舊格式（id 即位置）轉成新欄位
+  if(d.cat !== undefined) return d;
+  const m = /^c(\d+)_(\d+)(?:_(\d+))?$/.exec(d.id);
+  if(!m) return d;
+  return m[3] !== undefined ? {...d, cat:+m[1], parent:`c${m[1]}_${m[2]}`, pos:+m[3]} : {...d, cat:+m[1], parent:null, pos:+m[2]};
+}
 function startQK(){
   stopQK();
   unsubQK = FB.listenQuickKeys(list => {
-    qkDocs = new Map(list.map(d => [d.id, d]));
-    const c = qkDocs.get('_cats');
+    qkDocs = new Map(list.filter(d => d.id !== '_cats').map(d => [d.id, qkNorm(d)]));
+    const c = list.find(d => d.id === '_cats');
     qkCats = (c && Array.isArray(c.names) && c.names.length === 10) ? c.names : QK_DEFAULT_CATS.slice();
+    qkOrder = (c && Array.isArray(c.order) && c.order.length === 10) ? c.order : [0,1,2,3,4,5,6,7,8,9];
     renderQK();
   }, e => { const b = document.getElementById('qkBody'); if(b) b.innerHTML = '<div class="qk-edit-tip">⚠ 讀取快捷鍵失敗：' + escapeHtml(cloudErrMsg(e)) + '（若是剛更新，請先到 Firebase 更新規則）</div>'; });
 }
@@ -2675,8 +2694,14 @@ function stopQK(){
   qkDocs = new Map(); qkFolder = null; qkEditing = false;
   try{ renderQK(); }catch(e){}
 }
-function qkId(slot){ return qkFolder === null ? `c${qkCat}_${slot}` : `c${qkCat}_${qkFolder}_${slot}`; }
-function qkPrice(k){
+function qkCell(pos){ for(const d of qkDocs.values()){ if(d.cat === qkCat && (d.parent || null) === qkFolder && d.pos === pos) return d; } return null; }
+function qkSave(d){ const {id, ...rest} = d; return FB.saveQuickKey(id, rest); }
+let qkRowMap = null, qkRowSrc = null;
+function qkFindRow(k){
+  if(qkRowSrc !== rows){ qkRowMap = new Map(); rows.forEach(r => { qkRowMap.set(String(rowKey(r)), r); }); qkRowSrc = rows; }
+  return qkRowMap.get(String(k.ref)) || (k.refName ? rows.find(r => r[4] === k.refName) : null) || null;
+}
+function qkPrice(k){   // 自訂品項用
   const mode = document.getElementById('priceSourceSelect').value;
   const pr = k.prices || {};
   const grade = ['A','B','C','D'].includes(mode) ? mode : (selectedCustomer && selectedCustomer.grade) || 'A';
@@ -2686,26 +2711,36 @@ function qkPrice(k){
 }
 function renderQK(){
   const panel = document.getElementById('qkPanel'); if(!panel) return;
-  const boss = isBoss();
-  if(!boss) qkEditing = false;
+  if(!isBoss()) qkEditing = false;
   panel.classList.toggle('collapsed', qkFolded);
   panel.classList.toggle('editing', qkEditing);
   document.getElementById('qkFoldBtn').textContent = qkFolded ? '展開 ▾' : '收合 ▴';
   const eb = document.getElementById('qkEditBtn'); eb.classList.toggle('on', qkEditing); eb.textContent = qkEditing ? '完成編輯' : '編輯';
-  const tabs = qkCats.map((c,i) => `<button type="button" class="qk-tab ${i===qkCat?'on':''}" data-c="${i}">${escapeHtml(c)}</button>`).join('');
-  const crumb = qkFolder === null ? '' : `<div class="qk-crumb"><button type="button" class="qk-back" id="qkBack">← 返回</button>${escapeHtml(qkCats[qkCat])} ／ ${escapeHtml((qkDocs.get(`c${qkCat}_${qkFolder}`)||{}).name || '')}</div>`;
+  eb.style.display = qkFolded ? 'none' : '';
+  const tabs = qkOrder.map(i => `<button type="button" class="qk-tab ${i===qkCat?'on':''}" data-c="${i}">${escapeHtml(qkCats[i])}</button>`).join('');
+  document.getElementById('qkHeadL').innerHTML = qkFolded ? '<span class="qk-title">⚡ 快捷鍵</span>' : `<div class="qk-tabs" id="qkTabs">${tabs}</div>`;
+  const fd = qkFolder === null ? null : qkDocs.get(qkFolder);
+  const crumb = qkFolder === null ? '' : `<div class="qk-crumb"><button type="button" class="qk-back" id="qkBack">← 返回</button>${escapeHtml(qkCats[qkCat])} ／ ${escapeHtml((fd && fd.name) || '')}</div>`;
   let cells = '';
   for(let s = 0; s < 12; s++){
-    const k = qkDocs.get(qkId(s));
+    const k = qkCell(s);
     if(!k){ cells += `<button type="button" class="qk-key empty" data-s="${s}">${qkEditing ? '＋' : ''}</button>`; continue; }
     const isF = !!k.folder && qkFolder === null;
-    cells += `<button type="button" class="qk-key ${k.img ? 'img' : isF ? 'fold' : 'plain'}" data-s="${s}">${k.img ? `<img class="im" src="${k.img}" alt="">` : ''}<span class="nm">${escapeHtml(k.name || '')}</span>${isF ? '<span class="ar">▸</span>' : ''}</button>`;
+    cells += `<button type="button" class="qk-key ${k.img ? 'img' : isF ? 'fold' : 'plain'}" data-s="${s}">${k.img ? `<img class="im" src="${k.img}" alt="" draggable="false">` : ''}<span class="nm">${escapeHtml(k.name || '')}</span>${isF ? '<span class="ar">▸</span>' : ''}</button>`;
   }
   document.getElementById('qkBody').innerHTML =
-    (qkEditing ? '<p class="qk-edit-tip">編輯中：點格子可修改或新增；點分類名稱 2 次可改名。</p>' : '') +
-    `<div class="qk-tabs">${tabs}</div>${crumb}<div class="qk-grid">${cells}</div>`;
+    (qkEditing ? '<p class="qk-edit-tip">編輯中：點格子修改或新增，按住格子或分類可拖曳換位置；點目前的分類名稱可改名。</p>' : '') +
+    `${crumb}<div class="qk-grid">${cells}</div>`;
 }
 function qkAdd(k, qty){
+  if(k.ref !== undefined && k.ref !== null && k.ref !== ''){   // 商品資料庫的商品：用完整名稱、原本的價格規則
+    const r = qkFindRow(k);
+    if(!r){ alert(`商品資料庫找不到「${k.refName || k.name}」，可能已下架或改名；請老闆重新設定這一格。`); return; }
+    const key = addToCart(r, qty);
+    orderStatusEl.textContent = qty < 0 ? `已加入退貨：${r[4]} × ${qty}` : `已加入：${r[4]} × ${qty}`;
+    showAddedInCart(key, qty);
+    return;
+  }
   const key = 'qk-' + k.id + (qty < 0 ? '|ret' : '');
   const price = qkPrice(k);
   const ex = cart.find(it => it.key === key);
@@ -2750,29 +2785,49 @@ function qkResizeImage(file){
     fr.readAsDataURL(file);
   });
 }
-function qkEditDialog(slot){
-  const id = qkId(slot), old = qkDocs.get(id) || null;
+function qkEditDialog(pos){
+  const old = qkCell(pos);
   const inFolder = qkFolder !== null;
-  let isFolder = !!(old && old.folder), img = (old && old.img) || '';
+  let type = old ? (old.folder ? 'folder' : (old.ref !== undefined && old.ref !== null && old.ref !== '' ? 'product' : (old.prices ? 'custom' : 'product'))) : 'product';
+  let img = (old && old.img) || '';
+  let ref = (old && old.ref) || '', refName = (old && old.refName) || '';
   const pr = (old && old.prices) || {};
   qkOpenMask(`<h3>${old ? '修改' : '新增'}快捷鍵</h3>
-    <label>名稱</label><input type="text" id="qkName" maxlength="20" value="${escapeHtml((old && old.name) || '')}">
-    ${inFolder ? '' : `<label>類型</label><div class="qk-type"><button type="button" data-t="0" class="${isFolder?'':'on'}">直接加入出貨清單</button><button type="button" data-t="1" class="${isFolder?'on':''}">資料夾（再進一層）</button></div>`}
-    <div id="qkPriceBox" style="${isFolder?'display:none':''}">
-      <label>價格（沒填的等級會用 D 級價，再沒有就往 C、B、A 找）</label>
+    <label>類型</label><div class="qk-type" id="qkTypes"><button type="button" data-t="product">商品資料庫</button>${inFolder ? '' : '<button type="button" data-t="folder">資料夾</button>'}<button type="button" data-t="custom">自訂品項</button></div>
+    <div id="qkProdBox"><label>搜尋商品（名稱、條碼或編號）</label><input type="text" id="qkSearch" placeholder="輸入關鍵字…" autocomplete="off"><div class="qk-res" id="qkRes" style="display:none"></div>
+      <div class="qk-sel" id="qkSel" style="${refName ? '' : 'display:none'}">${escapeHtml(refName)}</div></div>
+    <label>顯示名稱（格子上的簡稱，加入出貨清單時仍用完整名稱）</label><input type="text" id="qkName" maxlength="20" value="${escapeHtml((old && old.name) || '')}">
+    <div id="qkPriceBox"><label>價格（沒填的等級用 D 級價，再沒有往 C、B、A 找）</label>
       <div class="qk-prices">${['A','B','C','D'].map(g=>`<div><label>${g}</label><input type="number" inputmode="decimal" id="qkP${g}" value="${pr[g] ?? ''}"></div>`).join('')}</div>
-      <label>本錢（選填，沒填就不記）</label><input type="number" inputmode="decimal" id="qkCost" value="${(old && old.cost !== undefined && old.cost !== null) ? old.cost : ''}">
-    </div>
+      <label>本錢（選填，沒填就不記）</label><input type="number" inputmode="decimal" id="qkCost" value="${(old && old.cost !== undefined && old.cost !== null) ? old.cost : ''}"></div>
     <label>圖片（選填，名稱容易搞錯時可放）</label>
     <div class="qk-img-row"><img class="qk-img-prev" id="qkImgPrev" ${img ? `src="${img}"` : ''} alt=""><input type="file" id="qkFile" accept="image/*" style="display:none">
       <button type="button" class="qk-hbtn" id="qkPick">選擇圖片</button><button type="button" class="qk-hbtn" id="qkNoImg">移除圖片</button></div>
-    <div class="qk-row">${old ? '<button type="button" class="del" id="qkDel">刪除</button>' : ''}<button type="button" id="qkCancel">取消</button><button type="button" class="pri" id="qkSave">儲存</button></div>`);
+    <div class="qk-row">${old ? '<button type="button" class="del" id="qkDel">刪除</button>' : ''}<button type="button" id="qkCancel">取消</button><button type="button" class="pri" id="qkSaveBtn">儲存</button></div>`);
   const dlg = document.getElementById('qkDlg');
-  dlg.querySelectorAll('[data-t]').forEach(b => b.onclick = () => {
-    isFolder = b.dataset.t === '1';
-    dlg.querySelectorAll('[data-t]').forEach(x => x.classList.toggle('on', x === b));
-    document.getElementById('qkPriceBox').style.display = isFolder ? 'none' : '';
-  });
+  const sync = () => {
+    dlg.querySelectorAll('#qkTypes [data-t]').forEach(x => x.classList.toggle('on', x.dataset.t === type));
+    document.getElementById('qkProdBox').style.display = type === 'product' ? '' : 'none';
+    document.getElementById('qkPriceBox').style.display = type === 'custom' ? '' : 'none';
+  };
+  dlg.querySelectorAll('#qkTypes [data-t]').forEach(b => b.onclick = () => { type = b.dataset.t; sync(); });
+  sync();
+  const si = document.getElementById('qkSearch'), res = document.getElementById('qkRes');
+  si.oninput = () => {
+    const q = si.value.trim();
+    if(!q){ res.style.display = 'none'; return; }
+    const list = searchRows(q, 8);
+    res.innerHTML = list.map((r,i) => `<button type="button" data-i="${i}">${escapeHtml(r[4] || '')}<br><small>${escapeHtml(r[3] || r[2] || '')}</small></button>`).join('') || '<div style="padding:8px 10px;color:#8e8e93;font-size:13px">沒有符合的商品</div>';
+    res.style.display = '';
+    res.querySelectorAll('button').forEach(b => b.onclick = () => {
+      const r = list[+b.dataset.i];
+      ref = String(rowKey(r)); refName = r[4] || '';
+      const sel = document.getElementById('qkSel'); sel.textContent = refName; sel.style.display = '';
+      const nm = document.getElementById('qkName'); if(!nm.value.trim() || nm.dataset.auto !== '0') { nm.value = refName.slice(0,20); }
+      res.style.display = 'none'; si.value = '';
+    });
+  };
+  document.getElementById('qkName').oninput = e => { e.target.dataset.auto = '0'; };
   document.getElementById('qkPick').onclick = () => document.getElementById('qkFile').click();
   document.getElementById('qkFile').onchange = async (e) => {
     const f = e.target.files[0]; if(!f) return;
@@ -2780,23 +2835,25 @@ function qkEditDialog(slot){
   };
   document.getElementById('qkNoImg').onclick = () => { img = ''; document.getElementById('qkImgPrev').removeAttribute('src'); };
   document.getElementById('qkCancel').onclick = qkCloseMask;
-  document.getElementById('qkSave').onclick = async () => {
+  document.getElementById('qkSaveBtn').onclick = async () => {
     const name = document.getElementById('qkName').value.trim();
-    if(!name){ alert('請輸入名稱'); return; }
-    const d = {name, folder: isFolder, img};
-    if(!isFolder){
+    if(!name){ alert('請輸入顯示名稱'); return; }
+    if(type === 'product' && !ref){ alert('請先搜尋並選一個商品'); return; }
+    const d = {id: old ? old.id : 'k' + Date.now().toString(36) + Math.random().toString(36).slice(2,5), cat: qkCat, parent: qkFolder, pos, name, folder: type === 'folder', img};
+    if(type === 'product'){ d.ref = ref; d.refName = refName; }
+    if(type === 'custom'){
       d.prices = {};
       ['A','B','C','D'].forEach(g => { const v = document.getElementById('qkP'+g).value.trim(); if(v !== '') d.prices[g] = fmtNum(v); });
       const c = document.getElementById('qkCost').value.trim(); if(c !== '') d.cost = fmtNum(c);
     }
-    try{ await FB.saveQuickKey(id, d); qkCloseMask(); }
+    try{ await qkSave(d); qkCloseMask(); }
     catch(e){ alert('儲存失敗：' + cloudErrMsg(e) + ((e && e.code === 'permission-denied') ? '（請先到 Firebase 更新規則）' : '')); }
   };
   const del = document.getElementById('qkDel');
   if(del) del.onclick = async () => {
-    const kids = (old.folder && !inFolder) ? [...qkDocs.keys()].filter(x => x.startsWith(id + '_')) : [];
+    const kids = old.folder ? [...qkDocs.values()].filter(x => x.parent === old.id) : [];
     if(!confirm(`確定刪除「${old.name}」？` + (kids.length ? `\n資料夾裡的 ${kids.length} 個品項也會一起刪除。` : ''))) return;
-    try{ for(const x of kids) await FB.deleteQuickKey(x); await FB.deleteQuickKey(id); qkCloseMask(); }
+    try{ for(const x of kids) await FB.deleteQuickKey(x.id); await FB.deleteQuickKey(old.id); qkCloseMask(); }
     catch(e){ alert('刪除失敗：' + cloudErrMsg(e)); }
   };
 }
@@ -2804,14 +2861,32 @@ async function qkRenameCat(i){
   const v = prompt('分類名稱', qkCats[i]); if(v === null) return;
   const n = v.trim(); if(!n) return;
   const names = qkCats.slice(); names[i] = n;
-  try{ await FB.saveQuickKey('_cats', {names}); }catch(e){ alert('改名失敗：' + cloudErrMsg(e)); }
+  try{ await FB.saveQuickKey('_cats', {names, order: qkOrder}); }catch(e){ alert('改名失敗：' + cloudErrMsg(e)); }
+}
+// 拖曳：格子 → 放到另一格（空格＝搬過去、有東西＝互換）；分類 → 插到目標位置
+async function qkMoveCell(from, to){
+  if(from === to) return;
+  const a = qkCell(from), b = qkCell(to); if(!a) return;
+  try{
+    await qkSave({...a, pos: to});
+    if(b) await qkSave({...b, pos: from});
+  }catch(e){ alert('移動失敗：' + cloudErrMsg(e)); }
+}
+async function qkMoveCat(from, to){
+  if(from === to) return;
+  const o = qkOrder.slice(); const i = o.indexOf(from), j = o.indexOf(to);
+  o.splice(i, 1); o.splice(j, 0, from);
+  qkOrder = o; renderQK();
+  try{ await FB.saveQuickKey('_cats', {names: qkCats, order: o}); }catch(e){ alert('排序失敗：' + cloudErrMsg(e)); }
 }
 (function initQK(){
   const body = document.getElementById('qkBody'), panel = document.getElementById('qkPanel');
   document.getElementById('qkFoldBtn').addEventListener('click', () => { qkFolded = !qkFolded; try{ localStorage.setItem('qkFolded', qkFolded ? '1' : '0'); }catch(e){} renderQK(); });
   document.getElementById('qkEditBtn').addEventListener('click', () => { if(!isBoss()) return; qkEditing = !qkEditing; renderQK(); });
   document.getElementById('qkMask').addEventListener('click', e => { if(e.target.id === 'qkMask') qkCloseMask(); });
-  body.addEventListener('click', e => {
+  let dragMoved = false;
+  panel.addEventListener('click', e => {
+    if(dragMoved){ dragMoved = false; return; }
     const tab = e.target.closest('.qk-tab');
     if(tab){
       const i = +tab.dataset.c;
@@ -2821,25 +2896,56 @@ async function qkRenameCat(i){
     if(e.target.closest('#qkBack')){ qkFolder = null; renderQK(); return; }
     const key = e.target.closest('.qk-key'); if(!key) return;
     if(key._longFired){ key._longFired = false; return; }
-    const slot = +key.dataset.s, k = qkDocs.get(qkId(slot));
-    if(qkEditing){ qkEditDialog(slot); return; }
+    const pos = +key.dataset.s, k = qkCell(pos);
+    if(qkEditing){ qkEditDialog(pos); return; }
     if(!k) return;
-    if(k.folder && qkFolder === null){ qkFolder = slot; renderQK(); return; }
+    if(k.folder && qkFolder === null){ qkFolder = k.id; renderQK(); return; }
     qkAdd(k, 1);
   });
   // 長按（電腦：右鍵）→ 輸入數量
   let t = null;
   body.addEventListener('pointerdown', e => {
     const key = e.target.closest('.qk-key'); if(!key || qkEditing) return;
-    const k = qkDocs.get(qkId(+key.dataset.s)); if(!k || k.folder) return;
-    clearTimeout(t); t = setTimeout(() => { key._longFired = true; k.id = qkId(+key.dataset.s); qkNumPad(k); }, 450);
+    const k = qkCell(+key.dataset.s); if(!k || k.folder) return;
+    clearTimeout(t); t = setTimeout(() => { key._longFired = true; qkNumPad(k); }, 450);
   });
   ['pointerup','pointerleave','pointercancel'].forEach(ev => body.addEventListener(ev, () => clearTimeout(t)));
   body.addEventListener('contextmenu', e => {
     const key = e.target.closest('.qk-key'); if(!key) return;
     e.preventDefault(); if(qkEditing) return;
-    const k = qkDocs.get(qkId(+key.dataset.s)); if(!k || k.folder) return;
-    k.id = qkId(+key.dataset.s); qkNumPad(k);
+    const k = qkCell(+key.dataset.s); if(!k || k.folder) return;
+    qkNumPad(k);
+  });
+  // 編輯模式拖曳（滑鼠、手指都可）
+  panel.addEventListener('pointerdown', e => {
+    if(!qkEditing || e.button > 0) return;
+    const src = e.target.closest('.qk-key:not(.empty), .qk-tab'); if(!src) return;
+    const isTab = src.classList.contains('qk-tab');
+    const sx = e.clientX, sy = e.clientY; let ghost = null, over = null, started = false;
+    const sel = isTab ? '.qk-tab' : '.qk-key';
+    const move = ev => {
+      if(!started){
+        if(Math.hypot(ev.clientX - sx, ev.clientY - sy) < 8) return;
+        started = true; dragMoved = true;
+        ghost = src.cloneNode(true); ghost.classList.add('qk-ghost'); ghost.style.width = src.offsetWidth + 'px'; ghost.style.height = src.offsetHeight + 'px';
+        document.body.appendChild(ghost); src.classList.add('qk-drag-src');
+      }
+      ghost.style.left = ev.clientX + 'px'; ghost.style.top = ev.clientY + 'px';
+      const el = document.elementFromPoint(ev.clientX, ev.clientY);
+      const tgt = el && el.closest(sel);
+      if(over && over !== tgt) over.classList.remove('qk-over');
+      over = (tgt && tgt !== src && panel.contains(tgt)) ? tgt : null;
+      if(over) over.classList.add('qk-over');
+    };
+    const up = () => {
+      document.removeEventListener('pointermove', move); document.removeEventListener('pointerup', up); document.removeEventListener('pointercancel', up);
+      if(ghost) ghost.remove(); if(over) over.classList.remove('qk-over'); src.classList.remove('qk-drag-src');
+      if(started && over){
+        if(isTab) qkMoveCat(+src.dataset.c, +over.dataset.c); else qkMoveCell(+src.dataset.s, +over.dataset.s);
+      }
+      if(started) setTimeout(() => { dragMoved = false; }, 0);
+    };
+    document.addEventListener('pointermove', move); document.addEventListener('pointerup', up); document.addEventListener('pointercancel', up);
   });
 })();
 
