@@ -933,7 +933,7 @@ document.querySelectorAll('.sort-sel').forEach(sel=>{
   });
 });
 
-function doSearch(){
+function doSearch(fromInput){
   const q = input.value.trim();
   clearBtn.style.visibility = q ? 'visible' : 'hidden';
   if(!q){
@@ -970,6 +970,11 @@ function doSearch(){
     </div>`;
   }
   resultsEl.innerHTML = html;
+  // 掃條碼（輸入內容剛好等於某個商品的條碼／編號）：顯示結果後馬上清空輸入欄，可以連續掃下一個
+  if(fromInput === true && q.length >= 4 && matches.some(r => (r[3] && r[3] === q) || (r[2] && r[2] === q))){
+    input.value = ''; clearBtn.style.visibility = 'hidden';
+    statusEl.innerHTML = `條碼 <b>${escapeHtml(q)}</b>：找到 <b>${total}</b> 筆（輸入欄已清空，可繼續掃下一個）`;
+  }
 }
 
 resultsEl.addEventListener('click', (e)=>{
@@ -1146,7 +1151,7 @@ function fallbackCopy(text){
 
 input.addEventListener('input', ()=>{
   clearTimeout(debounceTimer);
-  debounceTimer = setTimeout(doSearch, 90);
+  debounceTimer = setTimeout(() => doSearch(true), 90);
 });
 clearBtn.addEventListener('click', ()=>{ input.value=''; doSearch(); input.focus(); });
 clearBtn.style.visibility = 'hidden';
@@ -1304,6 +1309,13 @@ function doOrderSearch(){
   orderClearBtn.style.visibility = raw ? 'visible' : 'hidden';
   if(!q){
     orderStatusEl.textContent = multQty ? `數量 ${multQty}：請接著掃描商品條碼` : '請搜尋或掃描商品加入清單';
+    orderResultsEl.innerHTML = '';
+    return;
+  }
+
+  // 前兩碼是英文、數字、符號（沒有中文）時，先不搜尋，輸入到第 3 碼才開始；中文字不受限
+  if(q.length < 3 && !/[\u3400-\u9fff\uf900-\ufaff\u3040-\u30ff\uac00-\ud7af]/.test(q)){
+    orderStatusEl.textContent = `再輸入 ${3 - q.length} 碼開始搜尋（中文字不受限）`;
     orderResultsEl.innerHTML = '';
     return;
   }
@@ -2692,7 +2704,7 @@ document.getElementById('viewCustTxnsBtn').addEventListener('click', ()=>{
 //   ref(商品資料庫的條碼或品名)+refName，或自訂品項的 prices/cost}。移動格子只改 pos，不改文件 id。
 const QK_DEFAULT_CATS = ['常用','工具','包材','運費','配件','試用品','贈品','服務','雜項','其他'];
 let qkDocs = new Map(), qkCats = QK_DEFAULT_CATS.slice(), qkOrder = [0,1,2,3,4,5,6,7,8,9], qkCat = 0, qkFolder = null, qkEditing = false, unsubQK = null;
-let qkFolded = false; try{ qkFolded = localStorage.getItem('qkFolded') === '1'; }catch(e){}
+let qkFolded = true;   // 預設收合；點收合的框框任何地方展開
 function qkNorm(d){   // 舊格式（id 即位置）轉成新欄位
   if(d.cat !== undefined) return d;
   const m = /^c(\d+)_(\d+)(?:_(\d+))?$/.exec(d.id);
@@ -2909,12 +2921,14 @@ async function qkMoveCat(from, to){
 }
 (function initQK(){
   const body = document.getElementById('qkBody'), panel = document.getElementById('qkPanel');
-  document.getElementById('qkFoldBtn').addEventListener('click', () => { qkFolded = !qkFolded; try{ localStorage.setItem('qkFolded', qkFolded ? '1' : '0'); }catch(e){} renderQK(); });
+  document.getElementById('qkFoldBtn').addEventListener('click', () => { qkFolded = !qkFolded; renderQK(); });
   document.getElementById('qkEditBtn').addEventListener('click', () => { if(!isBoss()) return; qkEditing = !qkEditing; renderQK(); });
   document.getElementById('qkMask').addEventListener('click', e => { if(e.target.id === 'qkMask') qkCloseMask(); });
   panel.addEventListener('dblclick', e => { const tab = e.target.closest('.qk-tab'); if(tab && qkEditing){ qkRenameCat(+tab.dataset.c); } });
   let dragMoved = false;
   panel.addEventListener('click', e => {
+    if(e.target.closest('#qkFoldBtn')) return;   // 收合／展開按鈕自己處理
+    if(qkFolded){ qkFolded = false; renderQK(); return; }   // 收合時，點框內任何地方就展開
     if(dragMoved){ dragMoved = false; return; }
     const tab = e.target.closest('.qk-tab');
     if(tab){
