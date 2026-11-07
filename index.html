@@ -2273,6 +2273,8 @@ function updateOrderTop(){
 })();
 window.addEventListener('resize', updateStickyOffset);
 updateStickyOffset();
+// 分頁列在登入前是隱藏的（高度 0），所以顯示出來或高度改變時要重新量，搜尋列的「凍結」位置才會正確
+if(window.ResizeObserver){ const tw = document.getElementById('tabsStickyWrap'); if(tw) new ResizeObserver(updateStickyOffset).observe(tw); }
 if(window.matchMedia('(max-width:640px)').matches){ const oi = document.getElementById('orderSearchInput'); if(oi) oi.placeholder = '搜尋商品／條碼／掃描'; }
 
 
@@ -2981,6 +2983,7 @@ let currentRole = null;   // 'staff' | 'boss'；登入後這台電腦會記住�
 function isBoss(){ return currentRole === 'boss'; }
 function applyMode(){
   const boss = isBoss();
+  setTimeout(updateStickyOffset, 0);
   try{ renderQK(); }catch(e){}
   document.body.classList.toggle('staff', !boss);
   if(!boss && document.body.classList.contains('jy-view')){ document.body.classList.remove('jy-view'); if(typeof syncViewBtns==='function') syncViewBtns(); }
