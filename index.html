@@ -283,13 +283,16 @@ table.cart-table tr.ret-row .cart-name::before{content:'退貨 '; color:#c0392b;
   .cart-totals .tline{font-size:13px; color:var(--secondary);}
   .cart-totals .tline b{color:var(--ink); font-size:16px; margin-left:4px;}
   .quick-fee-row{display:grid; grid-template-columns:max-content repeat(6, minmax(0,112px)); justify-content:start; align-items:center; gap:8px; margin-top:12px;}
+  .fl-short{display:none;}
   .quick-fee-label{font-size:12px; color:var(--secondary); font-weight:600; margin-right:2px;}
   .quick-fee-btn{border:1px solid #E4E0DA; background:#F4F1EC; color:#5f6570; font-weight:600; font-size:13.5px; height:40px; padding:0 6px; border-radius:10px; cursor:pointer; font-family:var(--sysfont); white-space:nowrap; display:flex; align-items:center; justify-content:center;}
   .quick-fee-btn.refund, .quick-fee-btn.disc-btn{color:#5f6570;}
   @media (max-width:640px){
-    .quick-fee-row{grid-template-columns:repeat(3, minmax(0,1fr)); gap:8px;}
+    .quick-fee-row{grid-template-columns:repeat(6, minmax(0,1fr)); gap:5px;}
+    .fl-full{display:none;} .fl-short{display:inline;}
+    #orderStatusText{display:none;}
     .quick-fee-label{grid-column:1 / -1; margin:0;}
-    .quick-fee-btn{height:44px; font-size:13px; padding:0 2px;}
+    .quick-fee-btn{height:42px; font-size:13px; padding:0; border-radius:9px;}
   }
   td.cart-last{text-align:center; line-height:1.25;}
   .last-price{font-weight:700; font-size:13px;} .last-sub{font-size:10.5px; color:var(--secondary);} .last-none{color:var(--secondary);}
@@ -646,12 +649,12 @@ body.cust-view .prices{grid-template-columns:minmax(0,1fr) !important; max-width
       </div>
       <div class="quick-fee-row">
         <span class="quick-fee-label">快捷</span>
-        <button type="button" class="quick-fee-btn" id="tempItemBtn">＋ 臨時商品</button>
-        <button type="button" class="quick-fee-btn" data-fee="運費">＋ 運費</button>
-        <button type="button" class="quick-fee-btn" data-fee="前帳">＋ 前帳</button>
-        <button type="button" class="quick-fee-btn refund" data-fee="退費">－ 退費</button>
-        <button type="button" class="quick-fee-btn disc-btn" id="discBtn">％ 折數</button>
-        <button type="button" class="quick-fee-btn" id="taxBtn">＋ 稅金 5%</button>
+        <button type="button" class="quick-fee-btn" id="tempItemBtn"><span class="fl-full">＋ 臨時商品</span><span class="fl-short">臨時</span></button>
+        <button type="button" class="quick-fee-btn" data-fee="運費"><span class="fl-full">＋ 運費</span><span class="fl-short">運費</span></button>
+        <button type="button" class="quick-fee-btn" data-fee="前帳"><span class="fl-full">＋ 前帳</span><span class="fl-short">前帳</span></button>
+        <button type="button" class="quick-fee-btn refund" data-fee="退費"><span class="fl-full">－ 退費</span><span class="fl-short">退費</span></button>
+        <button type="button" class="quick-fee-btn disc-btn" id="discBtn"><span class="fl-full">％ 折數</span><span class="fl-short">折數</span></button>
+        <button type="button" class="quick-fee-btn" id="taxBtn"><span class="fl-full">＋ 稅金 5%</span><span class="fl-short">稅金</span></button>
       </div>
       <div class="cart-actions">
         <div class="print-group">
@@ -1673,7 +1676,7 @@ const cartTotalsEl = document.getElementById('cartTotals');
 
 const openNote = new Set(), closedNote = new Set(); // 備註欄展開/收合（手機版）
 const openHist = new Set(); // 展開「歷史價錢」的商品
-let histOnlyCust = false;
+let histOnlyCust = true;   // 預設只看目前客人；勾「全部」才看所有人
 
 // 此商品的購買紀錄（由舊到新）；編輯舊訂單時排除這張單自己
 function itemHistory(it){
@@ -1738,7 +1741,7 @@ function histPanelHtml(it){
       `</tbody></table>`;
   }
   return `<div class="hp-head"><b>${escapeHtml(it.name)}</b> 歷史價錢
-      ${nowCust ? `<label><input type="checkbox" class="hp-only" ${histOnlyCust ? 'checked' : ''}> 只看此客戶</label>` : ''}</div>${costDiffHtml(it)}${costChangeHtml(all, it.frozen || !it.base ? null : it.base[5])}${body}`;
+      ${nowCust ? `<label><input type="checkbox" class="hp-only" ${histOnlyCust ? '' : 'checked'}> 全部</label>` : ''}</div>${costDiffHtml(it)}${costChangeHtml(all, it.frozen || !it.base ? null : it.base[5])}${body}`;
 }
 
 function lastPurchaseCellHtml(it){
@@ -1850,7 +1853,7 @@ cartBody.addEventListener('change', (e)=>{
     }
     return;
   }
-  if(e.target.classList.contains('hp-only')){ histOnlyCust = e.target.checked; renderCart(); }
+  if(e.target.classList.contains('hp-only')){ histOnlyCust = !e.target.checked; renderCart(); }
 });
 
 cartBody.addEventListener('click', (e)=>{
