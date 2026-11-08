@@ -133,6 +133,11 @@
   .order-search-bar{margin-left:0; margin-right:0; padding-left:0; padding-right:0; padding-bottom:10px;}
   @media (max-width:640px){ #tab-order{--sbh:46px;} .order-search-bar{margin-left:0; margin-right:0; padding-left:0; padding-right:0;} #tab-order .cust-row .price-src-slot select{min-width:140px;} }
   @media (max-width:640px){ .order-search-bar{bottom:calc(68px + env(safe-area-inset-bottom));} }
+  @media (max-width:640px){
+    .tabs-sticky-wrap{transition:transform .25s ease;} .order-search-bar{transition:bottom .25s ease;}
+    body.nav-hide .tabs-sticky-wrap{transform:translateY(110%);}
+    body.nav-hide .order-search-bar{bottom:calc(6px + env(safe-area-inset-bottom));}
+  }
 
   .qty-stepper{display:flex; align-items:center; background:var(--paper-alt); border-radius:8px; overflow:hidden; height:28px;}
   .qty-stepper button{width:26px; height:28px; border:none; background:transparent; color:var(--ink); font-size:16px; font-weight:600; display:flex; align-items:center; justify-content:center; line-height:1; padding:0; cursor:pointer;}
@@ -2376,6 +2381,24 @@ function updateOrderTop(){
 })();
 window.addEventListener('resize', updateStickyOffset);
 updateStickyOffset();
+// 手機版：往下捲動時底部功能列自動隱藏，往上捲（或捲到頂/底、切換分頁）就出現
+(function(){
+  const mq = window.matchMedia('(max-width:640px)');
+  let lastY = window.scrollY, ticking = false;
+  const setHide = h => document.body.classList.toggle('nav-hide', h && mq.matches);
+  function onScroll(){
+    ticking = false;
+    const y = window.scrollY, dy = y - lastY;
+    const atBottom = window.innerHeight + y >= document.documentElement.scrollHeight - 4;
+    if(y < 60 || atBottom || !mq.matches) setHide(false);
+    else if(dy > 8) setHide(true);
+    else if(dy < -8) setHide(false);
+    if(Math.abs(dy) > 8) lastY = y;
+  }
+  window.addEventListener('scroll', ()=>{ if(!ticking){ ticking = true; requestAnimationFrame(onScroll); } }, {passive:true});
+  document.querySelectorAll('.tab-btn').forEach(b => b.addEventListener('click', ()=> setHide(false)));
+  mq.addEventListener && mq.addEventListener('change', ()=> setHide(false));
+})();
 // 手機版：選了客戶後，客戶資訊框跟著捲動，捲出畫面時只在最上方凍結「名字＋等級」
 (function(){
   const bar = document.getElementById('custInfoBar'), tab = document.getElementById('tab-order'), mini = document.getElementById('custMini');
