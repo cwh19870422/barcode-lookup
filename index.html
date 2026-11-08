@@ -9,9 +9,9 @@
   :root{
     --sysfont: -apple-system, BlinkMacSystemFont, "SF Pro Text", "PingFang TC", "Helvetica Neue", Arial, sans-serif;
     --monofont: ui-monospace, "SF Mono", Menlo, Monaco, Consolas, monospace;
-    --ink:#1C1C1E; --paper:#F2F2F7; --paper-alt:#EFEFF4;
-    --blue:#007AFF; --gray-fill:#E9E9EB; --line:#E5E5EA;
-    --red:#FF3B30; --green:#34C759; --orange:#FF9500; --secondary:#8E8E93; --card:#FFFFFF;
+    --ink:#1F1F1F; --paper:#F4F2EE; --paper-alt:#ECE8E2;
+    --blue:#1F1F1F; --gray-fill:#ECE8E2; --line:#E4E0DA;
+    --red:#B3261E; --green:#2E7D4F; --orange:#B7791F; --secondary:#85807A; --card:#FFFFFF;
     --shadow: 0 1px 2px rgba(0,0,0,0.04), 0 2px 10px rgba(0,0,0,0.05);
   }
   *{box-sizing:border-box;}
@@ -27,7 +27,7 @@
   .top-actions{position:absolute; top:22px; right:24px; z-index:3; display:flex; gap:8px;}
   .top-link{ background:var(--gray-fill); border:none; color:var(--blue); font-family:var(--sysfont); font-weight:600; font-size:13px; padding:8px 14px; border-radius:999px; text-decoration:none; display:flex; align-items:center; gap:6px;}
   .top-link{cursor:pointer;}
-  .top-link:hover{background:#DFDFE4;}
+  .top-link:hover{background:#E2DED7;}
   main{max-width:920px; margin:0 auto; padding:14px 24px 80px;}
 
   .tabs-sticky-wrap{position:sticky; top:0; z-index:50; background:var(--paper); padding:10px 0 8px; box-shadow:0 1px 0 var(--line);}
@@ -42,8 +42,8 @@
   .search-box svg{flex-shrink:0; color:var(--secondary);}
   .search-box input{flex:1; border:none; outline:none; background:transparent; font-size:17px; padding:11px 4px; font-family:var(--sysfont); color:var(--ink);}
   .search-box input::placeholder{color:var(--secondary);}
-  .clear-btn{border:none; background:#ff3b30; color:#fff; width:28px;height:28px; font-weight:700; border-radius:50%; cursor:pointer; font-size:14px; display:flex;align-items:center;justify-content:center; flex-shrink:0; transition:background .15s;}
-  .clear-btn:hover{background:#d70015;}
+  .clear-btn{border:none; background:#B3261E; color:#fff; width:28px;height:28px; font-weight:700; border-radius:50%; cursor:pointer; font-size:14px; display:flex;align-items:center;justify-content:center; flex-shrink:0; transition:background .15s;}
+  .clear-btn:hover{background:#8E1B14;}
   .status-row{display:flex; justify-content:space-between; align-items:center; margin:20px 0 10px; font-family:var(--sysfont); font-size:13px; color:var(--secondary);}
   .status-row b{color:var(--ink); font-weight:600;}
   .results{display:flex; flex-direction:column; gap:10px;}
@@ -51,12 +51,12 @@
   .card-top{display:flex; align-items:center; gap:10px; margin-bottom:10px; flex-wrap:wrap;}
   .name{font-size:16.5px; font-weight:600; line-height:1.4; font-family:var(--sysfont); flex-shrink:0;}
   .listprice{font-size:16.5px; font-weight:600; line-height:1.4; font-family:var(--sysfont); color:var(--orange); white-space:nowrap; margin-left:4ch; display:flex; align-items:center; gap:10px;}
-  .name mark{background:rgba(0,122,255,0.16); color:var(--ink); border-radius:3px; padding:0 1px;}
-  .tag{font-family:var(--sysfont); font-weight:600; font-size:11.5px; color:var(--blue); background:rgba(0,122,255,0.1); padding:3px 10px; border-radius:999px; white-space:nowrap; flex-shrink:0; margin-left:auto;}
+  .name mark{background:rgba(31,31,31,0.16); color:var(--ink); border-radius:3px; padding:0 1px;}
+  .tag{font-family:var(--sysfont); font-weight:600; font-size:11.5px; color:var(--blue); background:rgba(31,31,31,0.1); padding:3px 10px; border-radius:999px; white-space:nowrap; flex-shrink:0; margin-left:auto;}
   .meta-row{display:flex; gap:14px; flex-wrap:wrap; align-items:center; font-family:var(--sysfont); font-size:12.5px; color:var(--secondary); margin-bottom:12px;}
-  .meta-row mark{background:rgba(0,122,255,0.16); color:var(--ink); border-radius:2px;}
+  .meta-row mark{background:rgba(31,31,31,0.16); color:var(--ink); border-radius:2px;}
   .history-btn{margin-left:auto; background:var(--gray-fill); color:var(--blue); border:none; font-weight:600; font-size:11.5px; padding:5px 11px; border-radius:999px; cursor:pointer; font-family:var(--sysfont); flex-shrink:0;}
-  .history-btn:hover{background:#DFDFE4;}
+  .history-btn:hover{background:#E2DED7;}
   .history-panel{background:var(--paper-alt); border-radius:10px; padding:10px 12px; margin-bottom:12px; font-size:12.5px;}
   .history-panel table{width:100%; border-collapse:collapse;}
   .history-panel th{text-align:left; font-size:11px; color:var(--secondary); font-weight:600; padding:4px 6px;}
@@ -64,7 +64,7 @@
   .history-panel .hist-empty{color:var(--secondary); text-align:center; padding:8px;}
   .prices{display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); gap:8px;}
   .price-cell{-webkit-touch-callout:none; -webkit-user-select:none; display:flex; align-items:stretch; border-radius:12px; overflow:hidden; cursor:pointer; user-select:none; -webkit-tap-highlight-color:transparent; transition:transform .1s;}
-  .price-cell.lp-armed{box-shadow:inset 0 0 0 3px #0071e3; transform:scale(.96);}
+  .price-cell.lp-armed{box-shadow:inset 0 0 0 3px #1F1F1F; transform:scale(.96);}
   .price-cell:active{transform:scale(0.96);}
   .price-cell.copied .val{color:var(--green) !important;}
   .price-cell{min-width:0; position:relative;} .price-cell .lbl{position:absolute; left:0; top:0; bottom:0; width:30px; padding-left:0 !important; padding-right:0 !important; background:var(--paper-alt); color:#6B6B6F; font-family:var(--sysfont); font-weight:600; font-size:13px; display:flex; align-items:center; justify-content:center; padding:0 9px; flex-shrink:0;}
@@ -106,7 +106,7 @@
   .sticky-controls{position:sticky !important; top:var(--tabs-h, 62px); z-index:40 !important; background:var(--paper); padding-top:8px; padding-bottom:18px;}
   .price-cell .val{padding-left:30px !important; padding-right:30px !important;}
   @media (max-width:520px){.price-cell .lbl{position:static; width:auto;} .price-cell .val{padding-left:2px !important; padding-right:2px !important;} .prices{grid-template-columns:repeat(5,minmax(0,1fr)); gap:5px;} body.staff .prices{grid-template-columns:repeat(4,minmax(0,1fr));} .price-cell{flex-direction:column;} .price-cell .lbl{padding:3px 0; font-size:12px; width:auto;} .price-cell .val{padding:8px 2px; font-size:15px !important;} header{padding:20px 16px 12px;} main{padding:12px 16px 60px;} .tabs{padding-left:16px; padding-right:16px;} .price-cell .val{font-size:17px;}}
-  ::selection{background:rgba(0,122,255,0.25);}
+  ::selection{background:rgba(31,31,31,0.25);}
   /* 從搜尋加入商品：出貨清單那一列閃綠色＋提示 */
   @keyframes justAdded{0%{background:rgba(52,199,89,0.45);} 100%{background:transparent;}}
   .cart-table tr.just-added td{animation:justAdded 1.6s ease-out;}
@@ -124,11 +124,11 @@
   #tab-search .search-box{background:#fff; border-radius:14px; box-shadow:0 4px 14px rgba(0,0,0,.12); padding:0 8px 0 16px; min-height:var(--sbh); height:var(--sbh); box-sizing:border-box;}
   #tab-search .search-box svg{color:var(--blue);}
   #tab-search .search-box input{padding:0 4px; height:100%; font-size:16px;}
-  #tab-search .search-box input::placeholder{color:#6e6e73;}
+  #tab-search .search-box input::placeholder{color:#6F6A64;}
   @media (max-width:640px){ #tab-search{--sbh:46px;} }
   #tab-order .cust-row .search-box svg, #tab-order .order-search-bar .search-box svg{color:var(--blue);}
   #tab-order .cust-row .search-box input, #tab-order .order-search-bar .search-box input{padding:0 4px; height:100%; font-size:16px;}
-  #tab-order .cust-row .search-box input::placeholder, #tab-order .order-search-bar .search-box input::placeholder{color:#6e6e73;}
+  #tab-order .cust-row .search-box input::placeholder, #tab-order .order-search-bar .search-box input::placeholder{color:#6F6A64;}
   #tab-order .cust-row .price-src-slot select{height:var(--sbh); min-width:124px; padding:0 14px; background:#fff; border-radius:14px; box-shadow:0 4px 14px rgba(0,0,0,.12); font-size:15px; font-weight:700;}
   .order-search-bar{margin-left:0; margin-right:0; padding-left:0; padding-right:0; padding-bottom:10px;}
   @media (max-width:640px){ #tab-order{--sbh:46px;} .order-search-bar{margin-left:0; margin-right:0; padding-left:0; padding-right:0;} #tab-order .cust-row .price-src-slot select{min-width:140px;} }
@@ -140,7 +140,7 @@
   .qty-stepper .qty-num{width:38px; height:28px; border:none; background:transparent; text-align:center; font-family:inherit; font-size:14px; font-weight:600; color:var(--ink); padding:0; -moz-appearance:textfield;}
   .qty-stepper .qty-num:focus{outline:none; background:#fff; box-shadow:inset 0 0 0 1.5px var(--blue);}
   .add-btn{background:var(--blue); color:#fff; border:none; font-weight:600; font-size:12.5px; padding:0 14px; height:28px; border-radius:999px; cursor:pointer; display:flex; align-items:center;}
-  .add-btn:hover{background:#0062CC;}
+  .add-btn:hover{background:#000000;}
   .add-btn.added{background:var(--green);}
 
   .cust-picker{position:relative; margin-bottom:14px;}
@@ -160,8 +160,8 @@
   .cust-info-row{display:flex; align-items:center; justify-content:space-between; gap:12px;}
   .cust-info-row .cust-info-sub{flex:1; min-width:0;}
   .cust-info-bar .price-src-slot{margin:0; justify-content:flex-end;}
-  .cust-add-opt{padding:11px 14px; cursor:pointer; color:var(--blue); font-weight:600; font-size:13.5px; background:rgba(0,122,255,0.06);}
-  .temp-cust-form{display:flex; flex-direction:column; gap:8px; margin-top:8px; background:#fff; border:1px solid rgba(0,122,255,0.35); border-radius:12px; padding:12px;}
+  .cust-add-opt{padding:11px 14px; cursor:pointer; color:var(--blue); font-weight:600; font-size:13.5px; background:rgba(31,31,31,0.06);}
+  .temp-cust-form{display:flex; flex-direction:column; gap:8px; margin-top:8px; background:#fff; border:1px solid rgba(31,31,31,0.35); border-radius:12px; padding:12px;}
   .temp-cust-form .tc-title{font-size:13px; font-weight:700; color:var(--blue);}
   .temp-cust-form .tc-line{display:flex; gap:8px;}
   .temp-cust-form .tc-opt{font-size:12px; color:var(--secondary);}
@@ -172,7 +172,7 @@
   @media (max-width:640px){ .cust-row{flex-wrap:wrap;} .cust-row .price-src-slot{flex:1 1 100%; justify-content:flex-end;} }
   #tempCustConfirmBtn{background:var(--blue); color:#fff;}
   #tempCustCancelBtn{background:var(--gray-fill); color:var(--secondary);}
-  .temp-badge{font-size:11px; font-weight:700; color:var(--orange); background:rgba(255,149,0,0.12); padding:2px 9px; border-radius:999px; flex-shrink:0;}
+  .temp-badge{font-size:11px; font-weight:700; color:var(--orange); background:rgba(183,121,31,0.12); padding:2px 9px; border-radius:999px; flex-shrink:0;}
   .grade-badge{font-size:11px; font-weight:700; color:#fff; padding:2px 9px; border-radius:999px; flex-shrink:0;}
   .grade-A{background:var(--orange);} .grade-B{background:var(--green);} .grade-C{background:var(--blue);} .grade-D{background:var(--secondary);}
 
@@ -208,7 +208,7 @@
   .qk-h b{font-size:15px;}
   .qk-hl{flex:1; min-width:0; display:flex; align-items:center;}
   .qk-hl .qk-tabs{padding-bottom:0; flex:1; min-width:0;}
-  .qk-hbtn{border:0; background:#f2f2f7; color:#5f6570; border-radius:9px; padding:6px 12px; font:600 13px var(--sysfont); cursor:pointer;}
+  .qk-hbtn{border:0; background:#F4F2EE; color:#5f6570; border-radius:9px; padding:6px 12px; font:600 13px var(--sysfont); cursor:pointer;}
   .qk-hbtn.on{background:var(--blue); color:#fff;}
   .staff .qk-hbtn.qk-edit{display:none;}
   .qk-body{margin-top:8px;}
@@ -216,17 +216,17 @@
   .qk-ghost{position:fixed; z-index:3000; pointer-events:none; opacity:.9; box-shadow:0 6px 18px rgba(0,0,0,.3); transform:translate(-50%,-50%);}
   .qk-over{outline:3px solid var(--blue)!important; outline-offset:-3px;}
   .qk.editing .qk-key, .qk.editing .qk-tab{touch-action:none; cursor:grab;}
-  .qk-res{border:1px solid #e0e0e5; border-radius:9px; margin-top:6px; max-height:190px; overflow:auto;}
-  .qk-res button{display:block; width:100%; text-align:left; border:0; border-bottom:1px solid #f0f0f3; background:#fff; padding:8px 10px; font:13px/1.35 var(--sysfont); cursor:pointer;}
-  .qk-res button:hover{background:#f0f6ff;}
-  .qk-res small{color:#8e8e93;}
-  .qk-sel{font-size:12px; color:#0a4fa8; background:#eaf2ff; border-radius:8px; padding:6px 8px; margin-top:6px; word-break:break-all;}
+  .qk-res{border:1px solid #E4E0DA; border-radius:9px; margin-top:6px; max-height:190px; overflow:auto;}
+  .qk-res button{display:block; width:100%; text-align:left; border:0; border-bottom:1px solid #EFEBE5; background:#fff; padding:8px 10px; font:13px/1.35 var(--sysfont); cursor:pointer;}
+  .qk-res button:hover{background:#F4F1EC;}
+  .qk-res small{color:#85807A;}
+  .qk-sel{font-size:12px; color:#0a4fa8; background:#ECE8E2; border-radius:8px; padding:6px 8px; margin-top:6px; word-break:break-all;}
   .qk.collapsed .qk-body{display:none;}
   .qk-tabs{display:flex; gap:6px; overflow-x:auto; padding-bottom:6px; scrollbar-width:none;}
-  .qk-tab{flex:0 0 auto; border:0; background:#f2f2f7; color:#333; border-radius:18px; padding:7px 14px; font:700 14px var(--sysfont); cursor:pointer;}
+  .qk-tab{flex:0 0 auto; border:0; background:#F4F2EE; color:#333; border-radius:18px; padding:7px 14px; font:700 14px var(--sysfont); cursor:pointer;}
   .qk-tab.on{background:var(--blue); color:#fff;}
   .qk-crumb{display:flex; align-items:center; gap:8px; font-weight:700; font-size:14px; margin:2px 0 8px;}
-  .qk-back{border:0; background:#e5e5ea; border-radius:9px; padding:6px 12px; font:700 13px var(--sysfont); cursor:pointer;}
+  .qk-back{border:0; background:#E4E0DA; border-radius:9px; padding:6px 12px; font:700 13px var(--sysfont); cursor:pointer;}
   .qk-grid{display:grid; grid-template-columns:repeat(6,minmax(0,1fr)); gap:8px;}
   .qk-key{position:relative; border:0; border-radius:11px; background:#fffbe6; box-shadow:0 1px 3px rgba(0,0,0,.18); height:50px; padding:0 40px; font:700 14px/1.2 var(--sysfont); color:#222; cursor:pointer; display:flex; align-items:center; justify-content:center; text-align:center; user-select:none; -webkit-user-select:none; touch-action:manipulation; overflow:hidden;}
   .qk-key.plain{padding:0 8px;}
@@ -236,10 +236,10 @@
   .qk-key .nm{display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; word-break:break-all;}
   .qk-key .im{position:absolute; left:6px; top:50%; transform:translateY(-50%); width:36px; height:36px; border-radius:8px; object-fit:cover; background:#fff;}
   .qk-key .ar{position:absolute; right:9px; top:50%; transform:translateY(-50%); font-size:12px; color:#555; line-height:1;}
-  .qk-key.empty{background:#f6f6f8; box-shadow:none; color:#c3c3c8; cursor:default;}
-  .qk.editing .qk-key.empty{cursor:pointer; color:#8e8e93; background:#eef3fb;}
+  .qk-key.empty{background:#F4F1EC; box-shadow:none; color:#c3c3c8; cursor:default;}
+  .qk.editing .qk-key.empty{cursor:pointer; color:#85807A; background:#F1EEE8;}
   .qk.editing .qk-key{outline:2px dashed #9bbcf5; outline-offset:-3px;}
-  .qk-edit-tip{font-size:12px; color:#6e6e73; margin:0 0 8px;}
+  .qk-edit-tip{font-size:12px; color:#6F6A64; margin:0 0 8px;}
   @media (max-width:700px){ .qk-grid{grid-template-columns:repeat(3,minmax(0,1fr));} }
   @media (max-width:520px){ .qk-grid{grid-template-columns:repeat(2,minmax(0,1fr));} }
   .qk-title{font-size:15px; font-weight:700;}
@@ -247,20 +247,20 @@
   .qk-mask.on{display:flex;}
   .qk-dlg{background:#fff; border-radius:16px; padding:16px; width:100%; max-width:380px; max-height:90vh; overflow:auto;}
   .qk-dlg h3{margin:0 0 10px; font-size:16px;}
-  .qk-dlg label{display:block; font-size:12px; color:#6e6e73; margin:8px 0 3px;}
-  .qk-dlg input[type=text], .qk-dlg input[type=number]{width:100%; border:1px solid #e0e0e5; border-radius:9px; padding:9px 10px; font:15px var(--sysfont); background:#f7f7f9;}
+  .qk-dlg label{display:block; font-size:12px; color:#6F6A64; margin:8px 0 3px;}
+  .qk-dlg input[type=text], .qk-dlg input[type=number]{width:100%; border:1px solid #E4E0DA; border-radius:9px; padding:9px 10px; font:15px var(--sysfont); background:#F4F1EC;}
   .qk-prices{display:grid; grid-template-columns:repeat(4,1fr); gap:6px;}
   .qk-prices label{margin:0 0 3px; text-align:center;}
   .qk-row{display:flex; gap:8px; margin-top:14px;}
-  .qk-row button{flex:1; border:0; border-radius:10px; padding:11px 0; font:700 15px var(--sysfont); cursor:pointer; background:#f2f2f7; color:#333;}
-  .qk-row .pri{background:var(--blue); color:#fff;} .qk-row .del{background:#ffe5e3; color:#d70015;}
-  .qk-type{display:flex; gap:6px;} .qk-type button{flex:1; border:0; border-radius:9px; padding:8px 0; background:#f2f2f7; font:600 14px var(--sysfont); cursor:pointer;} .qk-type button.on{background:var(--blue); color:#fff;}
+  .qk-row button{flex:1; border:0; border-radius:10px; padding:11px 0; font:700 15px var(--sysfont); cursor:pointer; background:#F4F2EE; color:#333;}
+  .qk-row .pri{background:var(--blue); color:#fff;} .qk-row .del{background:#ffe5e3; color:#8E1B14;}
+  .qk-type{display:flex; gap:6px;} .qk-type button{flex:1; border:0; border-radius:9px; padding:8px 0; background:#F4F2EE; font:600 14px var(--sysfont); cursor:pointer;} .qk-type button.on{background:var(--blue); color:#fff;}
   .qk-img-row{display:flex; align-items:center; gap:10px;}
-  .qk-img-prev{width:44px; height:44px; border-radius:9px; background:#f2f2f7; object-fit:cover; flex:0 0 44px;}
+  .qk-img-prev{width:44px; height:44px; border-radius:9px; background:#F4F2EE; object-fit:cover; flex:0 0 44px;}
   .qk-pad .d{font-size:15px; text-align:center; color:#555; margin-bottom:4px;}
   .qk-pad .v{font-size:30px; font-weight:800; text-align:center; min-height:40px; margin-bottom:8px;}
   .qk-pad .g{display:grid; grid-template-columns:repeat(3,1fr); gap:6px;}
-  .qk-pad .g button{height:48px; border:0; border-radius:10px; background:#f2f2f7; font:700 20px var(--sysfont); cursor:pointer;}
+  .qk-pad .g button{height:48px; border:0; border-radius:10px; background:#F4F2EE; font:700 20px var(--sysfont); cursor:pointer;}
   .cart-section{background:#fff; border-radius:16px; padding:18px 20px; box-shadow:var(--shadow); margin-top:20px;}
   .cart-title-row{display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; position:sticky; top:var(--ord-top, 62px); z-index:35; background:#fff; padding:10px 0; margin-top:-10px; border-bottom:1px solid var(--line);}
   .cart-title{font-size:17px; font-weight:700;}
@@ -284,7 +284,7 @@ table.cart-table tr.ret-row .cart-name::before{content:'退貨 '; color:#c0392b;
   .cart-totals .tline b{color:var(--ink); font-size:16px; margin-left:4px;}
   .quick-fee-row{display:grid; grid-template-columns:max-content repeat(6, minmax(0,112px)); justify-content:start; align-items:center; gap:8px; margin-top:12px;}
   .quick-fee-label{font-size:12px; color:var(--secondary); font-weight:600; margin-right:2px;}
-  .quick-fee-btn{border:1px solid #e3e3e8; background:#f7f7f9; color:#5f6570; font-weight:600; font-size:13.5px; height:40px; padding:0 6px; border-radius:10px; cursor:pointer; font-family:var(--sysfont); white-space:nowrap; display:flex; align-items:center; justify-content:center;}
+  .quick-fee-btn{border:1px solid #E4E0DA; background:#F4F1EC; color:#5f6570; font-weight:600; font-size:13.5px; height:40px; padding:0 6px; border-radius:10px; cursor:pointer; font-family:var(--sysfont); white-space:nowrap; display:flex; align-items:center; justify-content:center;}
   .quick-fee-btn.refund, .quick-fee-btn.disc-btn{color:#5f6570;}
   @media (max-width:640px){
     .quick-fee-row{grid-template-columns:repeat(3, minmax(0,1fr)); gap:8px;}
@@ -318,16 +318,16 @@ table.cart-table tr.ret-row .cart-name::before{content:'退貨 '; color:#c0392b;
   table.hp-table th{text-align:left; font-size:11px; color:var(--secondary); font-weight:600; padding:4px 5px;}
   table.hp-table td{padding:5px; border-top:1px solid var(--line);}
   table.hp-table td.num, table.hp-table th.num{text-align:right;}
-  table.hp-table tr.hp-me td{background:rgba(255,149,0,0.12);}
+  table.hp-table tr.hp-me td{background:rgba(183,121,31,0.12);}
   .hp-tag{font-weight:700; font-size:12px;} .hp-tag.up{color:var(--red);} .hp-tag.down{color:#1f8a3d;} .hp-tag.same{color:var(--secondary); font-weight:500;}
   tr.temp-row td{background:rgba(52,199,89,0.07);}
   table.cart-table input.cart-name-input{font-weight:600; min-width:90px;}
-  tr.cart-sel td{background:rgba(255,149,0,0.16) !important;}
+  tr.cart-sel td{background:rgba(183,121,31,0.16) !important;}
   table.cart-table td.cart-name{cursor:pointer;}
   .disc-tag{display:inline-block; margin-left:6px; font-size:11px; font-weight:700; color:var(--orange);}
   .quick-fee-btn:active{opacity:.6;}
-  tr.fee-row td{background:rgba(0,122,255,0.04);}
-  tr.fee-row.refund td{background:rgba(255,59,48,0.05);}
+  tr.fee-row td{background:rgba(31,31,31,0.04);}
+  tr.fee-row.refund td{background:rgba(179,38,30,0.05);}
   td.c-nb, .m-last{display:none;}
   .cart-note-btn{border:none; background:var(--gray-fill); color:var(--blue); font-weight:700; font-size:16px; width:32px; height:32px; border-radius:8px; cursor:pointer; font-family:var(--sysfont); padding:0;}
   .cart-note-btn.has{background:var(--blue); color:#fff;}
@@ -338,9 +338,9 @@ table.cart-table tr.ret-row .cart-name::before{content:'退貨 '; color:#c0392b;
       grid-template-areas:"name name name name del" "price qty sub nb hist" "note note note note note";}
     table.cart-table > tbody > tr[data-idx] > td{display:block; border:none; padding:0; background:transparent !important; position:relative; min-width:0;}
     table.cart-table > tbody > tr[data-idx].temp-row{background:rgba(52,199,89,0.07);}
-    table.cart-table > tbody > tr[data-idx].fee-row{background:rgba(0,122,255,0.04);}
-    table.cart-table > tbody > tr[data-idx].fee-row.refund{background:rgba(255,59,48,0.05);}
-    table.cart-table > tbody > tr[data-idx].cart-sel{background:rgba(255,149,0,0.16);}
+    table.cart-table > tbody > tr[data-idx].fee-row{background:rgba(31,31,31,0.04);}
+    table.cart-table > tbody > tr[data-idx].fee-row.refund{background:rgba(179,38,30,0.05);}
+    table.cart-table > tbody > tr[data-idx].cart-sel{background:rgba(183,121,31,0.16);}
     td.cart-name{grid-area:name; font-weight:600; font-size:14px; line-height:1.3; overflow-wrap:anywhere;}
     .m-last{display:inline; margin-left:6px; font-size:11px; font-weight:500; color:var(--secondary); white-space:nowrap;}
     td.c-del{grid-area:del; text-align:right;}
@@ -363,8 +363,8 @@ table.cart-table tr.ret-row .cart-name::before{content:'退貨 '; color:#c0392b;
     .status-row .jy-btn, .status-row .cv-btn, .status-row .sort-sel{display:none !important;}
   }
 
-  .btn-save{background:#34c759; color:#fff;}
-  .edit-banner{background:rgba(255,149,0,0.14); color:#8a5200; border-radius:10px; padding:10px 12px; margin-bottom:12px; font-size:13px; display:none; align-items:center; gap:10px; flex-wrap:wrap;}
+  .btn-save{background:#1F1F1F; color:#fff;}
+  .edit-banner{background:rgba(183,121,31,0.14); color:#8a5200; border-radius:10px; padding:10px 12px; margin-bottom:12px; font-size:13px; display:none; align-items:center; gap:10px; flex-wrap:wrap;}
   .edit-banner button{margin-left:auto; border:none; background:#fff; color:var(--red); font-weight:600; font-size:12.5px; padding:6px 12px; border-radius:8px; cursor:pointer;}
   .txn-order-wrap{background:#fff; border-radius:10px; overflow-x:auto; margin-bottom:6px;}
   .cloud-status{margin-top:10px; font-size:12.5px; color:var(--secondary); min-height:0;}
@@ -409,7 +409,7 @@ table.cart-table tr.ret-row .cart-name::before{content:'退貨 '; color:#c0392b;
   .txn-detail td.num, .txn-detail th.num{text-align:right;}
   .txn-detail .txn-actions{margin-top:8px; display:flex; justify-content:flex-end;}
   .cart-title-left{display:flex; align-items:center; gap:10px; flex-wrap:wrap;}
-  .op-sel{font:inherit; font-size:13px; font-weight:600; box-sizing:border-box; height:32px; min-width:112px; padding:0 8px; border:1.5px solid #1d1d1f; border-radius:8px; background:#fff; color:#1d1d1f;}
+  .op-sel{font:inherit; font-size:13px; font-weight:600; box-sizing:border-box; height:32px; min-width:112px; padding:0 8px; border:1.5px solid #1F1F1F; border-radius:8px; background:#fff; color:#1F1F1F;}
   .cart-title-left{flex:1; min-width:0; margin-right:12px;}
   .cart-cust-note{flex:0 1 auto; margin:0 auto; min-width:0; max-width:100%; box-sizing:border-box; text-align:center; font-size:14px; font-weight:700; color:#854d0e; background:#fef08a; border:2px solid #eab308; border-radius:10px; padding:5px 14px; line-height:1.35; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; overflow-wrap:anywhere;}
   .cart-cust-note:empty{display:none;}
@@ -422,16 +422,16 @@ table.cart-table tr.ret-row .cart-name::before{content:'退貨 '; color:#c0392b;
     .cart-title-row .cart-head-actions{grid-column:3; grid-row:2; justify-self:end;}
     .cart-title-row .cart-cust-note{grid-column:1 / -1; grid-row:3; text-align:center; flex:none; justify-self:center; margin:0;}
   }
-  .op-sel.empty{color:#8e8e93; border-color:#c7c7cc;}
+  .op-sel.empty{color:#85807A; border-color:#c7c7cc;}
   .cart-head-actions{display:flex; gap:8px; align-items:center;}
   .cart-head-actions button{border:none; font-weight:600; font-size:13px; padding:7px 14px; border-radius:10px; cursor:pointer; font-family:var(--sysfont); white-space:nowrap;}
   .cart-actions{display:flex; gap:10px; margin-top:14px; align-items:stretch; background:var(--paper-alt); border:1px solid var(--line); border-radius:16px; padding:10px;}
   .cart-actions .print-group{display:flex; gap:10px; flex:none;}
   .cart-actions button{border:none; font-weight:600; font-size:14px; padding:12px 16px; border-radius:12px; cursor:pointer; font-family:var(--sysfont); white-space:nowrap;}
   .cart-actions .btn-save{flex:1; font-size:15px; min-height:44px;}
-  .btn-hold{background:#fff; color:#0071e3; box-shadow:inset 0 0 0 1.5px #0071e3;}
-  .btn-clear{background:#fff; color:#ff3b30; box-shadow:inset 0 0 0 1.5px #ff3b30;}
-  .btn-print{background:#fff; color:#0071e3; box-shadow:inset 0 0 0 1.5px #0071e3;}
+  .btn-hold{background:#fff; color:#1F1F1F; box-shadow:inset 0 0 0 1.5px #1F1F1F;}
+  .btn-clear{background:#fff; color:#B3261E; box-shadow:inset 0 0 0 1.5px #B3261E;}
+  .btn-print{background:#fff; color:#1F1F1F; box-shadow:inset 0 0 0 1.5px #1F1F1F;}
 
   .held-orders-title{font-size:12px; font-weight:600; color:var(--secondary); margin:0 0 8px;}
   .held-order-card{background:#fff; border-radius:12px; padding:12px 14px; box-shadow:var(--shadow); display:flex; align-items:center; gap:10px; margin-bottom:8px;}
@@ -453,21 +453,21 @@ table.cart-table tr.ret-row .cart-name::before{content:'退貨 '; color:#c0392b;
   #ckAlert.on{display:flex;}
   #ubAlert{display:none; position:fixed; inset:0; z-index:9600; background:rgba(0,0,0,.55); align-items:center; justify-content:center; padding:20px;}
   #ubAlert.on{display:flex;}
-  .ub-code{margin-top:16px; font-size:clamp(24px,5vw,40px); font-weight:800; color:#ff3b30; font-family:var(--monofont); word-break:break-all;}
-  .ub-sub{margin-top:10px; font-size:18px; color:#6e6e73; font-weight:600;}
+  .ub-code{margin-top:16px; font-size:clamp(24px,5vw,40px); font-weight:800; color:#B3261E; font-family:var(--monofont); word-break:break-all;}
+  .ub-sub{margin-top:10px; font-size:18px; color:#6F6A64; font-weight:600;}
   .ck-card{background:#fff; border-radius:22px; padding:44px 48px 34px; text-align:center; box-shadow:0 18px 60px rgba(0,0,0,.4); max-width:92vw;}
-  .ck-name{font-size:22px; color:#6e6e73; font-weight:600; margin-bottom:14px;}
-  .ck-msg{font-size:clamp(30px,6vw,52px); font-weight:800; color:#1d1d1f; line-height:1.3;}
-  .ck-msg .ck-amt{color:#ff3b30;}
-  .ck-ok{margin-top:26px; border:none; background:#0071e3; color:#fff; font:inherit; font-size:20px; font-weight:700; padding:12px 44px; border-radius:14px; cursor:pointer;}
+  .ck-name{font-size:22px; color:#6F6A64; font-weight:600; margin-bottom:14px;}
+  .ck-msg{font-size:clamp(30px,6vw,52px); font-weight:800; color:#1F1F1F; line-height:1.3;}
+  .ck-msg .ck-amt{color:#B3261E;}
+  .ck-ok{margin-top:26px; border:none; background:#1F1F1F; color:#fff; font:inherit; font-size:20px; font-weight:700; padding:12px 44px; border-radius:14px; cursor:pointer;}
   @page{size:A4; margin:0;}
   #previewOverlay{display:none; position:fixed; inset:0; z-index:9000; background:rgba(0,0,0,.62); flex-direction:column;}
   #previewOverlay.on{display:flex;}
-  .pv-bar{display:flex; align-items:center; gap:8px; padding:10px 14px; background:#1d1d1f; color:#fff; flex-wrap:wrap;}
-  .pv-bar button{border:none; border-radius:9px; padding:8px 14px; font:inherit; font-size:14px; font-weight:600; cursor:pointer; background:#fff; color:#1d1d1f;}
+  .pv-bar{display:flex; align-items:center; gap:8px; padding:10px 14px; background:#1F1F1F; color:#fff; flex-wrap:wrap;}
+  .pv-bar button{border:none; border-radius:9px; padding:8px 14px; font:inherit; font-size:14px; font-weight:600; cursor:pointer; background:#fff; color:#1F1F1F;}
   .pv-bar .pv-pct{min-width:52px; text-align:center; font-size:14px; font-weight:600;}
   .pv-bar .pv-sp{flex:1;}
-  .pv-bar .pv-go{background:#0071e3; color:#fff;}
+  .pv-bar .pv-go{background:#1F1F1F; color:#fff;}
   .pv-scroll{flex:1; overflow:auto; padding:18px; text-align:center;}
   .pv-sheet{display:inline-block; width:210mm; min-height:297mm; background:#fff; text-align:left; box-shadow:0 6px 30px rgba(0,0,0,.4); box-sizing:border-box; vertical-align:top;}
   @media print{
@@ -475,9 +475,9 @@ table.cart-table tr.ret-row .cart-name::before{content:'退貨 '; color:#c0392b;
     body > #printArea{display:block !important; position:static; padding:10mm 8mm; box-sizing:border-box;}
     body > #printArea.rc{padding:0;}
   }
-.cv-btn{margin-left:auto;font:inherit;font-size:13px;font-weight:600;box-sizing:border-box;height:32px;min-width:112px;padding:0 12px;border-radius:8px;border:1.5px solid #1d1d1f;background:#fff;color:#1d1d1f;cursor:pointer;white-space:nowrap}
+.cv-btn{margin-left:auto;font:inherit;font-size:13px;font-weight:600;box-sizing:border-box;height:32px;min-width:112px;padding:0 12px;border-radius:8px;border:1.5px solid #1F1F1F;background:#fff;color:#1F1F1F;cursor:pointer;white-space:nowrap}
 .cv-btn+.sort-sel{margin-left:8px}
-.jy-btn{margin-left:auto;font:inherit;font-size:13px;font-weight:600;box-sizing:border-box;height:32px;min-width:112px;padding:0 12px;border-radius:8px;border:1.5px solid #1d1d1f;background:#fff;color:#1d1d1f;cursor:pointer;white-space:nowrap}
+.jy-btn{margin-left:auto;font:inherit;font-size:13px;font-weight:600;box-sizing:border-box;height:32px;min-width:112px;padding:0 12px;border-radius:8px;border:1.5px solid #1F1F1F;background:#fff;color:#1F1F1F;cursor:pointer;white-space:nowrap}
 .jy-btn+.cv-btn{margin-left:8px}
 @media (max-width:520px){
   body:not(.staff) .status-row{flex-wrap:wrap; row-gap:8px}
@@ -487,7 +487,7 @@ table.cart-table tr.ret-row .cart-name::before{content:'退貨 '; color:#c0392b;
 }
 body.staff .jy-btn{display:none !important}
 body.staff .jy-btn+.cv-btn{margin-left:auto}
-body.jy-view .jy-btn{background:#0071e3;border-color:#0071e3;color:#fff}
+body.jy-view .jy-btn{background:#1F1F1F;border-color:#1F1F1F;color:#fff}
 .price-cell.jy{display:none}
 .price-cell.jy .val{color:#c2410c}
 body.jy-view .price-cell:not(.sell):not(.jy), body.jy-view .history-btn, body.jy-view .history-panel{display:none !important}
@@ -496,10 +496,10 @@ body.jy-view .prices, body.staff.jy-view .prices{grid-template-columns:repeat(2,
 body.jy-view .price-cell{flex-direction:row !important}
 body.jy-view .price-cell .lbl{position:static !important; width:auto !important; padding:0 10px !important; font-size:13px !important}
 body.jy-view .price-cell .val{padding-left:6px !important; padding-right:10px !important; font-size:19px !important}
-body.cust-view .cv-btn{background:#0071e3;border-color:#0071e3;color:#fff}
+body.cust-view .cv-btn{background:#1F1F1F;border-color:#1F1F1F;color:#fff}
 body.cust-view .price-cell:not(.sell), body.cust-view .history-btn, body.cust-view .history-panel{display:none !important}
 body.cust-view .prices{grid-template-columns:minmax(0,1fr) !important; max-width:260px}
-.sort-sel{margin-left:auto;font:inherit;font-size:13px;box-sizing:border-box;height:32px;min-width:112px;padding:0 8px;border:1.5px solid #1d1d1f;border-radius:8px;background:#fff;color:#1d1d1f;font-weight:600}
+.sort-sel{margin-left:auto;font:inherit;font-size:13px;box-sizing:border-box;height:32px;min-width:112px;padding:0 8px;border:1.5px solid #1F1F1F;border-radius:8px;background:#fff;color:#1F1F1F;font-weight:600}
 </style>
 <script>window.fbReady=new Promise(function(r){window.__fbResolve=r;});</script>
 <script type="module" src="./fb.js"></script>
@@ -1088,8 +1088,8 @@ function updateMultiBar(){
   if(!bar){
     bar = document.createElement('div');
     bar.id = 'multiCopyBar';
-    bar.style.cssText = 'position:fixed; left:50%; bottom:18px; transform:translateX(-50%); z-index:200; background:#1C1C1E; color:#fff; border-radius:999px; padding:9px 10px 9px 18px; font-size:14px; font-weight:600; display:flex; align-items:center; gap:12px; box-shadow:0 4px 16px rgba(0,0,0,0.25);';
-    bar.innerHTML = '<span id="multiCopyText"></span><button type="button" id="multiCopyClear" style="border:none; background:#fff; color:#1C1C1E; border-radius:999px; padding:6px 14px; font-weight:700; font-size:13px; cursor:pointer;">清除</button>';
+    bar.style.cssText = 'position:fixed; left:50%; bottom:18px; transform:translateX(-50%); z-index:200; background:#1F1F1F; color:#fff; border-radius:999px; padding:9px 10px 9px 18px; font-size:14px; font-weight:600; display:flex; align-items:center; gap:12px; box-shadow:0 4px 16px rgba(0,0,0,0.25);';
+    bar.innerHTML = '<span id="multiCopyText"></span><button type="button" id="multiCopyClear" style="border:none; background:#fff; color:#1F1F1F; border-radius:999px; padding:6px 14px; font-weight:700; font-size:13px; cursor:pointer;">清除</button>';
     document.body.appendChild(bar);
     bar.querySelector('#multiCopyClear').addEventListener('click', ()=>{ multiCopy = []; updateMultiBar(); });
   }
@@ -2327,7 +2327,7 @@ function renderCustomerList(){
     ? `共 ${customers.length} 位客戶，顯示 ${list.length} 位`
     : '目前沒有客戶資料，請到「⚙ 管理客戶」新增或匯入';
   if(!list.length){
-    custListBody.innerHTML = `<tr><td colspan="9" style="text-align:center; color:#8E8E93; padding:20px;">沒有符合的客戶</td></tr>`;
+    custListBody.innerHTML = `<tr><td colspan="9" style="text-align:center; color:#85807A; padding:20px;">沒有符合的客戶</td></tr>`;
     return;
   }
   custListBody.innerHTML = list.map(c => `
@@ -2934,7 +2934,7 @@ function qkEditDialog(pos){
     const q = si.value.trim();
     if(!q){ res.style.display = 'none'; return; }
     const list = searchRows(q, 8);
-    res.innerHTML = list.map((r,i) => `<button type="button" data-i="${i}">${escapeHtml(r[4] || '')}<br><small>${escapeHtml(r[3] || r[2] || '')}</small></button>`).join('') || '<div style="padding:8px 10px;color:#8e8e93;font-size:13px">沒有符合的商品</div>';
+    res.innerHTML = list.map((r,i) => `<button type="button" data-i="${i}">${escapeHtml(r[4] || '')}<br><small>${escapeHtml(r[3] || r[2] || '')}</small></button>`).join('') || '<div style="padding:8px 10px;color:#85807A;font-size:13px">沒有符合的商品</div>';
     res.style.display = '';
     res.querySelectorAll('button').forEach(b => b.onclick = () => {
       const r = list[+b.dataset.i];
