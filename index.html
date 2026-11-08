@@ -183,6 +183,16 @@
   .cust-info-sub{display:flex; gap:16px; flex-wrap:wrap; font-size:12.5px; color:var(--secondary);}
 
   .order-card .card-top{margin-bottom:8px;}
+  .listprice .lp-act{display:flex; align-items:center; gap:10px;}
+  @media (max-width:640px){
+    .order-card .card-top{display:grid; grid-template-columns:minmax(0,1fr) auto; grid-template-areas:"name name" "price act" "tag act"; column-gap:10px; row-gap:2px; align-items:center;}
+    .order-card .card-top .name{grid-area:name; margin-bottom:6px;}
+    .order-card .listprice{display:contents; margin-left:0;}
+    .order-card .lp-txt{grid-area:price; font-size:16px; color:var(--orange); font-weight:600;}
+    .order-card .lp-act{grid-area:act; gap:8px;}
+    .order-card .card-top .tag{grid-area:tag; justify-self:start; margin-left:0; background:none; padding:0; font-size:11.5px; max-width:100%; overflow:hidden; text-overflow:ellipsis;}
+    .order-card .card-top .tag::before{content:'📁 ';}
+  }
 
 
   /* ===== 打單頁：縮小各區塊之間的留白，讓出貨清單最大化 ===== */
@@ -1396,13 +1406,15 @@ function doOrderSearch(){
       <div class="card-top">
         <div class="name">${highlight(name, q)}</div>
         <div class="listprice">
-          定價 ${fmt(sellingPrice)}
-          <div class="qty-stepper">
-            <button class="qty-minus" type="button">−</button>
-            <input class="qty-num" type="text" inputmode="numeric" value="${qty}" aria-label="數量">
-            <button class="qty-plus" type="button">+</button>
+          <span class="lp-txt">定價 ${fmt(sellingPrice)}</span>
+          <div class="lp-act">
+            <div class="qty-stepper">
+              <button class="qty-minus" type="button">−</button>
+              <input class="qty-num" type="text" inputmode="numeric" value="${qty}" aria-label="數量">
+              <button class="qty-plus" type="button">+</button>
+            </div>
+            <button class="add-btn" type="button">加入</button>
           </div>
-          <button class="add-btn" type="button">加入</button>
         </div>
         <div class="tag">${escapeHtml(catLabel(cats[catIdx]) ?? '')}</div>
       </div>
