@@ -2893,7 +2893,7 @@ function renderQK(){
   const eb = document.getElementById('qkEditBtn'); eb.classList.toggle('on', qkEditing); eb.textContent = qkEditing ? '完成編輯' : '編輯';
   eb.style.display = qkFolded ? 'none' : '';
   const tabs = qkOrder.map(i => `<button type="button" class="qk-tab ${i===qkCat?'on':''}" data-c="${i}">${escapeHtml(qkCats[i])}</button>`).join('');
-  document.getElementById('qkHeadL').innerHTML = qkFolded ? '<span class="qk-title">⚡ 快速輸入商品</span>' : `<div class="qk-tabs" id="qkTabs">${tabs}</div>`;
+  document.getElementById('qkHeadL').innerHTML = qkFolded ? '<span class="qk-title">快速輸入商品</span>' : `<div class="qk-tabs" id="qkTabs">${tabs}</div>`;
   const fd = qkFolder === null ? null : qkDocs.get(qkFolder);
   const crumb = qkFolder === null ? '' : `<div class="qk-crumb"><button type="button" class="qk-back" id="qkBack">← 返回</button>${escapeHtml(qkCats[qkCat])} ／ ${escapeHtml((fd && fd.name) || '')}</div>`;
   let cells = '';
