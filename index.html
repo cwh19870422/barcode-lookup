@@ -38,6 +38,13 @@
   .tab-panel.active{display:block;}
 
   .search-wrap{position:relative; z-index:5;}
+  .refine-row{display:none; gap:8px; overflow-x:auto; padding:10px 2px 2px; margin:0; -webkit-overflow-scrolling:touch; scrollbar-width:none; align-items:center;}
+  .refine-row.show{display:flex;}
+  .refine-row::-webkit-scrollbar{display:none;}
+  .refine-lab{flex:0 0 auto; font-size:11.5px; font-weight:600; color:var(--secondary); margin-right:2px;}
+  .refine-chip{flex:0 0 auto; border:none; background:#fff; color:var(--ink); font-family:var(--sysfont); font-weight:600; font-size:13px; padding:7px 13px; border-radius:999px; box-shadow:0 1px 3px rgba(0,0,0,.14); cursor:pointer; white-space:nowrap;}
+  .refine-chip i{font-style:normal; font-weight:500; color:var(--secondary); margin-left:3px;}
+  .refine-chip:active{opacity:.6;}
   .search-box{background:var(--gray-fill); border:none; border-radius:12px; padding:2px 4px 2px 14px; display:flex; align-items:center; gap:8px;}
   .search-box svg{flex-shrink:0; color:var(--secondary);}
   .search-box input{flex:1; border:none; outline:none; background:transparent; font-size:17px; padding:11px 4px; font-family:var(--sysfont); color:var(--ink);}
@@ -565,6 +572,7 @@ body.cust-view .prices{grid-template-columns:minmax(0,1fr) !important; max-width
         <input id="searchInput" type="text" placeholder="輸入商品名稱、條碼或商品編號…" autocomplete="off">
         <button class="clear-btn" id="clearBtn" title="清除">✕</button>
       </div>
+      <div class="refine-row" id="refineRow"></div>
     </div>
     <div class="status-row">
       <span id="statusText">載入中…</span>
@@ -1024,8 +1032,10 @@ function doSearch(fromInput){
   if(!q){
     statusEl.textContent = '請輸入關鍵字開始搜尋';
     resultsEl.innerHTML = '';
+    renderRefine('');
     return;
   }
+  renderRefine(q);
   const matches = searchRows(q, 300);
   const total = matches.length;
   statusEl.innerHTML = `找到 <b>${total}${total>=300?'+':''}</b> 筆結果`;
@@ -1239,6 +1249,50 @@ input.addEventListener('input', ()=>{
   debounceTimer = setTimeout(() => doSearch(true), 90);
 });
 clearBtn.addEventListener('click', ()=>{ input.value=''; doSearch(); input.focus(); });
+
+// ── 搜尋「層層縮小」建議：依目前結果，列出可點的關鍵字（附商品數），點一個就接在搜尋詞後面 ──
+function renderRefine(q){
+  const refineRow = document.getElementById('refineRow');
+  if(!refineRow) return;
+  q = (q||'').trim();
+  if(!q || /^[0-9\-]+$/.test(q)){ refineRow.classList.remove('show'); refineRow.innerHTML = ''; return; }
+  const m = searchRows(q, 100000);
+  const total = m.length;
+  const ql = q.toLowerCase();
+  const cnt = new Map();
+  const add = (w, seen) => {
+    const k = w.toLowerCase();
+    if(k.length < 2 || ql.includes(k) || seen.has(k)) return;
+    seen.add(k);
+    const o = cnt.get(k); if(o) o.n++; else cnt.set(k, {w, n:1});
+  };
+  const isSize = w => /^[0-9.]+\s*(ml|g|l|kg|cc|入|片|包|支|瓶|組)$/i.test(w);
+  for(const r of m){
+    const seen = new Set();
+    String(r[4]||'').split(/[\s\/／、，,()（）]+/).forEach(w=>{
+      w = w.trim();
+      if(!w || w.length > 12 || /^[0-9.\-]+$/.test(w)) return;
+      add(w, seen);
+      if(/^[\u3400-\u9fff]{4,}$/.test(w)){          // 中文詞：再拆「系列(前4字)」與「品項(後2~3字)」
+        add(w.slice(0,4), seen); if(w.length === 4) add(w.slice(-2), seen); add(w.slice(-3), seen);
+      }
+    });
+  }
+  let cand = [...cnt.values()].filter(x => x.n >= 2 && x.n < total);
+  // 同樣數量時，被較長詞包含的短詞不重複列出
+  cand = cand.filter(x => !cand.some(y => y !== x && y.n === x.n && y.w.length > x.w.length && y.w.toLowerCase().includes(x.w.toLowerCase())));
+  cand.sort((a,b)=> (isSize(a.w) - isSize(b.w)) || b.n - a.n || b.w.length - a.w.length);
+  const top = cand.slice(0, 10);
+  if(!top.length){ refineRow.classList.remove('show'); refineRow.innerHTML = ''; return; }
+  refineRow.innerHTML = '<span class="refine-lab">縮小：</span>' + top.map(x=>`<button type="button" class="refine-chip" data-w="${escapeHtml(x.w)}">${escapeHtml(x.w)}<i>${x.n}</i></button>`).join('');
+  refineRow.classList.add('show');
+}
+document.getElementById('refineRow').addEventListener('click', e=>{
+  const b = e.target.closest('.refine-chip'); if(!b) return;
+  input.value = input.value.trim() + ' ' + b.dataset.w;
+  doSearch();
+  input.focus();
+});
 clearBtn.style.visibility = 'hidden';
 
 const custSearch = document.getElementById('custSearch');
