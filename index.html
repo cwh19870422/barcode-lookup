@@ -199,6 +199,13 @@
   #tab-order .sticky-controls{padding-top:4px; padding-bottom:6px;}
   #tab-order .cust-picker{margin-bottom:6px;}
   #tab-order .cust-info-bar{margin-bottom:6px; padding:10px 14px;}
+  .cust-mini{display:none;}
+  @media (max-width:640px){
+    #tab-order.cust-on #orderStickyControls{position:static !important;}
+    .cust-mini{position:fixed; top:0; left:0; right:0; z-index:60; background:var(--paper); padding:8px 16px; align-items:center; gap:10px; box-shadow:0 1px 0 var(--line), 0 4px 10px rgba(0,0,0,.06);}
+    body.cm-show .cust-mini{display:flex;}
+    .cust-mini .cm-name{font-size:15px; font-weight:700; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; min-width:0;}
+  }
   #tab-order .qk{margin-top:0; padding:8px 12px;}
   #tab-order .cart-section{margin-top:12px; padding:12px 16px;}
   #tab-order .cart-title-row{margin-bottom:8px; padding:6px 0; margin-top:-6px;}
@@ -560,6 +567,7 @@ body.cust-view .prices{grid-template-columns:minmax(0,1fr) !important; max-width
   </section>
 
   <section class="tab-panel" id="tab-order">
+    <div class="cust-mini" id="custMini"><span class="cm-name" id="custMiniName"></span><span class="grade-badge" id="custMiniBadge"></span></div>
     <div class="sticky-controls" id="orderStickyControls">
       <div class="cust-picker" id="custPickerWrap">
         <div class="cust-row">
@@ -2368,6 +2376,33 @@ function updateOrderTop(){
 })();
 window.addEventListener('resize', updateStickyOffset);
 updateStickyOffset();
+// 手機版：選了客戶後，客戶資訊框跟著捲動，捲出畫面時只在最上方凍結「名字＋等級」
+(function(){
+  const bar = document.getElementById('custInfoBar'), tab = document.getElementById('tab-order'), mini = document.getElementById('custMini');
+  if(!bar || !tab || !mini) return;
+  const mq = window.matchMedia('(max-width:640px)');
+  let out = false;
+  function apply(){
+    const on = bar.style.display !== 'none';
+    tab.classList.toggle('cust-on', on);
+    if(on){
+      document.getElementById('custMiniName').textContent = document.getElementById('custName').textContent;
+      const b = document.getElementById('custGradeBadge'), mb = document.getElementById('custMiniBadge');
+      mb.textContent = b.textContent; mb.className = b.className; mb.style.cssText = b.style.cssText; mb.style.display = b.style.display;
+    }
+    const show = mq.matches && on && out && tab.classList.contains('active');
+    document.body.classList.toggle('cm-show', show);
+    document.documentElement.style.setProperty('--ord-top', show ? mini.offsetHeight + 'px' : (mq.matches && on ? '0px' : ''));
+    if(!(mq.matches && on)) updateOrderTop();
+  }
+  new MutationObserver(apply).observe(bar, {attributes:true, attributeFilter:['style']});
+  new MutationObserver(apply).observe(document.getElementById('custName'), {childList:true, characterData:true, subtree:true});
+  new MutationObserver(apply).observe(tab, {attributes:true, attributeFilter:['class']});
+  if(window.IntersectionObserver){
+    new IntersectionObserver(es => { const e = es[es.length-1]; out = !e.isIntersecting && e.boundingClientRect.top < 0; apply(); }, {threshold:0}).observe(bar);
+  }
+  mq.addEventListener && mq.addEventListener('change', apply);
+})();
 // 分頁列在登入前是隱藏的（高度 0），所以顯示出來或高度改變時要重新量，搜尋列的「凍結」位置才會正確
 if(window.ResizeObserver){ const tw = document.getElementById('tabsStickyWrap'); if(tw) new ResizeObserver(updateStickyOffset).observe(tw); }
 if(window.matchMedia('(max-width:640px)').matches){ const oi = document.getElementById('orderSearchInput'); if(oi) oi.placeholder = '搜尋商品／條碼／掃描'; }
