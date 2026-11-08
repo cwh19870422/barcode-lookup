@@ -38,16 +38,6 @@
   .tab-panel.active{display:block;}
 
   .search-wrap{position:relative; z-index:5;}
-  .ac-wrap{position:relative;}
-  .ac-dd{display:none; position:absolute; left:0; right:0; top:calc(100% + 4px); background:#fff; border-radius:14px; box-shadow:0 10px 26px rgba(0,0,0,.2); overflow:hidden; z-index:70;}
-  .ac-dd.show{display:block;}
-  .ac-it{display:flex; justify-content:space-between; align-items:center; gap:10px; padding:11px 14px; border-top:1px solid var(--line); cursor:pointer;}
-  .ac-it:first-child{border-top:0;}
-  .ac-it:hover, .ac-it.on{background:var(--paper-alt);}
-  .ac-nm{font-size:15px; font-weight:600; line-height:1.3; min-width:0; overflow-wrap:anywhere;}
-  .ac-nm mark{background:rgba(31,31,31,0.16); color:var(--ink); border-radius:3px; padding:0 1px;}
-  .ac-sub{display:block; font-size:11.5px; font-weight:500; color:var(--secondary); margin-top:2px;}
-  .ac-pr{color:var(--orange); font-weight:700; font-size:14.5px; white-space:nowrap;}
   .search-box{background:var(--gray-fill); border:none; border-radius:12px; padding:2px 4px 2px 14px; display:flex; align-items:center; gap:8px;}
   .search-box svg{flex-shrink:0; color:var(--secondary);}
   .search-box input{flex:1; border:none; outline:none; background:transparent; font-size:17px; padding:11px 4px; font-family:var(--sysfont); color:var(--ink);}
@@ -570,13 +560,10 @@ body.cust-view .prices{grid-template-columns:minmax(0,1fr) !important; max-width
 
   <section class="tab-panel active" id="tab-search">
     <div class="search-wrap sticky-controls">
-      <div class="ac-wrap">
       <div class="search-box">
         <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
         <input id="searchInput" type="text" placeholder="輸入商品名稱、條碼或商品編號…" autocomplete="off">
         <button class="clear-btn" id="clearBtn" title="清除">✕</button>
-      </div>
-      <div class="ac-dd" id="acDd" role="listbox"></div>
       </div>
     </div>
     <div class="status-row">
@@ -1251,60 +1238,7 @@ input.addEventListener('input', ()=>{
   clearTimeout(debounceTimer);
   debounceTimer = setTimeout(() => doSearch(true), 90);
 });
-clearBtn.addEventListener('click', ()=>{ input.value=''; doSearch(); acHide(); input.focus(); });
-
-// ── 搜尋自動完成：輸入時在搜尋框下方列出「最相關」的 3 個商品 ──
-const acDd = document.getElementById('acDd');
-let acItems = [], acSel = -1, acSkip = false;
-function acScore(r, toks, q){
-  const name = (r[4]||'').toLowerCase(), bc = String(r[3]||'').toLowerCase(), code = String(r[2]||'').toLowerCase(), ql = q.toLowerCase();
-  let sc = 0;
-  if(bc === ql || code === ql) sc += 1000;
-  else if(bc.startsWith(ql) || code.startsWith(ql)) sc += 400;
-  if(name === ql) sc += 500;
-  else if(name.startsWith(ql)) sc += 300;
-  else if(name.includes(ql)) sc += 200 - Math.min(name.indexOf(ql), 60);
-  toks.forEach((t, i)=>{
-    const p = name.indexOf(t);
-    if(p === 0) sc += 60; else if(p > 0) sc += 40 - Math.min(p, 30)*0.5; else sc += 10;
-  });
-  return sc - name.length * 0.15;
-}
-function acHide(){ acDd.classList.remove('show'); acDd.innerHTML = ''; acItems = []; acSel = -1; }
-function acRender(){
-  const q = input.value.trim();
-  if(acSkip){ acSkip = false; acHide(); return; }
-  const cjk = /[\u3400-\u9fff]/.test(q);
-  if(!q || (!cjk && q.length < 2)){ acHide(); return; }
-  const toks = q.split(/\s+/).filter(Boolean).map(t=>t.toLowerCase());
-  const m = searchRows(q, 100000);
-  if(!m.length){ acHide(); return; }
-  acItems = m.map(r => ({r, s: acScore(r, toks, q)})).sort((a,b)=>b.s-a.s).slice(0,3).map(x=>x.r);
-  acSel = -1;
-  acDd.innerHTML = acItems.map((r,i)=>`<div class="ac-it" data-i="${i}" role="option"><div class="ac-nm">${highlight(r[4]||'', q)}<span class="ac-sub">${escapeHtml(catLabel(cats[r[0]]) ?? '')}</span></div><span class="ac-pr">${fmt(r[10])}</span></div>`).join('');
-  acDd.classList.add('show');
-}
-function acPick(i){
-  const r = acItems[i]; if(!r) return;
-  acSkip = true;
-  input.value = r[4] || '';
-  acHide();
-  doSearch();
-  input.blur();
-}
-function acMark(){ [...acDd.children].forEach((el,i)=> el.classList.toggle('on', i===acSel)); }
-input.addEventListener('input', ()=>{ clearTimeout(acTimer); acTimer = setTimeout(acRender, 90); });
-let acTimer;
-input.addEventListener('keydown', e=>{
-  if(!acDd.classList.contains('show')) return;
-  if(e.key === 'ArrowDown'){ e.preventDefault(); acSel = (acSel+1) % acItems.length; acMark(); }
-  else if(e.key === 'ArrowUp'){ e.preventDefault(); acSel = (acSel-1+acItems.length) % acItems.length; acMark(); }
-  else if(e.key === 'Enter' && acSel >= 0){ e.preventDefault(); acPick(acSel); }
-  else if(e.key === 'Escape'){ acHide(); }
-});
-acDd.addEventListener('mousedown', e=>{ const it = e.target.closest('.ac-it'); if(!it) return; e.preventDefault(); acPick(parseInt(it.dataset.i,10)); });
-input.addEventListener('blur', ()=> setTimeout(acHide, 150));
-document.querySelectorAll('.tab-btn').forEach(b => b.addEventListener('click', acHide));
+clearBtn.addEventListener('click', ()=>{ input.value=''; doSearch(); input.focus(); });
 clearBtn.style.visibility = 'hidden';
 
 const custSearch = document.getElementById('custSearch');
