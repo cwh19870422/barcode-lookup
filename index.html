@@ -2374,6 +2374,14 @@ function updateOrderTop(){
   const oc = document.getElementById('orderStickyControls');
   const tabsH = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--tabs-h')) || 0;
   const ch = oc && oc.offsetParent !== null ? oc.offsetHeight : 0;
+  // 手機版選了客戶：客戶資訊框不再凍結，標題列只需避開最上方的「名字＋等級」小條（沒顯示就貼頂）
+  const tabEl = document.getElementById('tab-order');
+  if(window.matchMedia('(max-width:640px)').matches && tabEl && tabEl.classList.contains('cust-on')){
+    const mini = document.getElementById('custMini');
+    const v = document.body.classList.contains('cm-show') && mini ? mini.offsetHeight : 0;
+    document.documentElement.style.setProperty('--ord-top', v + 'px');
+    return;
+  }
   document.documentElement.style.setProperty('--ord-top', (tabsH + ch) + 'px');
 }
 (function(){
@@ -2399,8 +2407,7 @@ updateStickyOffset();
     }
     const show = mq.matches && on && out && tab.classList.contains('active');
     document.body.classList.toggle('cm-show', show);
-    document.documentElement.style.setProperty('--ord-top', show ? mini.offsetHeight + 'px' : (mq.matches && on ? '0px' : ''));
-    if(!(mq.matches && on)) updateOrderTop();
+    updateOrderTop();
   }
   new MutationObserver(apply).observe(bar, {attributes:true, attributeFilter:['style']});
   new MutationObserver(apply).observe(document.getElementById('custName'), {childList:true, characterData:true, subtree:true});
