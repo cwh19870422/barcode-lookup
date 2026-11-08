@@ -200,6 +200,7 @@
   #tab-order .cust-picker{margin-bottom:6px;}
   #tab-order .cust-info-bar{margin-bottom:6px; padding:10px 14px;}
   .cust-mini{display:none;}
+  @media (max-width:640px){ .cust-info-main{flex-wrap:nowrap;} .cust-info-main .change-cust-btn{white-space:nowrap; flex:0 0 auto;} .cust-info-main .cust-name{min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;} }
   @media (max-width:640px){
     #tab-order.cust-on #orderStickyControls{position:static !important;}
     .cust-mini{position:fixed; top:0; left:0; right:0; z-index:60; background:var(--paper); padding:8px 16px; align-items:center; gap:10px; box-shadow:0 1px 0 var(--line), 0 4px 10px rgba(0,0,0,.06);}
@@ -423,6 +424,7 @@ table.cart-table tr.ret-row .cart-name::before{content:'退貨 '; color:#c0392b;
   .cart-title-left{flex:1; min-width:0; margin-right:12px;}
   .cart-cust-note{flex:0 1 auto; margin:0 auto; min-width:0; max-width:100%; box-sizing:border-box; text-align:center; font-size:14px; font-weight:700; color:#854d0e; background:#fef08a; border:2px solid #eab308; border-radius:10px; padding:5px 14px; line-height:1.35; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; overflow-wrap:anywhere;}
   .cart-cust-note:empty{display:none;}
+  .cart-note-m{display:none;}
   @media (max-width:640px){
     .cart-title-row{display:grid; grid-template-columns:max-content 1fr auto; column-gap:8px; row-gap:8px; align-items:center;}
     .cart-title-left{display:contents;}
@@ -430,7 +432,9 @@ table.cart-table tr.ret-row .cart-name::before{content:'退貨 '; color:#c0392b;
     .cart-title-row .cart-count{grid-column:2; grid-row:1;}
     .cart-title-row .op-sel{grid-column:1 / 3; grid-row:2; justify-self:start;}
     .cart-title-row .cart-head-actions{grid-column:3; grid-row:2; justify-self:end;}
-    .cart-title-row .cart-cust-note{grid-column:1 / -1; grid-row:3; text-align:center; flex:none; justify-self:center; margin:0;}
+    .cart-title-row .cart-cust-note{display:none;}
+    .cart-note-m{display:-webkit-box; margin:0 auto 8px; max-width:100%; text-align:center; flex:none; width:max-content;}
+    .cart-note-m:empty{display:none;}
   }
   .op-sel.empty{color:#85807A; border-color:#c7c7cc;}
   .cart-head-actions{display:flex; gap:8px; align-items:center;}
@@ -638,6 +642,7 @@ body.cust-view .prices{grid-template-columns:minmax(0,1fr) !important; max-width
     <div class="qk-mask" id="qkMask"><div class="qk-dlg" id="qkDlg"></div></div>
 
     <div class="cart-section">
+      <div class="cart-cust-note cart-note-m" id="cartCustNoteM"></div>
       <div class="cart-title-row">
         <div class="cart-title-left"><div class="cart-title">出貨清單</div><div class="cart-count" id="cartCount">0 項</div>
           <select id="operatorSel" class="op-sel" aria-label="打單人員"><option value="">打單人員</option><option>六六</option><option>宜惠</option><option>小豪</option><option>sam</option><option>文嘉</option><option>小蔚</option></select>
@@ -1769,6 +1774,8 @@ function updateCartNote(){
   const note = String(((fresh || c || {}).note) || '').trim();
   el.textContent = note;
   el.title = note;
+  const m = document.getElementById('cartCustNoteM');
+  if(m){ m.textContent = note; m.title = note; }
 }
 function renderCart(){
   updateCartNote();
