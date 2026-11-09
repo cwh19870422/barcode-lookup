@@ -199,3 +199,13 @@ textarea.pk-in.pk-src:focus{box-shadow:inset 0 0 0 2px var(--blue);}
 .pk-ord .m .d{flex:0 0 auto; font-weight:700; color:var(--ink); font-variant-numeric:tabular-nums;}
 .pk-ord .t .tr .pk-pill{min-width:48px; text-align:center;}
 .pk-ord .t .tr .pk-left{min-width:66px; text-align:center;}
+
+/* 已留：大圓形勾勾（樣式 5）——固定寬度，每一列對齊 */
+.pk-circ{flex:0 0 auto; width:38px; height:38px; border-radius:50%; border:0; padding:0; cursor:pointer; display:grid; place-items:center; background:#fff; box-shadow:inset 0 0 0 2px var(--sg-line2, #C7C7CC); color:#fff; font:800 18px var(--sysfont); touch-action:manipulation; -webkit-user-select:none; user-select:none;}
+.pk-circ:hover{box-shadow:inset 0 0 0 2px var(--sg-accent, #555);}
+.pk-circ.on{background:var(--sg-kept, #34C759); box-shadow:none;}
+.pk-circ.half{background:conic-gradient(var(--sg-pend, #FF9500) var(--p), #fff 0); box-shadow:inset 0 0 0 2px var(--sg-pend, #FF9500);}
+.pk-circ.half span{width:28px; height:28px; border-radius:50%; background:#fff; display:grid; place-items:center; font-size:11.5px; font-weight:800; color:var(--sg-pend, #FF9500); font-variant-numeric:tabular-nums;}
+.pk-circ-edit{flex:0 0 auto; width:62px; display:flex; align-items:center; justify-content:center; gap:2px;}
+.pk-circ-edit .pk-kn{width:34px; height:30px; font-size:14px; box-shadow:inset 0 0 0 1.5px var(--sg-accent, #555);}
+@media (max-width:520px){ .pk-circ{width:34px; height:34px;} .pk-circ.half span{width:25px; height:25px; font-size:10.5px;} }

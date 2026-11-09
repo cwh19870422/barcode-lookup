@@ -18,6 +18,7 @@ const S = {
   confirmDel: null,
   pendingImgs: [],
   needRender: false,
+  editKept: null,        // 正在改「留了幾個」的那一列
   noteOpen: false,       // 備註框是不是手動打開
   closed: false,         // 按「暫存」後先把編輯區收起來
   idle: false            // 剛進撿貨單分頁：還沒選任何客人
@@ -47,7 +48,7 @@ panel.innerHTML = `
       <div class="pk-sep" id="pkPreSep" style="display:none">預訂</div>
       <ul class="pk-list" id="pkPre"></ul>
       <form class="pk-add" id="pkAddForm"><input class="pk-in" id="pkAddIn" placeholder="單筆加入，例如：黑炫風 *25" autocomplete="off"><button class="pk-b" type="submit">加入</button></form>
-      <p class="pk-hint">點號碼可切換成「預訂」（會移到最下面）。按住 ⠿ 拖曳調整順序。</p>
+      <p class="pk-hint">點號碼可切換成「預訂」（會移到最下面）。按住 ⠿ 拖曳調整順序。點圓圈＝全部已留，長按（或按右鍵）圓圈可改留幾個。</p>
       <div class="pk-notewrap" id="pkNoteWrap" style="display:none">   <!-- 備註：平常藏起來，按標題列的「✎ 備註」才打開 -->
         <label class="pk-note-lbl" for="pkNote">備註</label>
         <textarea class="pk-in pk-note" id="pkNote" rows="2" placeholder="例如：週五來拿、要開發票…（輸出時會放在最下面）"></textarea>
@@ -262,7 +263,9 @@ function itemHTML(it, idx){
     ${s.showPrice ? `<label class="pk-price">$<input id="pkp-${it.id}" inputmode="numeric" value="${it.price == null ? '' : it.price}" data-f="price" aria-label="金額" placeholder="—"></label>` : ''}
     ${it.preorder ? `<button type="button" class="pk-tbd${it.tbd ? ' on' : ''}" data-act="tbd" title="${it.tbd ? '改回填數量' : '數量還不確定'}">${it.tbd ? '數量待確認' : '待確認'}</button>` : ''}
     ${it.preorder && it.tbd ? '' : `<div class="qty-stepper"><button type="button" data-act="minus" aria-label="減一">−</button><input class="qty-num" id="pkq-${it.id}" inputmode="numeric" value="${it.qty}" data-f="qty" aria-label="數量"><button type="button" data-act="plus" aria-label="加一">＋</button></div>`}
-    <span class="pk-kp"><label class="pk-kpc"><input type="checkbox" id="pkk-${it.id}" data-f="reserved" ${it.reserved ? 'checked' : ''} title="全部已留"><span class="kt">已留</span></label>${it.qty > 1 ? `<input class="pk-kn" id="pkkn-${it.id}" inputmode="numeric" data-f="kept" value="${kOf(it)}" aria-label="已留幾個" title="已留幾個"><span class="pk-kq">/${it.qty}</span>` : ''}</span>
+    ${S.editKept === it.id
+      ? `<span class="pk-circ-edit"><input class="pk-kn" id="pkkn-${it.id}" inputmode="numeric" data-f="kept" value="${kOf(it)}" aria-label="已留幾個"><span class="pk-kq">/${it.qty}</span></span>`
+      : `<button type="button" class="pk-circ${it.reserved ? ' on' : isPartial(it) ? ' half' : ''}" data-act="circ" style="--p:${Math.round(kOf(it) / it.qty * 100)}%" title="點一下：全部已留／取消；長按：改留幾個" aria-label="已留 ${kOf(it)}/${it.qty}">${it.reserved ? '✓' : isPartial(it) ? `<span>${kOf(it)}/${it.qty}</span>` : ''}</button>`}
     <button type="button" class="pk-del" data-act="del" aria-label="刪除">×</button>
   </li>`;
 }
@@ -382,6 +385,7 @@ const findItem = el => { const li = el.closest('.pk-it'); return li && cur().ite
     const s = cur(), a = b.dataset.act;
     if(a === 'del'){ s.items = s.items.filter(i => i !== it); toast('已刪除「' + it.name + '」'); }
     if(a === 'tbd') it.tbd = !it.tbd;
+    if(a === 'circ'){ if(b._long){ b._long = false; return; } setKept(it, it.reserved ? 0 : it.qty); }   // 點圓圈：全部已留／取消
     if(a === 'plus'){ const k = kOf(it); it.qty++; setKept(it, k); }
     if(a === 'minus'){ const k = kOf(it); it.qty = Math.max(1, it.qty - 1); setKept(it, k); }
     if(a === 'pre'){ s.items = s.items.filter(i => i !== it); it.preorder = !it.preorder; s.items = it.preorder ? s.items.concat(it) : normals().concat(it, pres()); }
@@ -398,11 +402,21 @@ const findItem = el => { const li = el.closest('.pk-it'); return li && cur().ite
     touch();
   });
   L.addEventListener('focusin', e => { if(e.target.dataset.f === 'name') e.target.dataset.orig = e.target.value; });
+  // 長按（或按右鍵）圓圈：改成輸入「留了幾個」
+  let pressT = null;
+  const openKeptEdit = (btn) => { const it = findItem(btn); if(!it) return; btn._long = true; S.editKept = it.id; renderItems();
+    const inp = $('pkkn-' + it.id); if(inp){ inp.focus(); inp.select(); } };
+  L.addEventListener('pointerdown', e => { const btn = e.target.closest('.pk-circ'); if(!btn || e.button > 0) return; clearTimeout(pressT); pressT = setTimeout(() => openKeptEdit(btn), 500); });
+  ['pointerup', 'pointerleave', 'pointercancel'].forEach(ev => L.addEventListener(ev, () => clearTimeout(pressT)));
+  L.addEventListener('contextmenu', e => { const btn = e.target.closest('.pk-circ'); if(!btn) return; e.preventDefault(); clearTimeout(pressT); openKeptEdit(btn); });
+  L.addEventListener('keydown', e => { if(e.target.dataset.f === 'kept' && (e.key === 'Enter' || e.key === 'Escape')) e.target.blur(); });
+  L.addEventListener('focusout', e => { if(e.target.dataset.f === 'kept'){ S.editKept = null; setTimeout(renderItems, 0); } });
   L.addEventListener('change', e => {
     const it = findItem(e.target); if(!it) return;
     if(e.target.dataset.f === 'name'){ const o = e.target.dataset.orig || '', n = e.target.value.trim();
       if(!n){ it.name = o; e.target.value = o; return; }
       it.name = n; if(o && n !== o) learn(o, n); e.target.dataset.orig = n; }
+    if(e.target.dataset.f === 'kept') S.editKept = null;
     if(e.target.dataset.f === 'qty' || e.target.dataset.f === 'kept') renderItems();
   });
 });
