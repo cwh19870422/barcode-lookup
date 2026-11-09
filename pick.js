@@ -462,7 +462,13 @@ $('pkDone').addEventListener('click', async () => {
   renderSum(); renderSide(); toast(s.status === 'done' ? '已完成，可在左邊「已完成」找到' : '改回進行中');
 });
 const outSheet = $('pkOutSheet');
-$('pkOut').addEventListener('click', () => { $('pkOutText').textContent = buildText(); $('pkCopyNote').textContent = ''; outSheet.style.display = 'flex'; });
+// 一鍵輸出：顯示文字，同時把這張單暫存起來、編輯區收起來（輸出視窗還是照常可以複製）
+$('pkOut').addEventListener('click', async () => {
+  const s = cur(); if(!hasContent(s)){ toast('這張單還是空的'); return; }
+  $('pkOutText').textContent = buildText(); $('pkCopyNote').textContent = ''; outSheet.style.display = 'flex';
+  clearTimeout(saveT); s.updatedAt = Date.now(); await saveNow(s);
+  S.closed = true; S.idle = false; S.confirmDel = null; renderAll();
+});
 outSheet.addEventListener('click', e => { if(e.target === outSheet || e.target.hasAttribute('data-pkclose')) outSheet.style.display = 'none'; });
 document.addEventListener('keydown', e => { if(e.key === 'Escape') outSheet.style.display = 'none'; });
 $('pkCopy').addEventListener('click', () => {
