@@ -161,6 +161,7 @@ function parseItem(s){
   let qty = 1, price = null, m;
   if((m = s.match(/(?:[*＊×xX+＋]|留)\s*(\d{1,4})\s*[個瓶支盒組件條包入罐片份]?\s*$/))){ qty = +m[1]; s = s.slice(0, m.index); }   // *3、x3、+3、留3 都當數量
   else if((m = s.match(/\s(\d{1,4})\s*[個瓶支盒組件條包罐片份]\s*$/))){ qty = +m[1]; s = s.slice(0, m.index); }
+  else if((m = s.match(/(?:^|\s)(\d{1,4})\s*(?:pcs?|ｐｃｓ)\.?\s*$/i))){ qty = +m[1]; s = s.slice(0, m.index); }   // 5pcs、5 PCS、5pc 當數量
   if((m = s.match(/(?:定價|售價|特價|原價|NT\$?|＄|\$)\s*(\d[\d,]*)\s*元?/i))){ price = +m[1].replace(/,/g, ''); s = s.slice(0, m.index) + ' ' + s.slice(m.index + m[0].length); }
   else if((m = s.match(/(\d[\d,]*)\s*元/))){ price = +m[1].replace(/,/g, ''); s = s.slice(0, m.index) + ' ' + s.slice(m.index + m[0].length); }
   const name = simplify(s.replace(/\s+/g, ' ').trim());
