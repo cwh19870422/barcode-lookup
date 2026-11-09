@@ -129,3 +129,16 @@ textarea.pk-in.pk-note{min-height:52px;}
 /* 預訂商品：數量待確認 */
 .pk-tbd{flex:0 0 auto; border:1px dashed var(--orange); background:transparent; color:var(--orange); font:600 12px var(--sysfont); border-radius:999px; padding:4px 9px; cursor:pointer; white-space:nowrap;}
 .pk-tbd.on{border-style:solid; background:var(--orange); color:#fff; padding:5px 11px; font-size:13px;}
+
+/* 區塊標題：卡片頂端一整條淺灰色標題列（B4） */
+.pk-card:not(.pk-closed){padding-top:0; overflow:hidden;}
+.pk-card h4{margin:0 -12px 6px; padding:9px 14px; background:#F6F6F8; border-bottom:1px solid var(--line); font-size:15px; font-weight:800; color:var(--ink); min-height:44px;}
+.pk-h4sub{font-size:12px; font-weight:400; color:var(--secondary);}
+.pk-h4r{display:flex; align-items:center; gap:10px;}
+.pk-notebtn{border:0; background:#fff; color:#555; font:600 12.5px var(--sysfont); border-radius:8px; padding:4px 10px; cursor:pointer; box-shadow:inset 0 0 0 1px var(--line);}
+.pk-notebtn.has{background:var(--blue); color:#fff; box-shadow:none;}
+.pk-notewrap{display:flex; flex-direction:column; gap:4px; margin-top:6px;}
+.pk-note-lbl{font-size:15px; font-weight:800; color:var(--ink); margin:4px 2px 0;}
+/* 大量匯入的框：放大、白底深框 */
+textarea.pk-in.pk-src{min-height:150px; font-size:15px; background:#fff; box-shadow:inset 0 0 0 2px #D1D1D6;}
+textarea.pk-in.pk-src:focus{box-shadow:inset 0 0 0 2px var(--blue);}

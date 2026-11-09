@@ -18,6 +18,7 @@ const S = {
   confirmDel: null,
   pendingImgs: [],
   needRender: false,
+  noteOpen: false,       // 備註框是不是手動打開
   closed: false,         // 按「暫存」後先把編輯區收起來
   idle: false            // 剛進撿貨單分頁：還沒選任何客人
 };
@@ -41,19 +42,21 @@ panel.innerHTML = `
     <div class="pk-locs" id="pkLocs"></div>
 
     <div class="pk-card">
-      <h4><span>撿貨清單</span><label class="pk-switch"><input type="checkbox" id="pkShowPrice">顯示金額</label></h4>
+      <h4><span>撿貨清單</span><span class="pk-h4r"><button type="button" class="pk-notebtn" id="pkNoteBtn">✎ 備註</button><label class="pk-switch"><input type="checkbox" id="pkShowPrice">顯示金額</label></span></h4>
       <ul class="pk-list" id="pkMain"></ul>
       <div class="pk-sep" id="pkPreSep" style="display:none">預訂</div>
       <ul class="pk-list" id="pkPre"></ul>
       <form class="pk-add" id="pkAddForm"><input class="pk-in" id="pkAddIn" placeholder="單筆加入，例如：黑炫風 *25" autocomplete="off"><button class="pk-b" type="submit">加入</button></form>
       <p class="pk-hint">點號碼可切換成「預訂」（會移到最下面）。按住 ⠿ 拖曳調整順序。</p>
-      <label class="pk-note-lbl" for="pkNote">備註</label>
-      <textarea class="pk-in pk-note" id="pkNote" rows="2" placeholder="例如：週五來拿、要開發票…（輸出時會放在最下面）"></textarea>
+      <div class="pk-notewrap" id="pkNoteWrap" style="display:none">   <!-- 備註：平常藏起來，按標題列的「✎ 備註」才打開 -->
+        <label class="pk-note-lbl" for="pkNote">備註</label>
+        <textarea class="pk-in pk-note" id="pkNote" rows="2" placeholder="例如：週五來拿、要開發票…（輸出時會放在最下面）"></textarea>
+      </div>
     </div>
 
     <div class="pk-card">
-      <h4><span>匯入商品</span><span style="font-weight:400">貼文字、貼截圖或選照片</span></h4>
-      <textarea class="pk-in" id="pkSrc" placeholder="把一長串文字貼在這裡；截圖可以直接 Ctrl+V 貼上"></textarea>
+      <h4><span>大量匯入商品</span><span class="pk-h4sub">貼文字、貼截圖或選照片</span></h4>
+      <textarea class="pk-in pk-src" id="pkSrc" placeholder="把一長串文字貼在這裡；截圖可以直接 Ctrl+V 貼上"></textarea>
       <div class="pk-thumbs" id="pkThumbs"></div>
       <div class="pk-row">
         <button class="pk-b pri" id="pkQuick" type="button">快速整理</button>
@@ -299,6 +302,7 @@ function renderAll(){
   renderClosed();
   $('pkCust').value = cur().customer || '';
   $('pkNote').value = cur().note || '';
+  renderNote();
   renderGrade(); renderLocs(); renderItems(); renderRules(); renderSide(); renderCustList();
 }
 function editing(){ const a = document.activeElement; return a && panel.contains(a) && a.matches('input,textarea'); }
@@ -344,9 +348,9 @@ $('pkSide').addEventListener('click', async e => {
   if(t.dataset.pktab){ S.tab = t.dataset.pktab; S.confirmDel = null; renderSide(); return; }
   if(t.dataset.pkopen){ const old = cur(); if(old && !hasContent(old) && !S.saved.has(old.id)) S.slips.delete(old.id);
     clearTimeout(saveT); if(old && hasContent(old)) saveNow(old);
-    S.curId = t.dataset.pkopen; S.closed = false; S.idle = false; S.confirmDel = null; renderAll(); return; }
+    S.curId = t.dataset.pkopen; S.closed = false; S.idle = false; S.noteOpen = false; S.confirmDel = null; renderAll(); return; }
   if(t.dataset.pk === 'new'){ const old = cur(); clearTimeout(saveT); if(old && hasContent(old)) saveNow(old); else if(old && !S.saved.has(old.id)) S.slips.delete(old.id);
-    const n = newSlip(); S.slips.set(n.id, n); S.curId = n.id; S.closed = false; S.idle = false; S.tab = 'draft'; S.confirmDel = null; renderAll(); $('pkCust').focus(); return; }
+    const n = newSlip(); S.slips.set(n.id, n); S.curId = n.id; S.closed = false; S.idle = false; S.noteOpen = false; S.tab = 'draft'; S.confirmDel = null; renderAll(); $('pkCust').focus(); return; }
   if(t.dataset.pk === 'del'){
     if(S.confirmDel !== S.curId){ S.confirmDel = S.curId; renderSide(); return; }
     const id = S.curId; S.confirmDel = null; clearTimeout(saveT);
@@ -355,7 +359,19 @@ $('pkSide').addEventListener('click', async e => {
   }
 });
 $('pkCust').addEventListener('input', e => { cur().customer = e.target.value; renderGrade(); touch(); });
-$('pkNote').addEventListener('input', e => { cur().note = e.target.value; touch(); });
+$('pkNote').addEventListener('input', e => { cur().note = e.target.value; touch(); $('pkNoteBtn').classList.toggle('has', !!e.target.value.trim()); });
+// 備註：有內容或按了「✎ 備註」才顯示；內容清空、離開輸入框就收回去
+function noteHas(){ return !!((cur() && cur().note) || '').trim(); }
+function renderNote(){
+  $('pkNoteWrap').style.display = (S.noteOpen || noteHas()) ? '' : 'none';
+  $('pkNoteBtn').classList.toggle('has', noteHas());
+}
+$('pkNoteBtn').addEventListener('click', () => {
+  const shown = $('pkNoteWrap').style.display !== 'none';
+  if(shown && !noteHas()){ S.noteOpen = false; renderNote(); return; }
+  S.noteOpen = true; renderNote(); $('pkNote').focus();
+});
+$('pkNote').addEventListener('blur', () => { if(!noteHas()){ S.noteOpen = false; renderNote(); } });
 $('pkLocs').addEventListener('click', e => { const b = e.target.closest('[data-pkloc]'); if(!b) return; cur().location = b.dataset.pkloc; renderLocs(); touch(); });
 $('pkShowPrice').addEventListener('change', e => { cur().showPrice = e.target.checked; renderItems(); touch(); });
 
@@ -454,7 +470,7 @@ $('pkApplyRules').addEventListener('click', () => { let c = 0; cur().items.forEa
 
 $('pkSave').addEventListener('click', async () => { if(!hasContent(cur())){ toast('這張單還是空的'); return; } clearTimeout(saveT); cur().updatedAt = Date.now(); await saveNow(); S.closed = true; S.idle = false; S.confirmDel = null; $('pkOutSheet').style.display = 'none'; renderAll(); window.scrollTo({ top: 0, behavior: 'smooth' }); toast('已暫存'); });
 $('pkClosed').addEventListener('click', e => {
-  if(e.target.closest('[data-pkreopen]')){ S.closed = false; S.idle = false; renderAll(); }
+  if(e.target.closest('[data-pkreopen]')){ S.closed = false; S.idle = false; S.noteOpen = false; renderAll(); }
   if(e.target.closest('[data-pknew]')) $('pkSide').querySelector('[data-pk="new"]').click();
 });
 $('pkDone').addEventListener('click', async () => {
