@@ -309,7 +309,18 @@ table.cart-table tr.ret-row .cart-name::before{content:'退貨 '; color:#c0392b;
   .quick-fee-label{font-size:12px; color:var(--secondary); font-weight:600; margin-right:2px;}
   .quick-fee-btn{border:1px solid #E4E0DA; background:#F4F1EC; color:#5f6570; font-weight:600; font-size:13.5px; height:40px; padding:0 6px; border-radius:10px; cursor:pointer; font-family:var(--sysfont); white-space:nowrap; display:flex; align-items:center; justify-content:center;}
   .quick-fee-btn.refund, .quick-fee-btn.disc-btn{color:#5f6570;}
+  /* 電腦版：六顆快捷連成一條分段條（樣式 3） */
+  @media (min-width:641px){
+    .quick-fee-row{display:flex; gap:0; margin-top:8px;}
+    .quick-fee-label{margin-right:8px;}
+    .quick-fee-btn{height:30px; width:56px; padding:0; font-size:13px; color:#3A3A3C; background:#fff; border:1px solid #D9D9DE; border-radius:0; margin-left:-1px;}
+    .quick-fee-btn.refund, .quick-fee-btn.disc-btn{color:#3A3A3C;}
+    .quick-fee-label + .quick-fee-btn{margin-left:0; border-radius:9px 0 0 9px;}
+    .quick-fee-btn:last-child{border-radius:0 9px 9px 0;}
+    .quick-fee-btn:hover{background:#F2F2F7;}
+  }
   @media (max-width:640px){
+    .quick-fee-btn.qf-tax{order:6;}   /* 手機版維持原本順序：稅金在最後 */
     .quick-fee-row{grid-template-columns:repeat(6, minmax(0,1fr)); gap:5px;}
     .fl-full{display:none;} .fl-short{display:inline;}
     #orderStatusText{display:none;}
@@ -677,12 +688,12 @@ body.cust-view .prices{grid-template-columns:minmax(0,1fr) !important; max-width
       </div>
       <div class="quick-fee-row">
         <span class="quick-fee-label">快捷</span>
-        <button type="button" class="quick-fee-btn" id="tempItemBtn"><span class="fl-full">＋ 臨時商品</span><span class="fl-short">臨時</span></button>
-        <button type="button" class="quick-fee-btn" data-fee="運費"><span class="fl-full">＋ 運費</span><span class="fl-short">運費</span></button>
-        <button type="button" class="quick-fee-btn" data-fee="前帳"><span class="fl-full">＋ 前帳</span><span class="fl-short">前帳</span></button>
-        <button type="button" class="quick-fee-btn refund" data-fee="退費"><span class="fl-full">－ 退費</span><span class="fl-short">退費</span></button>
-        <button type="button" class="quick-fee-btn disc-btn" id="discBtn"><span class="fl-full">％ 折數</span><span class="fl-short">折數</span></button>
-        <button type="button" class="quick-fee-btn" id="taxBtn"><span class="fl-full">＋ 稅金 5%</span><span class="fl-short">稅金</span></button>
+        <button type="button" class="quick-fee-btn" id="tempItemBtn"><span class="fl-full">自訂</span><span class="fl-short">臨時</span></button>
+        <button type="button" class="quick-fee-btn" data-fee="運費"><span class="fl-full">運費</span><span class="fl-short">運費</span></button>
+        <button type="button" class="quick-fee-btn qf-tax" id="taxBtn"><span class="fl-full">稅金</span><span class="fl-short">稅金</span></button>
+        <button type="button" class="quick-fee-btn" data-fee="前帳"><span class="fl-full">前帳</span><span class="fl-short">前帳</span></button>
+        <button type="button" class="quick-fee-btn refund" data-fee="退費"><span class="fl-full">退費</span><span class="fl-short">退費</span></button>
+        <button type="button" class="quick-fee-btn disc-btn" id="discBtn"><span class="fl-full">折數</span><span class="fl-short">折數</span></button>
       </div>
       <div class="cart-actions">
         <div class="print-group">
