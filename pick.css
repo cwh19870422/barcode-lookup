@@ -191,3 +191,11 @@ textarea.pk-in.pk-src:focus{box-shadow:inset 0 0 0 2px var(--blue);}
 #tab-pick .pk-kp input{accent-color:var(--sg-kept);}
 #tab-pick .pk-switch input:checked{background:var(--sg-accent);}
 @media (max-width:760px){ #tab-pick .pk-grid{padding:10px; border-radius:14px;} }
+
+/* 客人卡片：位置、撿貨狀態靠右；第二排右邊只放留貨天數 */
+.pk-ord .t .nm{flex:1 1 auto;}
+.pk-ord .t .tr{display:flex; align-items:center; gap:5px; flex:0 0 auto; margin-left:auto;}
+.pk-ord .m{display:flex; justify-content:space-between; align-items:center; gap:8px;}
+.pk-ord .m .d{flex:0 0 auto; font-weight:700; color:var(--ink); font-variant-numeric:tabular-nums;}
+.pk-ord .t .tr .pk-pill{min-width:48px; text-align:center;}
+.pk-ord .t .tr .pk-left{min-width:66px; text-align:center;}
