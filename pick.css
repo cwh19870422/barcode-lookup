@@ -142,3 +142,52 @@ textarea.pk-in.pk-note{min-height:52px;}
 /* 大量匯入的框：放大、白底深框 */
 textarea.pk-in.pk-src{min-height:150px; font-size:15px; background:#fff; box-shadow:inset 0 0 0 2px #D1D1D6;}
 textarea.pk-in.pk-src:focus{box-shadow:inset 0 0 0 2px var(--blue);}
+
+/* ===== 撿貨單配色：7 鼠尾草（只影響撿貨單分頁） ===== */
+#tab-pick{
+  --sg-bg:#F0F2EC; --sg-head:#E1E7DA; --sg-ink:#232C20; --sg-ink2:#3C4737; --sg-muted:#7A8475;
+  --sg-line:#DAE0D3; --sg-line2:#C3CCBA; --sg-row:#F5F7F2; --sg-chip:#E5EAE0; --sg-accent:#56704F;
+  --sg-kept:#4E7A52; --sg-kept-soft:#E5EFE2; --sg-pend:#B3783A; --sg-pend-soft:#F8EEE1; --sg-pend-line:#E3C9A6;
+  --sg-pre:#7A6688; --sg-pre-soft:#EFEAF2;
+  /* 把 POS 共用的顏色名稱在這個分頁裡換成鼠尾草色 */
+  --blue:var(--sg-accent); --ink:var(--sg-ink); --secondary:var(--sg-muted); --line:var(--sg-line);
+  --gray-fill:var(--sg-chip); --paper-alt:var(--sg-row); --paper:var(--sg-bg); --card:#FFFFFF;
+  --green:var(--sg-kept); --orange:var(--sg-pend); --pk-green-soft:var(--sg-kept-soft); --pk-orange-soft:var(--sg-pend-soft);
+  --shadow:0 0 0 1px var(--sg-line);
+  color:var(--sg-ink);
+}
+#tab-pick .pk-grid{background:var(--sg-bg); border-radius:18px; padding:14px;}
+#tab-pick .search-box{background:#fff; box-shadow:inset 0 0 0 1px var(--sg-line);}
+#tab-pick .pk-new{background:var(--sg-accent);}
+#tab-pick .pk-seg{background:var(--sg-chip);}
+#tab-pick .pk-ord.pending{background:var(--sg-pend-soft); box-shadow:inset 4px 0 0 var(--sg-pend), 0 0 0 1px var(--sg-line);}
+#tab-pick .pk-left{color:var(--sg-pend); background:var(--sg-pend-soft); box-shadow:inset 0 0 0 1px var(--sg-pend-line);}
+#tab-pick .pk-left.ok, #tab-pick .pk-pill.done{color:var(--sg-kept); background:var(--sg-kept-soft); box-shadow:none;}
+#tab-pick .pk-pill{background:var(--sg-chip); color:var(--sg-ink2);}
+#tab-pick .pk-closed-t{color:var(--sg-kept);}
+#tab-pick .pk-chip{background:var(--sg-chip); color:var(--sg-ink2);}
+#tab-pick .pk-chip.on{background:var(--sg-accent); color:#fff;}
+#tab-pick .pk-card h4{background:var(--sg-head); color:var(--sg-ink); border-bottom-color:var(--sg-line);}
+#tab-pick .pk-it{background:var(--sg-row);}
+#tab-pick .pk-it.kept{background:var(--sg-kept-soft);}
+#tab-pick .pk-it.kept .pk-kp{color:var(--sg-kept);}
+#tab-pick .pk-it.partial{background:var(--sg-pend-soft);}
+#tab-pick .pk-it.partial .pk-kp, #tab-pick .pk-it.partial .pk-kn{color:var(--sg-pend);}
+#tab-pick .pk-sn.pre{background:var(--sg-pre-soft); color:var(--sg-pre);}
+#tab-pick .pk-sep{color:var(--sg-pre);}
+#tab-pick .pk-sep::before, #tab-pick .pk-sep::after{border-top-color:var(--sg-pre);}
+#tab-pick .pk-tbd{border-color:var(--sg-pre); color:var(--sg-pre);}
+#tab-pick .pk-tbd.on{background:var(--sg-pre); color:#fff;}
+#tab-pick .pk-price, #tab-pick .pk-price input{color:var(--sg-accent);}
+#tab-pick .pk-notebtn{color:var(--sg-ink2); box-shadow:inset 0 0 0 1px var(--sg-line2);}
+#tab-pick .pk-notebtn.has{background:var(--sg-accent); color:#fff; box-shadow:none;}
+#tab-pick textarea.pk-in.pk-src{background:#fff; box-shadow:inset 0 0 0 2px var(--sg-line2);}
+#tab-pick textarea.pk-in.pk-src:focus{box-shadow:inset 0 0 0 2px var(--sg-accent);}
+#tab-pick .pk-in{background:var(--sg-chip);}
+#tab-pick .pk-b{background:var(--sg-chip); color:var(--sg-accent);}
+#tab-pick .pk-b.pri{background:var(--sg-accent); color:#fff;}
+#tab-pick .pk-bar{box-shadow:0 0 0 1px var(--sg-line), 0 4px 16px rgba(35,44,32,.10);}
+#tab-pick .pk-toast{background:var(--sg-ink);}
+#tab-pick .pk-kp input{accent-color:var(--sg-kept);}
+#tab-pick .pk-switch input:checked{background:var(--sg-accent);}
+@media (max-width:760px){ #tab-pick .pk-grid{padding:10px; border-radius:14px;} }
