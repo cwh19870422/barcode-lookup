@@ -247,6 +247,16 @@
   .qk-tabs{display:flex; gap:6px; overflow-x:auto; padding-bottom:6px; scrollbar-width:none;}
   .qk-tab{flex:0 0 auto; border:0; background:#F4F2EE; color:#333; border-radius:18px; padding:7px 14px; font:700 14px var(--sysfont); cursor:pointer;}
   .qk-tab.on{background:var(--blue); color:#fff;}
+  /* 收合時的分類小方塊（只有電腦版顯示） */
+  .qk-t-short, .qk-fchips{display:none;}
+  @media (min-width:641px){
+    .qk.collapsed .qk-t-full{display:none;}
+    .qk.collapsed .qk-t-short{display:inline; flex:0 0 auto; margin-right:12px;}
+    .qk.collapsed .qk-fchips{display:flex; gap:6px; overflow-x:auto; scrollbar-width:none; min-width:0; flex:1;}
+    .qk-fchip{flex:0 0 auto; border:1px solid #E4E0DA; background:#F4F1EC; color:#5f6570; border-radius:8px; padding:4px 11px; font:600 13px var(--sysfont); cursor:pointer;}
+    .qk-fchip:hover{background:#EAE6DF; color:var(--ink);}
+    .qk.collapsed #qkFoldBtn{background:var(--ink); color:#fff;}
+  }
   .qk-crumb{display:flex; align-items:center; gap:8px; font-weight:700; font-size:14px; margin:2px 0 8px;}
   .qk-back{border:0; background:#E4E0DA; border-radius:9px; padding:6px 12px; font:700 13px var(--sysfont); cursor:pointer;}
   .qk-grid{display:grid; grid-template-columns:repeat(6,minmax(0,1fr)); gap:8px;}
@@ -2969,7 +2979,11 @@ function renderQK(){
   const eb = document.getElementById('qkEditBtn'); eb.classList.toggle('on', qkEditing); eb.textContent = qkEditing ? '完成編輯' : '編輯';
   eb.style.display = qkFolded ? 'none' : '';
   const tabs = qkOrder.map(i => `<button type="button" class="qk-tab ${i===qkCat?'on':''}" data-c="${i}">${escapeHtml(qkCats[i])}</button>`).join('');
-  document.getElementById('qkHeadL').innerHTML = qkFolded ? '<span class="qk-title">快速輸入商品</span>' : `<div class="qk-tabs" id="qkTabs">${tabs}</div>`;
+  // 收合時：手機版只顯示標題；電腦版顯示「快速輸入」＋分類小方塊，點分類直接打開那一類
+  const fchips = qkOrder.map(i => `<button type="button" class="qk-fchip" data-fc="${i}">${escapeHtml(qkCats[i])}</button>`).join('');
+  document.getElementById('qkHeadL').innerHTML = qkFolded
+    ? `<span class="qk-title qk-t-full">快速輸入商品</span><span class="qk-title qk-t-short">快速輸入</span><div class="qk-fchips">${fchips}</div>`
+    : `<div class="qk-tabs" id="qkTabs">${tabs}</div>`;
   const fd = qkFolder === null ? null : qkDocs.get(qkFolder);
   const crumb = qkFolder === null ? '' : `<div class="qk-crumb"><button type="button" class="qk-back" id="qkBack">← 返回</button>${escapeHtml(qkCats[qkCat])} ／ ${escapeHtml((fd && fd.name) || '')}</div>`;
   let cells = '';
@@ -3147,7 +3161,11 @@ async function qkMoveCat(from, to){
   let dragMoved = false;
   panel.addEventListener('click', e => {
     if(e.target.closest('#qkFoldBtn')) return;   // 收合／展開按鈕自己處理
-    if(qkFolded){ qkFolded = false; renderQK(); return; }   // 收合時，點框內任何地方就展開
+    if(qkFolded){   // 收合時，點框內任何地方就展開；點到分類就直接打開那一類
+      const fc = e.target.closest('.qk-fchip');
+      if(fc){ qkCat = +fc.dataset.fc; qkFolder = null; }
+      qkFolded = false; renderQK(); return;
+    }
     if(dragMoved){ dragMoved = false; return; }
     const tab = e.target.closest('.qk-tab');
     if(tab){
