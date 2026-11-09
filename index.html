@@ -465,8 +465,10 @@ table.cart-table tr.ret-row .cart-name::before{content:'退貨 '; color:#c0392b;
     .cart-title-left{display:contents;}
     .cart-title-row .cart-title{grid-column:1; grid-row:1; white-space:nowrap;}
     .cart-title-row .cart-count{grid-column:2; grid-row:1;}
-    .cart-title-row .op-sel{grid-column:1 / 3; grid-row:2; justify-self:start;}
-    .cart-title-row .cart-head-actions{grid-column:3; grid-row:2; justify-self:end;}
+    .cart-title-row .op-sel{grid-column:1 / 3; grid-row:2; justify-self:start; min-width:0; width:84px; font-size:12px; padding:0 4px; height:30px;}
+    .cart-title-row .cart-head-actions{grid-column:3; grid-row:2; justify-self:end; display:flex; gap:5px; flex-wrap:nowrap;}
+    .cart-title-row .cart-head-actions button{font-size:12px; padding:0 8px; height:30px; white-space:nowrap; border-radius:8px;}
+    .cart-title-row{column-gap:6px;}
     .cart-title-row .cart-cust-note{display:none;}
     .cart-note-m{display:-webkit-box; margin:0 auto 8px; max-width:100%; text-align:center; flex:none; width:max-content;}
     .cart-note-m:empty{display:none;}
@@ -479,6 +481,8 @@ table.cart-table tr.ret-row .cart-name::before{content:'退貨 '; color:#c0392b;
   .cart-actions button{border:none; font-weight:600; font-size:14px; padding:12px 16px; border-radius:12px; cursor:pointer; font-family:var(--sysfont); white-space:nowrap;}
   .cart-actions .btn-save{flex:1; font-size:15px; min-height:44px;}
   .btn-hold{background:#fff; color:#1F1F1F; box-shadow:inset 0 0 0 1.5px #1F1F1F;}
+  .btn-tax{background:#fff; color:#1F1F1F; box-shadow:inset 0 0 0 1.5px #1F1F1F;}
+  .btn-tax.on{background:#1F1F1F; color:#fff;}
   .btn-clear{background:#fff; color:#B3261E; box-shadow:inset 0 0 0 1.5px #B3261E;}
   .btn-print{background:#fff; color:#1F1F1F; box-shadow:inset 0 0 0 1.5px #1F1F1F;}
 
@@ -686,6 +690,7 @@ body.cust-view .prices{grid-template-columns:minmax(0,1fr) !important; max-width
         </div>
         <div class="cart-head-actions">
           <button class="btn-hold" id="holdCartBtn">暫存訂單</button>
+          <button class="btn-tax" id="taxModeBtn" title="每個商品單價 ×1.05（四捨五入），再按一次還原">個別含稅</button>
           <button class="btn-clear" id="clearCartBtn">全部刪除</button>
         </div>
       </div>
@@ -1675,9 +1680,23 @@ function addToCart(r, qty){
   return key;
 }
 
+// 個別含稅：每個商品單價 ×1.05（四捨五入到整數）；再按一次還原成切換前的單價
+let taxMode = false;
+const TAX_RATE = 1.05;
+function applyTaxToCart(){
+  cart.forEach(it=>{
+    if(it.special) return;                 // 運費/前帳/退費/稅金 不乘
+    if(taxMode && !it.taxed){ it.preTax = it.unitPrice; it.unitPrice = Math.round(fmtNum(it.unitPrice) * TAX_RATE); it.taxed = true; }
+    else if(!taxMode && it.taxed){ it.unitPrice = it.preTax; delete it.taxed; delete it.preTax; }
+  });
+}
+function setTaxMode(on){ taxMode = !!on; renderCart(); }
+function syncTaxModeFromCart(){ taxMode = cart.some(it => it.taxed); }
+
 function applyPriceSourceToCart(){
   const mode = document.getElementById('priceSourceSelect').value;
   cart.forEach(it=>{
+    if(it.taxed){ delete it.taxed; delete it.preTax; }   // 重新帶價後由 renderCart 再依含稅狀態乘 1.05
     if(it.qk){ it.unitPrice = qkPrice(it.qk); it.disc = null; return; }   // 快捷鍵品項：依等級重新帶價
     if(it.special || !it.base || it.frozen) return; // 運費/前帳/退費/臨時商品/已不在商品檔的舊訂單商品 不受單價依據影響
     it.unitPrice = fmtNum(getPriceValue(it.base, mode, selectedCustomer ? selectedCustomer.grade : 'A'));
@@ -1717,12 +1736,13 @@ document.getElementById('discBtn').addEventListener('click', async ()=>{
   if(n === 0){
     const mode = document.getElementById('priceSourceSelect').value;
     it.unitPrice = fmtNum(getPriceValue(it.base, mode, selectedCustomer ? selectedCustomer.grade : 'A'));
-    it.disc = null;
+    it.disc = null; delete it.taxed; delete it.preTax;
   }else{
     if(sell <= 0){ alert('這個商品沒有定價，無法用折數計算'); return; }
     const rate = n >= 10 ? n/100 : n/10; // 85 → 0.85；8.8 → 0.88
     it.unitPrice = Math.round(sell * rate);
     it.disc = Math.round(rate*1000)/10; // 顯示用：85 / 88
+    delete it.taxed; delete it.preTax;
   }
   selectedCartKey = null;
   renderCart();
@@ -1870,6 +1890,8 @@ function updateCartNote(){
   if(m){ m.textContent = note; m.title = note; }
 }
 function renderCart(){
+  applyTaxToCart();
+  { const tb = document.getElementById('taxModeBtn'); if(tb){ tb.classList.toggle('on', taxMode); tb.textContent = taxMode ? '含稅中' : '個別含稅'; } }
   updateCartNote();
   updateEditBanner();
   document.getElementById('cartCount').textContent = cart.length + ' 項';
@@ -1935,6 +1957,7 @@ cartBody.addEventListener('input', (e)=>{
     const v = fmtNum(e.target.value);
     // 退費：輸入正數即可，系統自動以負數計入
     cart[i].unitPrice = cart[i].special === '退費' ? -Math.abs(v) : v;
+    if(taxMode && !cart[i].special){ cart[i].taxed = true; cart[i].preTax = Math.round(v / TAX_RATE * 100) / 100; }   // 含稅模式下手動改的價視為已含稅
   }else if(e.target.classList.contains('cart-qty')){
     const q = Math.round(fmtNum(e.target.value));
     if(q !== 0) cart[i].qty = q;   // 允許負數（退貨）；0 或空白暫不更新，離開欄位時還原
@@ -1995,6 +2018,11 @@ cartBody.addEventListener('click', (e)=>{
   renderCart();
 });
 
+document.getElementById('taxModeBtn').addEventListener('click', ()=>{
+  if(!cart.length && !taxMode){ alert('出貨清單是空的'); return; }
+  setTaxMode(!taxMode);
+});
+
 document.getElementById('holdCartBtn').addEventListener('click', ()=>{
   holdCurrentOrder();
 });
@@ -2022,7 +2050,7 @@ function holdCurrentOrder(){
   };
   heldOrders.push(held);
   FB.saveHeld(held).catch(heldErr);
-  cart = [];
+  cart = []; taxMode = false;
   currentTxn = null;
   window.clearOperator && window.clearOperator();
   selectedCustomer = null;
@@ -2054,6 +2082,7 @@ function resumeHeldOrder(id){
   }
   setPriceMode(target.priceMode);
   cart = savedCart;   // selectCustomer 會依等級重新帶價，這裡還原成暫存時的價錢
+  syncTaxModeFromCart();
   currentTxn = target.txn || null;
   renderCart();
   if(!currentTxn && target.operator){ const os = document.getElementById('operatorSel'); if(Array.from(os.options).some(o => o.value === target.operator)){ os.value = target.operator; if(window.paintOperator) window.paintOperator(); } }
@@ -2101,7 +2130,7 @@ document.getElementById('heldOrdersPanel').addEventListener('click', (e)=>{
 
 document.getElementById('clearCartBtn').addEventListener('click', ()=>{
   if(cart.length && !confirm('確定要清空整張出貨單嗎？')) return;
-  cart = [];
+  cart = []; taxMode = false;
   currentTxn = null;
   renderCart();
 });
@@ -2198,7 +2227,7 @@ document.getElementById('checkoutBtn').addEventListener('click', ()=>{
   if(!confirm(`${editing ? '確定儲存修改？（會覆蓋原訂單）' : '確定結帳？'}\n${who}　合計 $${fmt(snap.total)}`)) return;
   if(editing) currentTxn.editedAt = new Date().toISOString();
   saveTransaction();
-  cart = []; currentTxn = null; selectedCartKey = null;
+  cart = []; taxMode = false; currentTxn = null; selectedCartKey = null;
   window.clearOperator && window.clearOperator();
   resetOrderCustomerUI();
   renderCart(); updateEditBanner();
@@ -2255,7 +2284,7 @@ function updateEditBanner(){
 }
 document.getElementById('cancelEditBtn').addEventListener('click', ()=>{
   if(!confirm('取消編輯？目前畫面上的修改不會儲存，原訂單維持不變。')) return;
-  cart = []; currentTxn = null; selectedCartKey = null;
+  cart = []; taxMode = false; currentTxn = null; selectedCartKey = null;
   resetOrderCustomerUI();
   renderCart(); updateEditBanner();
 });
@@ -2287,7 +2316,7 @@ function startEditTxn(id){
   cart = [];
   if(t.customer){ selectCustomer({...t.customer}); } else { resetOrderCustomerUI(); }
   setPriceMode(t.priceMode);
-  cart = (t.lines || []).map(lineToCartItem);
+  cart = (t.lines || []).map(lineToCartItem); taxMode = false;
   currentTxn = {id:t.id, date:t.date, operator:t.operator};
   selectedCartKey = null;
   renderCart(); updateEditBanner();
