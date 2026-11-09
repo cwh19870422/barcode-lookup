@@ -689,8 +689,8 @@ body.cust-view .prices{grid-template-columns:minmax(0,1fr) !important; max-width
           <span class="cart-cust-note" id="cartCustNote"></span>
         </div>
         <div class="cart-head-actions">
+          <button class="btn-tax" id="taxModeBtn" title="每個商品單價 ×1.05（四捨五入），再按一次還原">含稅金額</button>
           <button class="btn-hold" id="holdCartBtn">暫存訂單</button>
-          <button class="btn-tax" id="taxModeBtn" title="每個商品單價 ×1.05（四捨五入），再按一次還原">個別含稅</button>
           <button class="btn-clear" id="clearCartBtn">全部刪除</button>
         </div>
       </div>
@@ -1891,7 +1891,7 @@ function updateCartNote(){
 }
 function renderCart(){
   applyTaxToCart();
-  { const tb = document.getElementById('taxModeBtn'); if(tb){ tb.classList.toggle('on', taxMode); tb.textContent = taxMode ? '含稅中' : '個別含稅'; } }
+  { const tb = document.getElementById('taxModeBtn'); if(tb){ tb.classList.toggle('on', taxMode);  } }
   updateCartNote();
   updateEditBanner();
   document.getElementById('cartCount').textContent = cart.length + ' 項';
