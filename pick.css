@@ -233,3 +233,12 @@ textarea.pk-in.pk-src:focus{box-shadow:inset 0 0 0 2px var(--blue);}
 #tab-pick .pk-addplus{font-weight:800; font-size:18px; color:var(--sg-ink); flex:0 0 auto;}
 #tab-pick .pk-addtop .pk-in{background:transparent; padding:9px 4px; font-size:15px; box-shadow:none;}
 #tab-pick .pk-addtop .pk-b{padding:8px 16px;}
+
+/* 加入商品（單筆＋大量合一格） */
+#tab-pick .pk-addtop{align-items:flex-start;}
+#tab-pick .pk-addtop .pk-addplus{line-height:40px;}
+#tab-pick .pk-addtop textarea.pk-in{resize:none; min-height:40px; max-height:260px; line-height:1.5; overflow-y:auto; font-family:var(--sysfont);}
+#tab-pick .pk-addtop .pk-b{flex:0 0 auto; align-self:flex-start; margin-top:0;}
+#tab-pick .pk-addtop .pk-photo{background:var(--sg-chip); color:var(--sg-ink); cursor:pointer;}
+#tab-pick .pk-addextra{display:flex; flex-direction:column; gap:6px; margin:0 2px 6px;}
+@media (max-width:520px){ #tab-pick .pk-addtop .pk-b{padding:8px 11px;} }

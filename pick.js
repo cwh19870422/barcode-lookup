@@ -44,31 +44,28 @@ panel.innerHTML = `
 
     <div class="pk-card">
       <h4><span>撿貨清單</span><span class="pk-h4r"><button type="button" class="pk-notebtn" id="pkNoteBtn">✎ 備註</button><label class="pk-switch"><input type="checkbox" id="pkShowPrice">顯示金額</label></span></h4>
-      <form class="pk-add pk-addtop" id="pkAddForm"><span class="pk-addplus" aria-hidden="true">＋</span><input class="pk-in" id="pkAddIn" placeholder="單筆加入，例如：黑炫風 *25" autocomplete="off"><button class="pk-b pri" type="submit">加入</button></form>   <!-- 單筆加入：放在清單最上面 -->
+      <!-- 加入商品：單筆和大量合在同一格，放在清單最上面 -->
+      <form class="pk-add pk-addtop" id="pkAddForm">
+        <span class="pk-addplus" aria-hidden="true">＋</span>
+        <textarea class="pk-in" id="pkAddIn" rows="1" placeholder="加入商品：黑炫風 *25，或貼上一整串／截圖" autocomplete="off"></textarea>
+        <label class="pk-b pk-photo" for="pkPhoto" title="選照片">照片</label>
+        <input id="pkPhoto" type="file" accept="image/*" multiple style="display:none">
+        <button class="pk-b pri" type="submit">加入</button>
+      </form>
+      <div class="pk-addextra" id="pkAddExtra" style="display:none">
+        <div class="pk-thumbs" id="pkThumbs"></div>
+        <div class="pk-row"><button class="pk-b" id="pkOcr" type="button" style="display:none">辨識照片文字</button><span class="pk-hint" id="pkOcrNote"></span></div>
+      </div>
       <ul class="pk-list" id="pkMain"></ul>
       <div class="pk-sep" id="pkPreSep" style="display:none">預訂</div>
       <ul class="pk-list" id="pkPre"></ul>
       <div class="pk-sep wait" id="pkWaitSep" style="display:none">等到貨</div>
       <ul class="pk-list" id="pkWait"></ul>
-      <p class="pk-hint">點號碼切換：一般 → 預訂 → 等到貨 → 一般（預訂、等到貨會移到最下面）。數量可以清空不填。按住 ⠿ 拖曳調整順序。點圓圈＝全部已留，長按（或按右鍵）圓圈可改留幾個。</p>
+      <p class="pk-hint">加入商品：按 Enter 或「加入」，Shift+Enter 換行；貼上好幾行會一次整理加入。數量可以寫 *3、x3、+3、留3、5pcs。點號碼切換：一般 → 預訂 → 等到貨 → 一般（預訂、等到貨會移到最下面）。數量可以清空不填。按住 ⠿ 拖曳調整順序。點圓圈＝全部已留，長按（或按右鍵）圓圈可改留幾個。</p>
       <div class="pk-notewrap" id="pkNoteWrap" style="display:none">   <!-- 備註：平常藏起來，按標題列的「✎ 備註」才打開 -->
         <label class="pk-note-lbl" for="pkNote">備註</label>
         <textarea class="pk-in pk-note" id="pkNote" rows="2" placeholder="例如：週五來拿、要開發票…（輸出時會放在最下面）"></textarea>
       </div>
-    </div>
-
-    <div class="pk-card">
-      <h4><span>大量匯入商品</span><span class="pk-h4sub">貼文字、貼截圖或選照片</span></h4>
-      <textarea class="pk-in pk-src" id="pkSrc" placeholder="把一長串文字貼在這裡；截圖可以直接 Ctrl+V 貼上"></textarea>
-      <div class="pk-thumbs" id="pkThumbs"></div>
-      <div class="pk-row">
-        <button class="pk-b pri" id="pkQuick" type="button">快速整理</button>
-        <label class="pk-b" for="pkPhoto">選照片</label>
-        <input id="pkPhoto" type="file" accept="image/*" multiple style="display:none">
-        <button class="pk-b" id="pkOcr" type="button" style="display:none">辨識照片文字</button>
-        <span class="pk-hint" id="pkOcrNote"></span>
-      </div>
-      <p class="pk-hint">數量可以寫成「*3」「x3」「+3」或「留3」。照片會先轉成文字放進上面的框，檢查一下錯字，再按「快速整理」。</p>
     </div>
 
     <div class="pk-card" id="pkRulesCard" style="display:none">   <!-- 簡化詞庫：先隱藏，功能照常運作 -->
@@ -278,7 +275,7 @@ function itemHTML(it, idx){
 }
 function renderItems(){
   const n = normals(), p = pres(), w = waits();
-  $('pkMain').innerHTML = n.map((it, i) => itemHTML(it, i + 1)).join('') || (p.length || w.length ? '' : '<li class="pk-empty">還沒有商品。下面貼文字或照片，或用「單筆加入」。</li>');
+  $('pkMain').innerHTML = n.map((it, i) => itemHTML(it, i + 1)).join('') || (p.length || w.length ? '' : '<li class="pk-empty">還沒有商品。在上面那一格打商品，或貼上一整串文字、截圖。</li>');
   $('pkPre').innerHTML = p.map(it => itemHTML(it, 0)).join('');
   $('pkPreSep').style.display = p.length ? 'flex' : 'none';
   $('pkWait').innerHTML = w.map(it => itemHTML(it, 0)).join('');
@@ -444,13 +441,18 @@ function syncOrder(){
 }
 if(window.Sortable) [$('pkMain'), $('pkPre'), $('pkWait')].forEach(L => Sortable.create(L, { handle: '.pk-grip', animation: 150, filter: '.pk-empty', onEnd: syncOrder }));
 
-$('pkAddForm').addEventListener('submit', e => { e.preventDefault(); const v = $('pkAddIn').value.trim(); if(!v) return;
-  const r = parseText(v); if(!r.items.length) return; mergeParsed({ items: r.items }); $('pkAddIn').value = ''; });
-$('pkQuick').addEventListener('click', () => {
-  const t = $('pkSrc').value.trim();
-  if(!t){ toast(S.pendingImgs.length ? '先按「辨識照片文字」' : '先貼上文字'); return; }
+// 加入商品：一筆或一整串都從這一格加入（一整串會自動拆行、抓客人和位置）
+const addIn = $('pkAddIn');
+function growAdd(){ addIn.style.height = 'auto'; addIn.style.height = Math.min(addIn.scrollHeight, 260) + 'px'; }
+addIn.addEventListener('input', growAdd);
+addIn.addEventListener('keydown', e => { if(e.key === 'Enter' && !e.shiftKey && !e.isComposing){ e.preventDefault(); $('pkAddForm').requestSubmit(); } });
+$('pkAddForm').addEventListener('submit', e => {
+  e.preventDefault();
+  const t = addIn.value.trim();
+  if(!t){ toast(S.pendingImgs.length ? '先按「辨識照片文字」' : '先打商品，或貼上文字'); return; }
   const r = parseText(t); if(!r.items.length && !r.customer){ toast('看不出商品，請檢查文字格式'); return; }
-  mergeParsed(r); $('pkSrc').value = ''; toast('已加入 ' + r.items.length + ' 項');
+  mergeParsed(r); addIn.value = ''; growAdd();
+  if(r.items.length > 1) toast('已加入 ' + r.items.length + ' 項');
 });
 
 // ---------- 照片 → 文字（瀏覽器內建辨識，第一次會下載辨識檔，稍等一下）----------
@@ -461,6 +463,7 @@ function addImgs(files){
 function renderThumbs(){
   $('pkThumbs').innerHTML = S.pendingImgs.map((p, i) => `<div class="pk-thumb"><img src="${p.url}" alt="待辨識照片"><button type="button" data-rm="${i}" aria-label="移除">×</button></div>`).join('');
   $('pkOcr').style.display = S.pendingImgs.length ? '' : 'none';
+  $('pkAddExtra').style.display = S.pendingImgs.length || $('pkOcrNote').textContent ? '' : 'none';
 }
 $('pkThumbs').addEventListener('click', e => { const b = e.target.closest('[data-rm]'); if(b){ S.pendingImgs.splice(+b.dataset.rm, 1); renderThumbs(); } });
 $('pkPhoto').addEventListener('change', e => { addImgs(e.target.files); e.target.value = ''; });
@@ -482,9 +485,9 @@ $('pkOcr').addEventListener('click', async () => {
     let txt = texts.join('\n')
       .replace(/([㐀-鿿（）（）])[ \t]+(?=[㐀-鿿（）（）])/g, '$1')   // 中文字中間多出來的空白
       .replace(/[ \t]+/g, ' ').replace(/\n{3,}/g, '\n\n').trim();
-    $('pkSrc').value = ($('pkSrc').value.trim() ? $('pkSrc').value.trim() + '\n' : '') + txt;
+    addIn.value = (addIn.value.trim() ? addIn.value.trim() + '\n' : '') + txt; growAdd();
     S.pendingImgs = []; renderThumbs();
-    note.textContent = ''; toast('辨識完成，請檢查文字後按「快速整理」'); $('pkSrc').focus();
+    note.textContent = ''; toast('辨識完成，請檢查文字後按「加入」'); addIn.focus();
   }catch(e){ note.textContent = ''; toast('辨識失敗：' + (e.message || e)); }
   finally{ if(worker) try{ await worker.terminate(); }catch(e){} btn.disabled = false; btn.textContent = '辨識照片文字'; }
 });
