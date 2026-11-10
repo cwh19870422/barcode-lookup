@@ -216,3 +216,13 @@ textarea.pk-in.pk-src:focus{box-shadow:inset 0 0 0 2px var(--blue);}
 .pk-sn.wait{background:var(--sg-wait-soft); color:var(--sg-wait); font-size:11px; padding:0 5px;}
 #tab-pick .pk-sep.wait{color:var(--sg-wait);}
 #tab-pick .pk-sep.wait::before, #tab-pick .pk-sep.wait::after{border-top-color:var(--sg-wait);}
+
+/* 未撿完的客人卡片：白底＋黑色外框＋實心黑色「未撿」標籤（打單區的黑色） */
+#tab-pick .pk-ord{border:1.5px solid transparent;}
+#tab-pick .pk-ord.pending{background:#fff; border-color:#1F1F1F; box-shadow:var(--shadow);}
+#tab-pick .pk-left{background:#1F1F1F; color:#fff; box-shadow:none;}
+#tab-pick .pk-left.ok{background:var(--sg-kept-soft); color:var(--sg-kept);}
+/* 目前選中的那張：淺灰底＋外圈光暈（跟未撿完的黑框分開） */
+#tab-pick .pk-ord.cur, #tab-pick .pk-ord.pending.cur{background:#ECE8E2; box-shadow:0 0 0 3px rgba(31,31,31,.18);}
+#tab-pick .pk-ord.cur:not(.pending){border-color:transparent;}
+#tab-pick .pk-ord.cur .pk-pill:not(.done){background:#fff;}
