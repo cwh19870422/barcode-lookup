@@ -47,8 +47,10 @@ panel.innerHTML = `
       <ul class="pk-list" id="pkMain"></ul>
       <div class="pk-sep" id="pkPreSep" style="display:none">預訂</div>
       <ul class="pk-list" id="pkPre"></ul>
+      <div class="pk-sep wait" id="pkWaitSep" style="display:none">等到貨</div>
+      <ul class="pk-list" id="pkWait"></ul>
       <form class="pk-add" id="pkAddForm"><input class="pk-in" id="pkAddIn" placeholder="單筆加入，例如：黑炫風 *25" autocomplete="off"><button class="pk-b" type="submit">加入</button></form>
-      <p class="pk-hint">點號碼可切換成「預訂」（會移到最下面）。按住 ⠿ 拖曳調整順序。點圓圈＝全部已留，長按（或按右鍵）圓圈可改留幾個。</p>
+      <p class="pk-hint">點號碼切換：一般 → 預訂 → 等到貨 → 一般（預訂、等到貨會移到最下面）。數量可以清空不填。按住 ⠿ 拖曳調整順序。點圓圈＝全部已留，長按（或按右鍵）圓圈可改留幾個。</p>
       <div class="pk-notewrap" id="pkNoteWrap" style="display:none">   <!-- 備註：平常藏起來，按標題列的「✎ 備註」才打開 -->
         <label class="pk-note-lbl" for="pkNote">備註</label>
         <textarea class="pk-in pk-note" id="pkNote" rows="2" placeholder="例如：週五來拿、要開發票…（輸出時會放在最下面）"></textarea>
@@ -97,16 +99,20 @@ function toast(m){ const t = $('pkToast'); t.textContent = m; t.style.display = 
 // ---------- 資料 ----------
 function newSlip(){ const now = Date.now(); return { id: uid('p'), customer: '', location: '準備中', showPrice: false, status: 'draft', items: [], createdAt: now, updatedAt: now }; }
 function mkItem(o){
-  const it = { id: uid('i'), name: String(o.name || ''), qty: Math.max(1, parseInt(o.qty) || 1), price: o.price ? Number(o.price) : null, reserved: false, kept: 0, preorder: !!o.preorder, tbd: !!(o.preorder && o.tbd) };
-  setKept(it, o.kept != null ? o.kept : (o.reserved ? it.qty : 0));
+  const it = { id: uid('i'), name: String(o.name || ''), qty: o.qty === null ? null : Math.max(1, parseInt(o.qty) || 1), price: o.price ? Number(o.price) : null, reserved: false, kept: 0, preorder: !!o.preorder && !o.wait, wait: !!o.wait, tbd: !!(o.preorder && o.tbd) };
+  setKept(it, o.kept != null ? o.kept : (o.reserved ? effQ(it) : 0));
   return it;
 }
 // 已留數量：kept 是留了幾個（0～數量），reserved＝全部留好。舊資料沒有 kept，就照 reserved 換算
-const kOf = it => it.kept == null ? (it.reserved ? it.qty : 0) : Math.min(it.kept, it.qty);
-function setKept(it, n){ it.kept = Math.max(0, Math.min(parseInt(n) || 0, it.qty)); it.reserved = it.kept >= it.qty; }
-const isPartial = it => { const k = kOf(it); return k > 0 && k < it.qty; };
-const normals = () => cur().items.filter(i => !i.preorder);
-const pres = () => cur().items.filter(i => i.preorder);
+// 數量可以空白（qty = null）：留貨計算時當作 1 個
+const effQ = it => it.qty || 1;
+const kOf = it => it.kept == null ? (it.reserved ? effQ(it) : 0) : Math.min(it.kept, effQ(it));
+function setKept(it, n){ it.kept = Math.max(0, Math.min(parseInt(n) || 0, effQ(it))); it.reserved = it.kept >= effQ(it); }
+const isPartial = it => { const k = kOf(it); return k > 0 && k < effQ(it); };
+// 三組：一般／預訂／等到貨
+const normals = () => cur().items.filter(i => !i.preorder && !i.wait);
+const pres = () => cur().items.filter(i => i.preorder && !i.wait);
+const waits = () => cur().items.filter(i => i.wait);
 const hasContent = s => s && (s.items.length || (s.customer || '').trim());
 const canDelete = () => (typeof isBoss === 'function') ? isBoss() : true;
 
@@ -155,11 +161,12 @@ function learn(oldName, newName){
 }
 
 // ---------- 文字拆解 ----------
-const RE_KEPT = /[（(]\s*已留\s*(\d{0,4})\s*[)）]/g, RE_PRE = /[（(]\s*預[訂定約購]\s*[)）]/g;
+const RE_KEPT = /[（(]\s*已留\s*(\d{0,4})\s*[)）]/g, RE_PRE = /[（(]\s*預[訂定約購]\s*[)）]/g, RE_WAIT = /[（(]\s*等到貨\s*[)）]/g;
 function parseItem(s){
   let reserved = false, keptN = null;
   s = s.replace(RE_KEPT, (_, d) => { reserved = true; if(d) keptN = +d; return ' '; });   // （已留）＝全留；（已留1）＝留了 1 個
   const preorder = RE_PRE.test(s); RE_PRE.lastIndex = 0; s = s.replace(RE_PRE, ' ');
+  const wait = RE_WAIT.test(s); RE_WAIT.lastIndex = 0; s = s.replace(RE_WAIT, ' ');
   let tbd = false; s = s.replace(/[（(]?\s*數量\s*待確認\s*[)）]?/g, () => { tbd = true; return ' '; });   // 預訂商品：數量待確認
   s = s.trim().replace(/^(?:\d{1,3}\s*[.、．)）:：]|[-•・●▪]\s*)\s*/, '');
   let qty = 1, price = null, m;
@@ -169,7 +176,7 @@ function parseItem(s){
   if((m = s.match(/(?:定價|售價|特價|原價|NT\$?|＄|\$)\s*(\d[\d,]*)\s*元?/i))){ price = +m[1].replace(/,/g, ''); s = s.slice(0, m.index) + ' ' + s.slice(m.index + m[0].length); }
   else if((m = s.match(/(\d[\d,]*)\s*元/))){ price = +m[1].replace(/,/g, ''); s = s.slice(0, m.index) + ' ' + s.slice(m.index + m[0].length); }
   const name = simplify(s.replace(/\s+/g, ' ').trim());
-  return name ? mkItem({ name, qty, price, reserved, kept: keptN, preorder, tbd }) : null;
+  return name ? mkItem({ name, qty, price, reserved, kept: keptN, preorder, wait, tbd }) : null;
 }
 function parseText(txt){
   const out = { customer: null, location: null, items: [] };
@@ -195,7 +202,7 @@ function mergeParsed(r){
   if(r.location && LOCS.includes(r.location)){ s.location = r.location; renderLocs(); }
   if(r.items.some(i => i.price)) s.showPrice = true;
   if(r.items.length && !s.items.length) s.firstAt = Date.now();   // 留貨天數從加進第一筆商品那天開始算
-  s.items = normals().concat(r.items.filter(i => !i.preorder), pres(), r.items.filter(i => i.preorder));
+  s.items = normals().concat(r.items.filter(i => !i.preorder && !i.wait), pres(), r.items.filter(i => i.preorder && !i.wait), waits(), r.items.filter(i => i.wait));
   touch(); renderItems();
 }
 
@@ -204,10 +211,10 @@ function buildText(){
   const s = cur();
   const name = (s.customer || '').trim();
   const head = '#' + s.location + (name ? ' （' + name + '）' : '');
-  const line = it => it.preorder && it.tbd ? `${it.name}${s.showPrice && it.price ? ' ' + it.price : ''}（數量待確認）` : `${it.name}${s.showPrice && it.price ? ' ' + it.price : ''} *${it.qty}${it.reserved ? '（已留）' : isPartial(it) ? '（已留' + kOf(it) + '）' : ''}`;
-  const n = normals().map((it, i) => `${i + 1}. ${line(it)}`), p = pres().map(it => '（預訂）' + line(it));
-  let t = head + '\n\n' + n.join('\n');
-  if(p.length) t += (n.length ? '\n\n' : '') + p.join('\n');
+  const line = it => it.preorder && it.tbd ? `${it.name}${s.showPrice && it.price ? ' ' + it.price : ''}（數量待確認）` : `${it.name}${s.showPrice && it.price ? ' ' + it.price : ''}${it.qty ? ' *' + it.qty : ''}${it.reserved ? '（已留）' : isPartial(it) ? '（已留' + kOf(it) + '）' : ''}`;
+  const n = normals().map((it, i) => `${i + 1}. ${line(it)}`), p = pres().map(it => '（預訂）' + line(it)), w = waits().map(it => '（等到貨）' + line(it));
+  const groups = [n, p, w].filter(g => g.length).map(g => g.join('\n'));
+  let t = head + '\n\n' + groups.join('\n\n');   // 每一組中間空一行
   const note = (s.note || '').trim();
   if(note) t += '\n\n' + note;   // 備註放最下面，上面空一行（不加「備註：」）
   return t;
@@ -223,7 +230,7 @@ function keepDays(s){
 function renderSide(){
   const all = Array.from(S.slips.values()).filter(s => hasContent(s) || (s.id === S.curId && !S.closed));
   const drafts = all.filter(s => s.status !== 'done'), dones = all.filter(s => s.status === 'done');
-  const left = s => s.items.filter(i => kOf(i) < i.qty).length;   // 還沒留滿的商品數
+  const left = s => s.items.filter(i => kOf(i) < effQ(i)).length;   // 還沒留滿的商品數
   // 還有沒撿完的單排最上面，同一組裡越新的越上面
   const list = (S.tab === 'done' ? dones : drafts).sort((a, b) => ((left(b) > 0) - (left(a) > 0)) || (b.updatedAt - a.updatedAt));
   const ts = t => { const d = new Date(t), today = new Date(); const same = d.toDateString() === today.toDateString();
@@ -258,22 +265,24 @@ function itemHTML(it, idx){
   const s = cur();
   return `<li class="pk-it${it.reserved ? ' kept' : isPartial(it) ? ' partial' : ''}" data-id="${it.id}">
     <span class="pk-grip" aria-label="拖曳">⠿</span>
-    <button type="button" class="pk-sn${it.preorder ? ' pre' : ''}" data-act="pre" title="${it.preorder ? '改回一般' : '改成預訂'}">${it.preorder ? '預訂' : idx}</button>
+    <button type="button" class="pk-sn${it.wait ? ' wait' : it.preorder ? ' pre' : ''}" data-act="pre" title="${it.wait ? '改回一般' : it.preorder ? '改成等到貨' : '改成預訂'}">${it.wait ? '等到貨' : it.preorder ? '預訂' : idx}</button>
     <input class="pk-nm" id="pkn-${it.id}" value="${esc(it.name)}" data-f="name" aria-label="品名">
     ${s.showPrice ? `<label class="pk-price">$<input id="pkp-${it.id}" inputmode="numeric" value="${it.price == null ? '' : it.price}" data-f="price" aria-label="金額" placeholder="—"></label>` : ''}
     ${it.preorder ? `<button type="button" class="pk-tbd${it.tbd ? ' on' : ''}" data-act="tbd" title="${it.tbd ? '改回填數量' : '數量還不確定'}">${it.tbd ? '數量待確認' : '待確認'}</button>` : ''}
-    ${it.preorder && it.tbd ? '' : `<div class="qty-stepper"><button type="button" data-act="minus" aria-label="減一">−</button><input class="qty-num" id="pkq-${it.id}" inputmode="numeric" value="${it.qty}" data-f="qty" aria-label="數量"><button type="button" data-act="plus" aria-label="加一">＋</button></div>`}
+    ${it.preorder && it.tbd ? '' : `<div class="qty-stepper"><button type="button" data-act="minus" aria-label="減一">−</button><input class="qty-num" id="pkq-${it.id}" inputmode="numeric" value="${it.qty == null ? '' : it.qty}" data-f="qty" aria-label="數量" placeholder="—"><button type="button" data-act="plus" aria-label="加一">＋</button></div>`}
     ${S.editKept === it.id
-      ? `<span class="pk-circ-edit"><input class="pk-kn" id="pkkn-${it.id}" inputmode="numeric" data-f="kept" value="${kOf(it)}" aria-label="已留幾個"><span class="pk-kq">/${it.qty}</span></span>`
-      : `<button type="button" class="pk-circ${it.reserved ? ' on' : isPartial(it) ? ' half' : ''}" data-act="circ" style="--p:${Math.round(kOf(it) / it.qty * 100)}%" title="點一下：全部已留／取消；長按：改留幾個" aria-label="已留 ${kOf(it)}/${it.qty}">${it.reserved ? '✓' : isPartial(it) ? `<span>${kOf(it)}/${it.qty}</span>` : ''}</button>`}
+      ? `<span class="pk-circ-edit"><input class="pk-kn" id="pkkn-${it.id}" inputmode="numeric" data-f="kept" value="${kOf(it)}" aria-label="已留幾個"><span class="pk-kq">/${effQ(it)}</span></span>`
+      : `<button type="button" class="pk-circ${it.reserved ? ' on' : isPartial(it) ? ' half' : ''}" data-act="circ" style="--p:${Math.round(kOf(it) / effQ(it) * 100)}%" title="點一下：全部已留／取消；長按：改留幾個" aria-label="已留 ${kOf(it)}/${effQ(it)}">${it.reserved ? '✓' : isPartial(it) ? `<span>${kOf(it)}/${effQ(it)}</span>` : ''}</button>`}
     <button type="button" class="pk-del" data-act="del" aria-label="刪除">×</button>
   </li>`;
 }
 function renderItems(){
-  const n = normals(), p = pres();
-  $('pkMain').innerHTML = n.map((it, i) => itemHTML(it, i + 1)).join('') || (p.length ? '' : '<li class="pk-empty">還沒有商品。下面貼文字或照片，或用「單筆加入」。</li>');
+  const n = normals(), p = pres(), w = waits();
+  $('pkMain').innerHTML = n.map((it, i) => itemHTML(it, i + 1)).join('') || (p.length || w.length ? '' : '<li class="pk-empty">還沒有商品。下面貼文字或照片，或用「單筆加入」。</li>');
   $('pkPre').innerHTML = p.map(it => itemHTML(it, 0)).join('');
   $('pkPreSep').style.display = p.length ? 'flex' : 'none';
+  $('pkWait').innerHTML = w.map(it => itemHTML(it, 0)).join('');
+  $('pkWaitSep').style.display = w.length ? 'flex' : 'none';
   $('pkShowPrice').checked = !!cur().showPrice;
   renderSum();
 }
@@ -379,24 +388,31 @@ $('pkLocs').addEventListener('click', e => { const b = e.target.closest('[data-p
 $('pkShowPrice').addEventListener('change', e => { cur().showPrice = e.target.checked; renderItems(); touch(); });
 
 const findItem = el => { const li = el.closest('.pk-it'); return li && cur().items.find(i => i.id === li.dataset.id); };
-[$('pkMain'), $('pkPre')].forEach(L => {
+[$('pkMain'), $('pkPre'), $('pkWait')].forEach(L => {
   L.addEventListener('click', e => {
     const b = e.target.closest('[data-act]'); if(!b) return; const it = findItem(b); if(!it) return;
     const s = cur(), a = b.dataset.act;
     if(a === 'del'){ s.items = s.items.filter(i => i !== it); toast('已刪除「' + it.name + '」'); }
     if(a === 'tbd') it.tbd = !it.tbd;
-    if(a === 'circ'){ if(b._long){ b._long = false; return; } setKept(it, it.reserved ? 0 : it.qty); }   // 點圓圈：全部已留／取消
-    if(a === 'plus'){ const k = kOf(it); it.qty++; setKept(it, k); }
-    if(a === 'minus'){ const k = kOf(it); it.qty = Math.max(1, it.qty - 1); setKept(it, k); }
-    if(a === 'pre'){ s.items = s.items.filter(i => i !== it); it.preorder = !it.preorder; s.items = it.preorder ? s.items.concat(it) : normals().concat(it, pres()); }
+    if(a === 'circ'){ if(b._long){ b._long = false; return; } setKept(it, it.reserved ? 0 : effQ(it)); }   // 點圓圈：全部已留／取消
+    if(a === 'plus'){ const k = kOf(it); it.qty = (it.qty || 0) + 1; setKept(it, k); }
+    if(a === 'minus'){ const k = kOf(it); if(it.qty) it.qty = Math.max(1, it.qty - 1); setKept(it, k); }
+    if(a === 'pre'){   // 一般 → 預訂 → 等到貨 → 一般，換組時排到那一組的最後
+      s.items = s.items.filter(i => i !== it);
+      if(it.wait){ it.wait = false; it.preorder = false; } else if(it.preorder){ it.preorder = false; it.wait = true; } else it.preorder = true;
+      const N = normals(), P = pres(), W = waits();
+      (it.wait ? W : it.preorder ? P : N).push(it);
+      s.items = N.concat(P, W);
+    }
     renderItems(); touch();
   });
   L.addEventListener('input', e => {
     const f = e.target.dataset.f, it = findItem(e.target); if(!it || !f) return;
     if(f === 'name') it.name = e.target.value;
     if(f === 'price'){ const v = e.target.value.replace(/[^\d]/g, ''); it.price = v ? +v : null; }
-    if(f === 'qty'){ const v = parseInt(e.target.value); if(v > 0){ const k = kOf(it); it.qty = v; setKept(it, k); } }
-    if(f === 'reserved'){ setKept(it, e.target.checked ? it.qty : 0); renderItems(); }
+    if(f === 'qty'){ const raw = e.target.value.trim(), v = parseInt(raw), k = kOf(it);
+      if(raw === ''){ it.qty = null; setKept(it, k); } else if(v > 0){ it.qty = v; setKept(it, k); } }   // 清空＝數量空白
+    if(f === 'reserved'){ setKept(it, e.target.checked ? effQ(it) : 0); renderItems(); }
     if(f === 'kept'){ const v = e.target.value.replace(/[^\d]/g, ''); if(v !== ''){ setKept(it, +v); const li = e.target.closest('.pk-it');
       li.classList.toggle('kept', it.reserved); li.classList.toggle('partial', isPartial(it)); const cb = li.querySelector('[data-f="reserved"]'); if(cb) cb.checked = it.reserved; } }
     touch();
@@ -421,12 +437,12 @@ const findItem = el => { const li = el.closest('.pk-it'); return li && cur().ite
   });
 });
 function syncOrder(){
-  const ids = [...$('pkMain').children, ...$('pkPre').children].map(li => li.dataset.id).filter(Boolean);
+  const ids = [...$('pkMain').children, ...$('pkPre').children, ...$('pkWait').children].map(li => li.dataset.id).filter(Boolean);
   const map = Object.fromEntries(cur().items.map(i => [i.id, i]));
   cur().items = ids.map(id => map[id]).filter(Boolean);
   renderItems(); touch();
 }
-if(window.Sortable) [$('pkMain'), $('pkPre')].forEach(L => Sortable.create(L, { handle: '.pk-grip', animation: 150, filter: '.pk-empty', onEnd: syncOrder }));
+if(window.Sortable) [$('pkMain'), $('pkPre'), $('pkWait')].forEach(L => Sortable.create(L, { handle: '.pk-grip', animation: 150, filter: '.pk-empty', onEnd: syncOrder }));
 
 $('pkAddForm').addEventListener('submit', e => { e.preventDefault(); const v = $('pkAddIn').value.trim(); if(!v) return;
   const r = parseText(v); if(!r.items.length) return; mergeParsed({ items: r.items }); $('pkAddIn').value = ''; });
