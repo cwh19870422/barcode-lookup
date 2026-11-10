@@ -44,12 +44,12 @@ panel.innerHTML = `
 
     <div class="pk-card">
       <h4><span>撿貨清單</span><span class="pk-h4r"><button type="button" class="pk-notebtn" id="pkNoteBtn">✎ 備註</button><label class="pk-switch"><input type="checkbox" id="pkShowPrice">顯示金額</label></span></h4>
+      <form class="pk-add pk-addtop" id="pkAddForm"><span class="pk-addplus" aria-hidden="true">＋</span><input class="pk-in" id="pkAddIn" placeholder="單筆加入，例如：黑炫風 *25" autocomplete="off"><button class="pk-b pri" type="submit">加入</button></form>   <!-- 單筆加入：放在清單最上面 -->
       <ul class="pk-list" id="pkMain"></ul>
       <div class="pk-sep" id="pkPreSep" style="display:none">預訂</div>
       <ul class="pk-list" id="pkPre"></ul>
       <div class="pk-sep wait" id="pkWaitSep" style="display:none">等到貨</div>
       <ul class="pk-list" id="pkWait"></ul>
-      <form class="pk-add" id="pkAddForm"><input class="pk-in" id="pkAddIn" placeholder="單筆加入，例如：黑炫風 *25" autocomplete="off"><button class="pk-b" type="submit">加入</button></form>
       <p class="pk-hint">點號碼切換：一般 → 預訂 → 等到貨 → 一般（預訂、等到貨會移到最下面）。數量可以清空不填。按住 ⠿ 拖曳調整順序。點圓圈＝全部已留，長按（或按右鍵）圓圈可改留幾個。</p>
       <div class="pk-notewrap" id="pkNoteWrap" style="display:none">   <!-- 備註：平常藏起來，按標題列的「✎ 備註」才打開 -->
         <label class="pk-note-lbl" for="pkNote">備註</label>
