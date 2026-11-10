@@ -483,6 +483,14 @@ table.cart-table tr.ret-row .cart-name::before{content:'退貨 '; color:#c0392b;
   .btn-hold{background:#fff; color:#1F1F1F; box-shadow:inset 0 0 0 1.5px #1F1F1F;}
   .btn-tax{background:#fff; color:#1F1F1F; box-shadow:inset 0 0 0 1.5px #1F1F1F;}
   .btn-tax.on{background:#1F1F1F; color:#fff;}
+  /* 隱藏金額：出貨清單只留品名、數量、備註 */
+  .cart-section.hide-money .cart-table th:nth-child(2), .cart-section.hide-money .cart-table td.c-price,
+  .cart-section.hide-money .cart-table th:nth-child(4), .cart-section.hide-money .cart-table td.cart-subtotal,
+  .cart-section.hide-money .cart-table th:nth-child(7), .cart-section.hide-money .cart-table td.cart-last,
+  .cart-section.hide-money .cart-table th:nth-child(8), .cart-section.hide-money .cart-table td.c-hist,
+  .cart-section.hide-money .cart-table tr.fee-row,
+  .cart-section.hide-money .m-last, .cart-section.hide-money #untaxedLine, .cart-section.hide-money .tline-amt{display:none !important;}
+  .cart-section.hide-money td.c-qty::before{content:none !important;}
   .btn-clear{background:#fff; color:#B3261E; box-shadow:inset 0 0 0 1.5px #B3261E;}
   .btn-print{background:#fff; color:#1F1F1F; box-shadow:inset 0 0 0 1.5px #1F1F1F;}
 
@@ -689,6 +697,7 @@ body.cust-view .prices{grid-template-columns:minmax(0,1fr) !important; max-width
           <span class="cart-cust-note" id="cartCustNote"></span>
         </div>
         <div class="cart-head-actions">
+          <button class="btn-tax" id="hideMoneyBtn" title="隱藏所有金額，只顯示品名和數量（列印的帳單也一樣），再按一次還原">隱藏金額</button>
           <button class="btn-tax" id="taxModeBtn" title="每個商品單價 ×1.05（四捨五入），再按一次還原">含稅金額</button>
           <button class="btn-hold" id="holdCartBtn">暫存訂單</button>
           <button class="btn-clear" id="clearCartBtn">全部刪除</button>
@@ -699,7 +708,7 @@ body.cust-view .prices{grid-template-columns:minmax(0,1fr) !important; max-width
       <div class="cart-totals" id="cartTotals" style="display:none;">
         <div class="tline">總數量 <b id="totalQty">0</b></div>
         <div class="tline" id="untaxedLine" style="display:none;">未稅總額 <b id="untaxedAmt">0</b></div>
-        <div class="tline"><span id="totalAmtLabel">總金額</span> <b id="totalAmt">0</b></div>
+        <div class="tline tline-amt"><span id="totalAmtLabel">總金額</span> <b id="totalAmt">0</b></div>
       </div>
       <div class="quick-fee-row">
         <span class="quick-fee-label">快捷</span>
@@ -1684,6 +1693,7 @@ function addToCart(r, qty){
 
 // 個別含稅：每個商品單價 ×1.05（四捨五入到整數）；再按一次還原成切換前的單價
 let taxMode = false;
+let hideMoney = false;   // 隱藏金額：畫面與列印都只顯示品名、數量
 const TAX_RATE = 1.05;
 function applyTaxToCart(){
   cart.forEach(it=>{
@@ -1894,6 +1904,8 @@ function updateCartNote(){
 function renderCart(){
   applyTaxToCart();
   { const tb = document.getElementById('taxModeBtn'); if(tb){ tb.classList.toggle('on', taxMode);  } }
+  { const hb = document.getElementById('hideMoneyBtn'); if(hb){ hb.classList.toggle('on', hideMoney); hb.textContent = hideMoney ? '顯示金額' : '隱藏金額'; }
+    const cs = document.getElementById('hideMoneyBtn') && document.getElementById('hideMoneyBtn').closest('.cart-section'); if(cs) cs.classList.toggle('hide-money', hideMoney); }
   updateCartNote();
   updateEditBanner();
   document.getElementById('cartCount').textContent = cart.length + ' 項';
@@ -2020,6 +2032,7 @@ cartBody.addEventListener('click', (e)=>{
   renderCart();
 });
 
+document.getElementById('hideMoneyBtn').addEventListener('click', ()=>{ hideMoney = !hideMoney; renderCart(); });
 document.getElementById('taxModeBtn').addEventListener('click', ()=>{
   if(!cart.length && !taxMode){ alert('出貨清單是空的'); return; }
   setTaxMode(!taxMode);
@@ -2048,11 +2061,12 @@ function holdCurrentOrder(){
     priceMode: document.getElementById('priceSourceSelect').value,
     operator: document.getElementById('operatorSel').value,
     txn: currentTxn,
+    hidePrice: hideMoney,
     savedAt: new Date().toISOString()
   };
   heldOrders.push(held);
   FB.saveHeld(held).catch(heldErr);
-  cart = []; taxMode = false;
+  cart = []; taxMode = false; hideMoney = false;
   currentTxn = null;
   window.clearOperator && window.clearOperator();
   selectedCustomer = null;
@@ -2085,6 +2099,7 @@ function resumeHeldOrder(id){
   setPriceMode(target.priceMode);
   cart = savedCart;   // selectCustomer 會依等級重新帶價，這裡還原成暫存時的價錢
   syncTaxModeFromCart();
+  hideMoney = !!target.hidePrice;
   currentTxn = target.txn || null;
   renderCart();
   if(!currentTxn && target.operator){ const os = document.getElementById('operatorSel'); if(Array.from(os.options).some(o => o.value === target.operator)){ os.value = target.operator; if(window.paintOperator) window.paintOperator(); } }
@@ -2132,7 +2147,7 @@ document.getElementById('heldOrdersPanel').addEventListener('click', (e)=>{
 
 document.getElementById('clearCartBtn').addEventListener('click', ()=>{
   if(cart.length && !confirm('確定要清空整張出貨單嗎？')) return;
-  cart = []; taxMode = false;
+  cart = []; taxMode = false; hideMoney = false;
   currentTxn = null;
   renderCart();
 });
@@ -2229,7 +2244,7 @@ document.getElementById('checkoutBtn').addEventListener('click', ()=>{
   if(!confirm(`${editing ? '確定儲存修改？（會覆蓋原訂單）' : '確定結帳？'}\n${who}　合計 $${fmt(snap.total)}`)) return;
   if(editing) currentTxn.editedAt = new Date().toISOString();
   saveTransaction();
-  cart = []; taxMode = false; currentTxn = null; selectedCartKey = null;
+  cart = []; taxMode = false; hideMoney = false; currentTxn = null; selectedCartKey = null;
   window.clearOperator && window.clearOperator();
   resetOrderCustomerUI();
   renderCart(); updateEditBanner();
@@ -2286,7 +2301,7 @@ function updateEditBanner(){
 }
 document.getElementById('cancelEditBtn').addEventListener('click', ()=>{
   if(!confirm('取消編輯？目前畫面上的修改不會儲存，原訂單維持不變。')) return;
-  cart = []; taxMode = false; currentTxn = null; selectedCartKey = null;
+  cart = []; taxMode = false; hideMoney = false; currentTxn = null; selectedCartKey = null;
   resetOrderCustomerUI();
   renderCart(); updateEditBanner();
 });
@@ -2318,7 +2333,7 @@ function startEditTxn(id){
   cart = [];
   if(t.customer){ selectCustomer({...t.customer}); } else { resetOrderCustomerUI(); }
   setPriceMode(t.priceMode);
-  cart = (t.lines || []).map(lineToCartItem); taxMode = false;
+  cart = (t.lines || []).map(lineToCartItem); taxMode = false; hideMoney = false;
   currentTxn = {id:t.id, date:t.date, operator:t.operator};
   selectedCartKey = null;
   renderCart(); updateEditBanner();
@@ -2328,6 +2343,7 @@ function startEditTxn(id){
 
 // 出貨單／已儲存訂單共用同一個畫法：畫面上看到的就是當時列印出來的樣子
 function renderOrderHtml(o){
+  if(o.hidePrice) return renderOrderHtmlNoPrice(o);
   const c = o.customer;
   const cell = 'padding:6px 4px; border-bottom:1px solid #ddd;';
   const rowsHtml = (o.lines || []).map(l => `
@@ -2392,6 +2408,37 @@ function renderOrderHtml(o){
     </div>`;
 }
 
+// A4 帳單（隱藏金額版）：只有代碼、品名、數量、備註，運費／稅金等金額行不印
+function renderOrderHtmlNoPrice(o){
+  const full = renderOrderHtml({...o, hidePrice:false});
+  const cell = 'padding:6px 4px; border-bottom:1px solid #ddd;';
+  const items = (o.lines || []).filter(l => l.type !== 'fee');
+  const rowsHtml = items.map(l => `
+    <tr>
+      <td style="${cell}">${escapeHtml(l.type === 'item' ? (l.code || l.barcode || '') : '')}</td>
+      <td style="${cell}">${escapeHtml(l.name || '')}</td>
+      <td style="${cell} text-align:center;">${l.qty}</td>
+      <td style="${cell}">${escapeHtml(l.note || '')}</td>
+    </tr>`).join('');
+  const totalQty = items.reduce((s,l)=>s+fmtNum(l.qty),0);
+  const head = full.slice(0, full.indexOf('<table'));   // 沿用原本的客人名稱、日期、電話地址、抬頭統編
+  return head + `<table style="width:100%; border-collapse:collapse; font-size:15px;">
+        <thead><tr style="border-bottom:2px solid #000;">
+          <th style="text-align:left; padding:6px 4px;">商品(服務)代碼</th>
+          <th style="text-align:left; padding:6px 4px;">服務(產品)名稱</th>
+          <th style="text-align:center; padding:6px 4px;">數量</th>
+          <th style="text-align:left; padding:6px 4px;">備註</th>
+        </tr></thead>
+        <tbody>${rowsHtml}</tbody>
+        <tfoot><tr style="border-top:2px solid #000; font-weight:700;">
+          <td colspan="2" style="padding:8px 4px; text-align:right;">總數量</td>
+          <td style="padding:8px 4px; text-align:center;">${totalQty}</td>
+          <td></td>
+        </tr></tfoot>
+      </table>
+    </div>`;
+}
+
 // 80mm 感熱收據（精簡版）：只印客戶名、日期、品名／單價／數量／小計、總額
 function fmtDateTime24(iso){
   const d = new Date(iso);
@@ -2401,6 +2448,22 @@ function fmtDateTime24(iso){
 function renderReceiptHtml(o){
   const c = o.customer;
   const td = 'padding:4px 0; vertical-align:top; border-bottom:1px dotted #000;';
+  if(o.hidePrice){   // 隱藏金額：只印品名、數量
+    const items = (o.lines || []).filter(l => l.type !== 'fee');
+    const th0 = 'padding:5px 0 3px; border-bottom:1px solid #000; font-weight:700; white-space:nowrap;';
+    return `
+    <div class="receipt-80" style="width:72mm; padding:2mm 1mm; color:#000; font-family:-apple-system,'PingFang TC','Microsoft JhengHei',sans-serif; font-size:12px; line-height:1.45;">
+      <div style="display:flex; justify-content:space-between; align-items:baseline; gap:6px; border-bottom:3px double #000; padding-bottom:5px;">
+        <span style="font-weight:700; font-size:17px;">${c ? escapeHtml(c.name || '') : ''}</span>
+        <span style="font-size:11px; white-space:nowrap;">${fmtDateTime24(o.date)}</span>
+      </div>
+      <table style="width:100%; border-collapse:collapse; font-size:12px;">
+        <thead><tr><th style="${th0} text-align:left;">品名</th><th style="${th0} text-align:center; padding-left:4px;">數量</th></tr></thead>
+        <tbody>${items.map(l => `<tr><td style="${td} padding-right:4px;">${escapeHtml(l.name || '')}</td><td style="${td} text-align:center; white-space:nowrap;">${l.qty}</td></tr>`).join('')}</tbody>
+      </table>
+      <div style="border-top:3px double #000; margin-top:8px; padding-top:6px; display:flex; justify-content:flex-end; font-weight:700; font-size:16px;">共 ${items.reduce((s,l)=>s+fmtNum(l.qty),0)} 件</div>
+    </div>`;
+  }
   const rowsHtml = (o.lines || []).map(l => `
     <tr>
       <td style="${td} padding-right:4px;">${escapeHtml(l.name || '')}${l.disc ? `(${l.disc}折)` : ''}</td>
@@ -2755,7 +2818,8 @@ function snapshotCart(){
     goods: lines.filter(l => l.type !== 'fee').reduce((s,l)=>s+l.amount,0),
     shipping: sumKind('運費'), prevBalance: sumKind('前帳'), refund: sumKind('退費'),
     tax, hasTax: lines.some(l => l.type==='fee' && l.kind==='稅金'),
-    untaxed: total - tax, total
+    untaxed: total - tax, total,
+    hidePrice: hideMoney   // 這張單是「隱藏金額」：補印時也照樣隱藏
   };
 }
 
