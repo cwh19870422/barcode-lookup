@@ -1345,11 +1345,12 @@ function closeTempForm(){
   tempCustForm.style.display = 'none';
   ['tempCustName','tempCustPhone','tempCustAddress'].forEach(id=>{ document.getElementById(id).value=''; });
 }
-// 搜尋客戶：姓名、會員號碼、電話、電話2 都找得到（電話忽略橫線與空白）
+// 搜尋客戶：姓名、暱稱（不顯示，只用來搜尋）、會員號碼、電話、電話2 都找得到（電話忽略橫線與空白）
 const digitsOnly = v => String(v||'').replace(/[\s\-()（）]/g,'');
 function custMatch(c, q){
   const qd = digitsOnly(q);
   return (c.name||'').toLowerCase().includes(q)
+    || (c.nick||'').toLowerCase().includes(q)
     || (c.memberNo||'').toLowerCase().includes(q)
     || (c.invoiceTitle||'').toLowerCase().includes(q) || (c.taxId||'').includes(q)
     || (c.phone||'').includes(q) || (c.phone2||'').includes(q)
@@ -2590,7 +2591,7 @@ function downloadBlob(blob, name){
 }
 function buildBackupWorkbook(custs, txns){
   const wb = XLSX.utils.book_new();
-  const custRows = custs.map(c => ({ 客戶名稱:c.name||'', 等級:c.grade||'', 會員號碼:c.memberNo||'', 電話:c.phone||'', 電話2:c.phone2||'', 地址:c.address||'', 抬頭:c.invoiceTitle||'', 統編:c.taxId||'', 品名:c.invoiceItem||'', 備註:c.note||'', 系統編號:c.id||'' }));
+  const custRows = custs.map(c => ({ 客戶名稱:c.name||'', 等級:c.grade||'', 會員號碼:c.memberNo||'', 電話:c.phone||'', 電話2:c.phone2||'', 暱稱:c.nick||'', 地址:c.address||'', 抬頭:c.invoiceTitle||'', 統編:c.taxId||'', 品名:c.invoiceItem||'', 備註:c.note||'', 系統編號:c.id||'' }));
   XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(custRows.length ? custRows : [{客戶名稱:''}]), '客戶');
   const sorted = txns.slice().sort((a,b)=>String(a.date||'').localeCompare(String(b.date||'')));
   const head = sorted.map(t => ({
