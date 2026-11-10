@@ -143,20 +143,21 @@ textarea.pk-in.pk-note{min-height:52px;}
 textarea.pk-in.pk-src{min-height:150px; font-size:15px; background:#fff; box-shadow:inset 0 0 0 2px #D1D1D6;}
 textarea.pk-in.pk-src:focus{box-shadow:inset 0 0 0 2px var(--blue);}
 
-/* ===== 撿貨單配色：7 鼠尾草（只影響撿貨單分頁） ===== */
+/* ===== 撿貨單配色：跟打單區一樣（只影響撿貨單分頁） ===== */
 #tab-pick{
-  --sg-bg:#F0F2EC; --sg-head:#E1E7DA; --sg-ink:#232C20; --sg-ink2:#3C4737; --sg-muted:#7A8475;
-  --sg-line:#DAE0D3; --sg-line2:#C3CCBA; --sg-row:#F5F7F2; --sg-chip:#E5EAE0; --sg-accent:#56704F;
-  --sg-kept:#4E7A52; --sg-kept-soft:#E5EFE2; --sg-pend:#B3783A; --sg-pend-soft:#F8EEE1; --sg-pend-line:#E3C9A6;
-  --sg-pre:#7A6688; --sg-pre-soft:#EFEAF2;
+  /* 配色跟打單區一樣（POS 的暖灰＋黑） */
+  --sg-bg:transparent; --sg-head:#F4F2EE; --sg-ink:#1F1F1F; --sg-ink2:#3A3733; --sg-muted:#85807A;
+  --sg-line:#E4E0DA; --sg-line2:#D2CCC3; --sg-row:#F7F5F1; --sg-chip:#ECE8E2; --sg-accent:#1F1F1F;
+  --sg-kept:#2E7D4F; --sg-kept-soft:#E6F2EA; --sg-pend:#B7791F; --sg-pend-soft:#FBF3E4; --sg-pend-line:#E9D3A8;
+  --sg-pre:#6E5E8A; --sg-pre-soft:#EFEBF4;
   /* 把 POS 共用的顏色名稱在這個分頁裡換成鼠尾草色 */
   --blue:var(--sg-accent); --ink:var(--sg-ink); --secondary:var(--sg-muted); --line:var(--sg-line);
-  --gray-fill:var(--sg-chip); --paper-alt:var(--sg-row); --paper:var(--sg-bg); --card:#FFFFFF;
+  --gray-fill:var(--sg-chip); --paper-alt:var(--sg-row); --paper:#F4F2EE; --card:#FFFFFF;
   --green:var(--sg-kept); --orange:var(--sg-pend); --pk-green-soft:var(--sg-kept-soft); --pk-orange-soft:var(--sg-pend-soft);
-  --shadow:0 0 0 1px var(--sg-line);
+  --shadow:0 1px 2px rgba(0,0,0,0.04), 0 2px 10px rgba(0,0,0,0.05);
   color:var(--sg-ink);
 }
-#tab-pick .pk-grid{background:var(--sg-bg); border-radius:18px; padding:14px;}
+#tab-pick .pk-grid{background:var(--sg-bg);}
 #tab-pick .search-box{background:#fff; box-shadow:inset 0 0 0 1px var(--sg-line);}
 #tab-pick .pk-new{background:var(--sg-accent);}
 #tab-pick .pk-seg{background:var(--sg-chip);}
@@ -186,11 +187,11 @@ textarea.pk-in.pk-src:focus{box-shadow:inset 0 0 0 2px var(--blue);}
 #tab-pick .pk-in{background:var(--sg-chip);}
 #tab-pick .pk-b{background:var(--sg-chip); color:var(--sg-accent);}
 #tab-pick .pk-b.pri{background:var(--sg-accent); color:#fff;}
-#tab-pick .pk-bar{box-shadow:0 0 0 1px var(--sg-line), 0 4px 16px rgba(35,44,32,.10);}
+#tab-pick .pk-bar{box-shadow:0 2px 16px rgba(0,0,0,.12);}
 #tab-pick .pk-toast{background:var(--sg-ink);}
 #tab-pick .pk-kp input{accent-color:var(--sg-kept);}
 #tab-pick .pk-switch input:checked{background:var(--sg-accent);}
-@media (max-width:760px){ #tab-pick .pk-grid{padding:10px; border-radius:14px;} }
+
 
 /* 客人卡片：位置、撿貨狀態靠右；第二排右邊只放留貨天數 */
 .pk-ord .t .nm{flex:1 1 auto;}
