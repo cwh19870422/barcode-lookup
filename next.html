@@ -881,6 +881,7 @@ function fmt(n){
   if(isNaN(num)) return '—';
   return num.toLocaleString('en-US', {maximumFractionDigits:0});
 }
+// 本錢、B／C／D 價：有小數就顯示到小數第 1 位（四捨五入），整數就不顯示小數
 function fmtCost(n){
   if(n===null || n===undefined || n==='' || (typeof n==='number' && isNaN(n))) return '—';
   const num = Number(n);
@@ -989,9 +990,9 @@ function priceCellsHtml(r, q){
   return `
     <div class="prices">
       <div class="price-cell sell" data-name="${escapeHtml(name)}" data-value="${escapeHtml(fmt(priceA))}"><div class="lbl">賣</div><div class="val">${fmt(priceA)}</div></div>
-      <div class="price-cell" data-name="${escapeHtml(name)}" data-value="${escapeHtml(fmt(priceB))}"><div class="lbl">2</div><div class="val">${fmt(priceB)}</div></div>
-      <div class="price-cell" data-name="${escapeHtml(name)}" data-value="${escapeHtml(fmt(priceC))}"><div class="lbl">3</div><div class="val">${fmt(priceC)}</div></div>
-      <div class="price-cell" data-name="${escapeHtml(name)}" data-value="${escapeHtml(fmt(priceD))}"><div class="lbl">4</div><div class="val">${fmt(priceD)}</div></div>
+      <div class="price-cell" data-name="${escapeHtml(name)}" data-value="${escapeHtml(fmtCost(priceB))}"><div class="lbl">2</div><div class="val">${fmtCost(priceB)}</div></div>
+      <div class="price-cell" data-name="${escapeHtml(name)}" data-value="${escapeHtml(fmtCost(priceC))}"><div class="lbl">3</div><div class="val">${fmtCost(priceC)}</div></div>
+      <div class="price-cell" data-name="${escapeHtml(name)}" data-value="${escapeHtml(fmtCost(priceD))}"><div class="lbl">4</div><div class="val">${fmtCost(priceD)}</div></div>
       ${(typeof cost==='number' && cost>0) ? `<div class="price-cell jy" data-name="${escapeHtml(name)}" data-value="${escapeHtml(fmtCost(cost/1.05*0.97))}"><div class="lbl">今英價</div><div class="val">${fmtCost(cost/1.05*0.97)}</div></div>` : `<div class="price-cell jy" data-name="${escapeHtml(name)}" data-value=""><div class="lbl">今英價</div><div class="val">—</div></div>`}
       <div class="price-cell cost" data-name="${escapeHtml(name)}" data-value="${escapeHtml(fmtCost(cost))}"><div class="lbl">本</div><div class="val">${fmtCost(cost)}</div></div>
     </div>`;
