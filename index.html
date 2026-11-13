@@ -2254,7 +2254,7 @@ let ckCopyText = '';
 function showCheckoutAlert(name, total){
   document.getElementById('ckMsg').innerHTML = '帳單金額 <span class="ck-amt">$' + fmt(total) + '</span> 請登記';
   const d = new Date();
-  ckCopyText = (d.getMonth()+1) + '/' + d.getDate() + ' $' + fmt(total) + ' 未付款  已出貨';   // 例：11/13 $300 未付款  已出貨
+  ckCopyText = [(d.getMonth()+1) + '/' + d.getDate(), '$' + fmt(total), '未付款', '已出貨'].join('  ');   // 四段之間固定空兩格，例：11/13  $300  未付款  已出貨
   document.getElementById('ckAlert').classList.add('on');
   document.getElementById('ckOk').focus();
 }
