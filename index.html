@@ -805,7 +805,7 @@ body.cust-view .prices{grid-template-columns:minmax(0,1fr) !important; max-width
 
 <div id="printArea"></div>
 <div id="ubAlert"><div class="ck-card"><div class="ck-msg">⚠ 找不到這個條碼</div><div class="ub-code" id="ubCode"></div><div class="ub-sub">這個商品尚未建檔，請另外處理</div><button type="button" class="ck-ok" id="ubOk">確定</button></div></div>
-<div id="ckAlert"><div class="ck-card"><div class="ck-msg" id="ckMsg"></div><button type="button" class="ck-ok" id="ckOk">確定</button></div></div>
+<div id="ckAlert"><div class="ck-card"><div class="ck-msg" id="ckMsg"></div><button type="button" class="ck-ok" id="ckOk">複製並關閉</button></div></div>
 <div id="previewOverlay">
   <div class="pv-bar">
     <button type="button" id="pvOut">－ 縮小</button>
@@ -2247,14 +2247,30 @@ function closeUnknownBarcode(){
 document.getElementById('ubOk').addEventListener('click', closeUnknownBarcode);
 document.addEventListener('keydown', e=>{ if((e.key==='Escape'||e.key==='Enter') && document.getElementById('ubAlert').classList.contains('on')){ e.preventDefault(); closeUnknownBarcode(); } });
 
+let ckCopyText = '';
 function showCheckoutAlert(name, total){
   document.getElementById('ckMsg').innerHTML = '帳單金額 <span class="ck-amt">$' + fmt(total) + '</span> 請登記';
+  const d = new Date();
+  ckCopyText = (d.getMonth()+1) + '/' + d.getDate() + ' $' + fmt(total) + ' 未付款  已出貨';   // 例：11/13 $300 未付款  已出貨
   document.getElementById('ckAlert').classList.add('on');
   document.getElementById('ckOk').focus();
 }
 function closeCheckoutAlert(){ document.getElementById('ckAlert').classList.remove('on'); }
-document.getElementById('ckOk').addEventListener('click', closeCheckoutAlert);
-document.addEventListener('keydown', e=>{ if((e.key==='Escape'||e.key==='Enter') && document.getElementById('ckAlert').classList.contains('on')){ e.preventDefault(); closeCheckoutAlert(); } });
+// 按「複製並關閉」（或 Enter）：把「日期 金額 未付款  已出貨」複製到剪貼簿；Esc 只關閉不複製
+function copyAndCloseCheckoutAlert(){
+  const text = ckCopyText;
+  const fallback = () => { try{ const ta = document.createElement('textarea'); ta.value = text; ta.style.cssText = 'position:fixed;left:-9999px;top:0;'; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); ta.remove(); }catch(e){} };
+  try{
+    if(navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).catch(fallback); else fallback();
+  }catch(e){ fallback(); }
+  closeCheckoutAlert();
+}
+document.getElementById('ckOk').addEventListener('click', copyAndCloseCheckoutAlert);
+document.addEventListener('keydown', e=>{
+  if(!document.getElementById('ckAlert').classList.contains('on')) return;
+  if(e.key==='Enter'){ e.preventDefault(); copyAndCloseCheckoutAlert(); }
+  else if(e.key==='Escape'){ e.preventDefault(); closeCheckoutAlert(); }
+});
 
 document.getElementById('checkoutBtn').addEventListener('click', ()=>{
   if(!cart.length){ alert('清單是空的，沒有可結帳的內容'); return; }
