@@ -454,6 +454,9 @@ table.cart-table tr.ret-row .cart-name::before{content:'退貨 '; color:#c0392b;
   .txn-detail td{padding:5px 4px; border-top:1px solid var(--line);}
   .txn-detail td.num, .txn-detail th.num{text-align:right;}
   .txn-detail .txn-actions{margin-top:8px; display:flex; justify-content:flex-end;}
+  .txn-detail .txn-actions{gap:8px; flex-wrap:wrap;}
+  .txn-detail .txn-actions .txn-small-btn{background:transparent; border:1.5px solid var(--ink); color:var(--ink); padding:8px 16px; border-radius:10px; font-size:13px;}
+  .txn-detail .txn-actions .txn-small-btn.danger{border-color:var(--red); color:var(--red);}
   .cart-title-left{display:flex; align-items:center; gap:10px; flex-wrap:wrap;}
   .op-sel{font:inherit; font-size:13px; font-weight:600; box-sizing:border-box; height:32px; min-width:112px; padding:0 8px; border:1.5px solid #1F1F1F; border-radius:8px; background:#fff; color:#1F1F1F;}
   .cart-title-left{flex:1; min-width:0; margin-right:12px;}
