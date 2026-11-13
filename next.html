@@ -564,7 +564,7 @@ body.cust-view .prices{grid-template-columns:minmax(0,1fr) !important; max-width
 </style>
 <script>window.fbReady=new Promise(function(r){window.__fbResolve=r;});</script>
 <script type="module" src="./fb.js"></script>
-<link rel="stylesheet" href="./pick.css?v=20261110e">
+<link rel="stylesheet" href="./pick.css?v=20261113a">
 </head>
 <body class="locked staff">
 
@@ -1603,6 +1603,26 @@ orderInput.addEventListener('keydown', (e)=>{
     e.preventDefault();
     setTimeout(()=> showUnknownBarcode(q), 0);
   }
+});
+
+// 條碼槍防呆：掃描時如果游標不在搜尋框（例如剛按過「加入」、＋－或點到空白處），
+// 條碼槍送出的 Enter 會「按下」目前停在的按鈕，造成上一個商品又被加入一次（數量 1→2）。
+// 所以只要在打單頁、游標不在任何輸入欄／下拉時按下一般字元或數字，就先把游標移回搜尋框，字元會照常輸入進去。
+document.addEventListener('keydown', (e)=>{
+  if(e.ctrlKey || e.metaKey || e.altKey || e.isComposing) return;
+  if(e.key.length !== 1) return;                              // 只處理可印字元（數字、字母、*、-）
+  const tab = document.getElementById('tab-order');
+  if(!tab || !tab.classList.contains('active')) return;
+  const t = e.target;
+  if(t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.tagName === 'SELECT' || t.isContentEditable)) return;
+  if(document.querySelector('.qk-mask.on, #previewOverlay.on, #ubAlert.on, #ckAlert.on, .pk-mask.on')) return;   // 有彈出視窗時不搶游標
+  orderInput.focus({preventScroll:true});
+  orderInput.select();   // 搜尋框若還留著上次的字，第一個字元會直接取代它
+});
+// 按完「加入」後，讓按鈕放開焦點，避免之後的 Enter 又按到它
+orderResultsEl.addEventListener('click', (e)=>{
+  const b = e.target.closest('.add-btn, .qty-plus, .qty-minus');
+  if(b && b.blur) setTimeout(()=> b.blur(), 0);
 });
 
 orderClearBtn.addEventListener('click', ()=>{
@@ -3405,6 +3425,6 @@ setTxnRange('month');
 init();
 </script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.2/Sortable.min.js"></script>
-<script src="./pick.js?v=20261110e"></script>
+<script src="./pick.js?v=20261113a"></script>
 </body>
 </html>

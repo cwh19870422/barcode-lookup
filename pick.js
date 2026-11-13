@@ -12,6 +12,8 @@ const S = {
   slips: new Map(),      // id -> slip
   saved: new Set(),      // 已經存上雲端的 id
   rules: [],             // [{w, count, on, muted}]
+  links: [],             // 算金額：撿貨單品名 → POS 商品的對照（[{q, k, n}]，存在 pickrules/main，大家共用）
+  calcOpen: null,        // 算金額視窗裡正在選商品的那一項
   curId: null,
   tab: 'draft',
   unsub: [],
@@ -43,7 +45,7 @@ panel.innerHTML = `
     <div class="pk-locs" id="pkLocs"></div>
 
     <div class="pk-card">
-      <h4><span>撿貨清單</span><span class="pk-h4r"><button type="button" class="pk-notebtn" id="pkNoteBtn">✎ 備註</button><label class="pk-switch"><input type="checkbox" id="pkShowPrice">顯示金額</label></span></h4>
+      <h4><span>撿貨清單</span><span class="pk-h4r"><button type="button" class="pk-notebtn" id="pkCalcBtn" title="用 POS 的價錢算這張單的金額">$ 算金額</button><button type="button" class="pk-notebtn" id="pkNoteBtn">✎ 備註</button><label class="pk-switch"><input type="checkbox" id="pkShowPrice">顯示金額</label></span></h4>
       <!-- 加入商品：單筆和大量合在同一格，放在清單最上面 -->
       <form class="pk-add pk-addtop" id="pkAddForm">
         <span class="pk-addplus" aria-hidden="true">＋</span>
@@ -88,6 +90,10 @@ panel.innerHTML = `
   <pre class="pk-out" id="pkOutText"></pre>
   <div class="pk-row"><button class="pk-b pri" id="pkCopy" type="button">全部複製</button><span class="pk-hint" id="pkCopyNote"></span></div>
 </div></div>
+<div class="pk-scrim" id="pkCalcSheet" style="display:none"><div class="pk-sheet pk-calc" role="dialog" aria-label="算金額">
+  <h3>算金額 <button class="pk-b" type="button" data-pkcclose>關閉</button></h3>
+  <div id="pkCalcBody"></div>
+</div></div>
 <div class="pk-toast" id="pkToast" style="display:none"></div>`;
 
 let toastT;
@@ -126,7 +132,7 @@ async function saveNow(s){
   try{ await FB.savePickslip(s); S.saved.add(s.id); }
   catch(e){ toast('存檔失敗：' + (e && e.code === 'permission-denied' ? '沒有權限' : (e && e.message || e))); }
 }
-function saveRules(){ if(window.FB && FB.currentUser()) FB.savePickRules({ words: S.rules }).catch(e => toast('詞庫存檔失敗：' + (e.message || e))); }
+function saveRules(){ if(window.FB && FB.currentUser()) FB.savePickRules({ words: S.rules, links: S.links }).catch(e => toast('詞庫存檔失敗：' + (e.message || e))); }
 
 // ---------- 簡化詞 ----------
 const ruleOf = w => S.rules.find(r => r.w === w);
@@ -344,7 +350,7 @@ const Pick = {
     Pick.stop();
     if(!window.FB || !FB.listenPickslips) return;
     S.unsub.push(FB.listenPickslips(onSlips, e => toast('讀取撿貨單失敗：' + (e && e.code === 'permission-denied' ? '沒有權限（Firebase 規則還沒更新？）' : (e.message || e)))));
-    S.unsub.push(FB.listenPickRules(r => { S.rules = Array.isArray(r && r.words) ? r.words : []; renderRules(); }, () => {}));
+    S.unsub.push(FB.listenPickRules(r => { S.rules = Array.isArray(r && r.words) ? r.words : []; S.links = Array.isArray(r && r.links) ? r.links : []; renderRules(); if(calcSheet.style.display !== 'none') renderCalc(); }, () => {}));
   },
   stop(){ S.unsub.forEach(f => { try{ f(); }catch(e){} }); S.unsub = []; },
   refreshCustomers(){ renderCustList(); renderGrade(); }
@@ -533,6 +539,191 @@ $('pkCopy').addEventListener('click', () => {
   };
   try{ navigator.clipboard.writeText(t).then(done, fallback); }catch(e){ fallback(); }
 });
+
+// ---------- 算金額：用 POS 的價錢算這張單（只算有貨、已留的）----------
+const calcSheet = $('pkCalcSheet');
+const posRows = () => (typeof rows !== 'undefined' && Array.isArray(rows)) ? rows : [];
+const posCusts = () => (typeof customers !== 'undefined' && Array.isArray(customers)) ? customers : [];
+// 比對用：全形轉半形、轉小寫、去掉空白和符號
+// 香水濃度：英文縮寫換成中文，兩邊才比得起來（淡香水=EDT、淡香精=EDP、香精=Parfum、古龍水=EDC）
+const CONC = [[/eau\s*de\s*parfum|\bedp\b/g, '淡香精'], [/eau\s*de\s*toilette|\bedt\b/g, '淡香水'], [/eau\s*de\s*cologne|\bedc\b/g, '古龍水'], [/\bextrait\b|\bparfum\b|\bperfume\b/g, '香精']];
+const unify = t => { let v = String(t || '').normalize('NFKC').toLowerCase(); CONC.forEach(([re, w]) => { v = v.replace(re, ' ' + w + ' '); }); return v; };
+const concOf = t => /淡香精/.test(t) ? 'edp' : /淡香水/.test(t) ? 'edt' : /古龍水/.test(t) ? 'edc' : /香精/.test(t) ? 'p' : '';
+const norm = t => unify(t).replace(/[\s()（）\[\]【】「」#＃*×,，.。、\/\-_~～:：;；!！?？'"+]/g, '');
+// 容量：抓出 ml / g / L，換成同一個單位比大小
+const volOf = t => { const m = String(t).normalize('NFKC').match(/(\d+(?:\.\d+)?)\s*(ml|毫升|g|克|公克|l|公升)(?![a-z])/i); if(!m) return null; const v = +m[1], u = m[2].toLowerCase(); return (u === 'l' || u === '公升') ? v * 1000 : v; };
+// T包（試用瓶／簡裝）：POS 品名寫「T包」或結尾一個「T」；有沒有 T包 要一致
+const TEST_RE = /t包|\btester\b|(?:^|\s)t(?=\s|$)/i;
+const isT = t => TEST_RE.test(String(t).normalize('NFKC'));
+const SIZE_RE = /(?:^|\s)(大|中|小)(?:瓶|罐|支|條|號|容量)?(?=\s|$)/;
+// 雙字切片：中文和英數字分開切（「心100ml」不會切出「心1」）
+const grams = t => { const g = new Set(); (t.match(/[\u3400-\u9fff]+|[^\u3400-\u9fff]+/g) || []).forEach(seg => { if(seg.length === 1) g.add(seg); for(let i = 0; i < seg.length - 1; i++) g.add(seg.slice(i, i + 2)); }); return g; };
+const nums = t => (String(t).normalize('NFKC').match(/\d+(\.\d+)?/g) || []);
+let IDX = null, IDXsrc = null;
+function index(){
+  const R = posRows(); if(IDX && IDXsrc === R && IDX.n === R.length) return IDX;
+  const list = [];
+  R.forEach(r => { const nm = String(r[4] || '').trim(); if(!nm || nm === '無' || nm === 'X') return;
+    const n = norm(nm), t = isT(nm), core = norm(t ? String(nm).normalize('NFKC').replace(new RegExp(TEST_RE.source, 'gi'), ' ') : nm);
+    const sz = (String(nm).normalize('NFKC').match(SIZE_RE) || [])[1] || '';
+    list.push({ r, n, core, g: grams(core), num: nums(nm), c: concOf(n), v: volOf(nm), t, sz, k: String(r[3] || r[2] || '') }); });
+  IDX = { list, n: R.length }; IDXsrc = R; return IDX;
+}
+const rowKey = x => x.k + '|' + x.n;
+function findByLink(l){ return index().list.find(x => x.k === l.k && x.r[4] === l.n) || index().list.find(x => x.k === l.k) || null; }
+// 找最像的商品：雙字比對（Dice）＋容量數字要一樣
+const guessMemo = new Map();
+function guess(name, top){
+  const key = (top || 5) + '|' + name, ix = index();
+  if(guessMemo.get('@') !== ix) { guessMemo.clear(); guessMemo.set('@', ix); }
+  if(guessMemo.has(key)) return guessMemo.get(key);
+  const r = guessRaw(name, top); guessMemo.set(key, r); return r;
+}
+function guessRaw(name, top){
+  const sm = String(name).normalize('NFKC').match(SIZE_RE), size = sm ? sm[1] : '';   // 只寫「大／中／小」
+  const qt = isT(name);
+  let base = String(name).normalize('NFKC');
+  if(size) base = base.replace(SIZE_RE, ' ');
+  if(qt) base = base.replace(new RegExp(TEST_RE.source, 'gi'), ' ');
+  const q = norm(base), qg = grams(q), qn = nums(base), qc = concOf(q);
+  if(!q) return [];
+  const out = [];
+  for(const x of index().list){
+    let sc;
+    if(x.core === q) sc = 1;
+    else { let hit = 0; qg.forEach(g => { if(x.g.has(g)) hit++; }); if(!hit) continue;
+      const cover = hit / qg.size, dice = 2 * hit / (qg.size + x.g.size);   // cover：打的字有多少出現在 POS 品名裡
+      sc = cover * 0.75 + dice * 0.25;
+      if(x.core.includes(q)) sc = Math.max(sc, 0.85 + 0.1 * dice);
+      if(qn.length && !qn.every(v => x.num.includes(v))) sc *= 0.55;   // 容量、號碼對不上就大扣分（只寫 100 也算對到 100ml）
+    }
+    if(qc && x.c && qc !== x.c) sc *= 0.5;   // 淡香水／淡香精／香精 不一樣就大扣分
+    if(qt !== x.t) sc *= 0.7;                 // 有寫 T包 就找 T包，沒寫就找一般的
+    out.push({ x, sc });
+  }
+  out.sort((a, b) => b.sc - a.sc);
+  // 只寫「大／中／小」：在分數差不多的同款商品裡，照品名的大中小或容量挑一個
+  if(size && out.length > 1){
+    const fam = out.filter(o => o.sc >= out[0].sc - 0.12);
+    let pick = fam.filter(o => o.x.sz === size);
+    if(!pick.length){
+      const vs = [...new Set(fam.map(o => o.x.v).filter(v => v != null))].sort((a, b) => a - b);
+      const want = vs.length < 2 ? null : size === '大' ? vs[vs.length - 1] : size === '小' ? vs[0] : (vs.length % 2 ? vs[(vs.length - 1) / 2] : null);
+      pick = want == null ? [] : fam.filter(o => o.x.v === want);
+    }
+    if(pick.length){ const top0 = out[0].sc; pick.forEach(o => { o.sc = Math.min(0.99, Math.max(top0 + 0.15, top0 >= 0.6 ? 0.86 : 0)); }); out.sort((a, b) => b.sc - a.sc); }
+  }
+  return out.slice(0, top || 5);
+}
+// 一項商品對到哪個 POS 商品：記住的 → 很確定的自動對上 → 不確定（要人選）
+function matchOf(it){
+  const q = norm(it.name);
+  const l = S.links.find(v => v.q === q);
+  if(l){ const x = findByLink(l); if(x) return { x, how: 'link' }; }
+  const g = guess(it.name, 2);
+  if(g[0] && g[0].sc >= 0.8 && (!g[1] || g[0].sc - g[1].sc >= 0.1 || g[1].x.n === g[0].x.n)) return { x: g[0].x, how: 'auto' };
+  return { x: null, how: 'none', best: g[0] && g[0].sc >= 0.35 ? g[0].x : null };
+}
+function calcCust(){
+  const name = (cur().customer || '').trim(); if(!name) return null;
+  return posCusts().find(c => (c.name || '').trim() === name) || posCusts().find(c => (c.nick || '').trim() === name) || null;
+}
+const gradeNow = () => { const c = calcCust(); return c ? (c.grade || 'A') : (cur().calcGrade || 'A'); };
+const GI = { A: 6, B: 7, C: 8, D: 9 };
+const priceAt = (x, g) => { const v = parseFloat(String(x.r[GI[g] || 6]).replace(/,/g, '')); return isNaN(v) ? null : v; };
+const money = v => (Math.round(v * 10) / 10).toLocaleString('en-US');
+function renderCalc(){
+  const s = cur(), c = calcCust(), g = gradeNow();
+  const body = $('pkCalcBody');
+  if(!index().list.length){ body.innerHTML = '<p class="pk-hint">商品資料還沒載入完成，請稍等一下再按一次。</p>'; return; }
+  const items = normals().filter(it => kOf(it) > 0);
+  const skipped = s.items.length - items.length;
+  let total = 0, miss = 0;
+  const lines = items.map(it => {
+    const m = matchOf(it), q = kOf(it);
+    const manual = it.price != null, unit = manual ? it.price : (m.x ? priceAt(m.x, g) : null);
+    const ok = unit != null && (manual || m.x);
+    if(ok) total += unit * q; else miss++;
+    const tag = manual ? `<span class="pk-cm man">手填價錢</span>${m.x ? ' <span class="pk-cm-n">' + esc(m.x.r[4]) + '</span>' : ''}`
+      : m.x ? `<span class="pk-cm ok">✓ ${m.how === 'link' ? '已對上' : '自動對上'}</span> <span class="pk-cm-n">${esc(m.x.r[4])}</span>`
+      : `<span class="pk-cm q">？ 點這裡選商品</span>${m.best ? ' <span class="pk-cm-n">可能是：' + esc(m.best.r[4]) + '</span>' : ''}`;
+    const open = S.calcOpen === it.id;
+    let pick = '';
+    if(open){
+      const qv = S.calcQ || '';
+      const cands = qv.trim() ? searchRows(qv) : guess(it.name, 5).map(v => v.x);
+      pick = `<div class="pk-cpick">
+        <input class="pk-in" id="pkCalcQ" placeholder="搜尋 POS 商品（品名、條碼或編號）" value="${esc(qv)}" autocomplete="off">
+        ${cands.length ? cands.map(x => `<button type="button" class="pk-copt" data-pick="${esc(rowKey(x))}"><span>${esc(x.r[4])}</span><b>${priceAt(x, g) == null ? '—' : '$' + money(priceAt(x, g))}</b></button>`).join('') : '<p class="pk-hint">找不到，換個關鍵字試試。</p>'}
+        ${S.links.some(v => v.q === norm(it.name)) ? '<button type="button" class="pk-b" data-unlink="1">取消這個對照</button>' : ''}
+      </div>`;
+    }
+    return `<li class="pk-cl${ok ? '' : ' miss'}${open ? ' open' : ''}" data-cid="${it.id}">
+      <button type="button" class="pk-crow" data-copen="1">
+        <span class="pk-cnm"><span class="nm">${esc(it.name)}</span><span class="sub">${tag}</span></span>
+        <span class="pk-cq">${unit == null ? '—' : '$' + money(unit)} × ${q}</span>
+        <span class="pk-csub">${ok ? '$' + money(unit * q) : '未算'}</span>
+      </button>${pick}</li>`;
+  }).join('');
+  body.innerHTML = `
+    <div class="pk-cgrade">${c ? `<span>${esc(c.name)}</span><span class="grade-badge grade-${esc(g)}">${esc(g)}</span><span class="pk-hint">依客戶資料的會員等級</span>`
+      : `<span>${esc((s.customer || '').trim() || '未填客戶')}</span><span class="pk-hint">客戶資料裡找不到，請選等級：</span><span class="pk-cseg">${['A','B','C','D'].map(x => `<button type="button" data-cg="${x}" class="${g === x ? 'on' : ''}">${x}</button>`).join('')}</span>`}</div>
+    <p class="pk-hint">只算有貨、已留的商品（只留一部分的照已留的數量算）。有手填價錢的用手填的。點一項可以改對到哪個商品，選過會記住，下次自動對上。</p>
+    ${items.length ? `<ul class="pk-clist">${lines}</ul>` : '<p class="pk-hint" style="text-align:center;padding:12px 0">這張單還沒有已留的商品。</p>'}
+    <div class="pk-ctotal"><span>${items.length} 項${skipped ? `<span class="pk-hint">（另有 ${skipped} 項未留或預訂，沒算）</span>` : ''}</span><b>總額 $${money(total)}</b></div>
+    ${miss ? `<p class="pk-cwarn">還有 ${miss} 項沒對上商品，沒算進總額。</p>` : ''}
+    ${items.length && typeof addToCart === 'function' ? `<div class="pk-row" style="justify-content:flex-end"><button class="pk-b pri" type="button" data-toorder="1">轉到打單 →</button></div>` : ''}`;
+  if(open()){ const inp = $('pkCalcQ'); if(inp && S.calcFocus){ inp.focus(); inp.setSelectionRange(inp.value.length, inp.value.length); } }
+  function open(){ return !!S.calcOpen; }
+}
+function searchRows(qv){
+  const toks = qv.trim().split(/\s+/).map(norm).filter(Boolean); if(!toks.length) return [];
+  const raw = qv.trim();
+  const out = [];
+  for(const x of index().list){
+    if(x.k === raw || String(x.r[2]) === raw || String(x.r[3]) === raw || toks.every(t => x.n.includes(t))){ out.push(x); if(out.length >= 8) break; }
+  }
+  return out;
+}
+$('pkCalcBtn').addEventListener('click', () => { if(!hasContent(cur())){ toast('這張單還是空的'); return; } S.calcOpen = null; S.calcQ = ''; renderCalc(); calcSheet.style.display = 'flex'; });
+calcSheet.addEventListener('click', e => {
+  if(e.target === calcSheet || e.target.hasAttribute('data-pkcclose')){ calcSheet.style.display = 'none'; return; }
+  const cg = e.target.closest('[data-cg]'); if(cg){ cur().calcGrade = cg.dataset.cg; touch(); renderCalc(); return; }
+  if(e.target.closest('[data-toorder]')){ toOrder(); return; }
+  const li = e.target.closest('.pk-cl'); if(!li) return;
+  const it = cur().items.find(i => i.id === li.dataset.cid); if(!it) return;
+  if(e.target.closest('[data-copen]')){ S.calcOpen = S.calcOpen === it.id ? null : it.id; S.calcQ = ''; S.calcFocus = false; renderCalc(); return; }
+  const pk = e.target.closest('[data-pick]');
+  if(pk){ const x = index().list.find(v => rowKey(v) === pk.dataset.pick); if(!x) return;
+    const q = norm(it.name); S.links = S.links.filter(v => v.q !== q); S.links.push({ q, k: x.k, n: x.r[4] });
+    saveRules(); S.calcOpen = null; renderCalc(); toast('已記住：' + it.name + ' → ' + x.r[4]); return; }
+  if(e.target.closest('[data-unlink]')){ const q = norm(it.name); S.links = S.links.filter(v => v.q !== q); saveRules(); renderCalc(); }
+});
+// 轉到打單：把算好的商品（有貨、已留）放進打單的出貨清單，客人和等級一起帶過去
+function toOrder(){
+  const items = normals().filter(it => kOf(it) > 0);
+  const lines = items.map(it => ({ it, m: matchOf(it), q: kOf(it) })).filter(l => l.m.x || l.it.price != null);
+  const miss = items.length - lines.length;
+  if(!lines.length){ toast('沒有對上商品的項目可以轉'); return; }
+  if(miss && !confirm(`還有 ${miss} 項沒對上商品，這幾項不會轉過去。要繼續嗎？`)) return;
+  if((cart.length || selectedCustomer) && typeof holdCurrentOrder === 'function'){
+    if(!confirm('打單畫面現在還有內容，要先把它暫存起來，再轉這張撿貨單嗎？（取消的話不會轉）')) return;
+    if(!holdCurrentOrder()) return;
+  }
+  cart = []; if(typeof currentTxn !== 'undefined') currentTxn = null;
+  const c = calcCust();
+  if(c) selectCustomer({ ...c }); else { resetOrderCustomerUI(); setPriceMode(gradeNow()); }
+  lines.forEach(({ it, m, q }) => {
+    if(m.x){ const key = addToCart(m.x.r, q); if(it.price != null){ const ci = cart.find(x => x.key === key); if(ci) ci.unitPrice = it.price; } }
+    else cart.push({ key: 'pk-' + it.id, code: '', barcode: '', name: it.name, base: null, qty: q, unitPrice: it.price, note: '' });
+  });
+  renderCart(); if(typeof updateEditBanner === 'function') updateEditBanner();
+  calcSheet.style.display = 'none';
+  switchTab('order');
+  if(!c) setTimeout(() => alert(`已轉到打單：${lines.length} 項\n客戶資料裡找不到「${(cur().customer || '').trim() || '未填客戶'}」，請在打單畫面選客人（價錢已先用 ${gradeNow()} 級）`), 80);
+}
+calcSheet.addEventListener('input', e => { if(e.target.id === 'pkCalcQ'){ S.calcQ = e.target.value; S.calcFocus = true; renderCalc(); } });
+document.addEventListener('keydown', e => { if(e.key === 'Escape') calcSheet.style.display = 'none'; });
 
 // 一開始先放一張空白單，雲端資料到了再換成最近那張
 pickDefault(); renderAll();
