@@ -80,6 +80,7 @@ panel.innerHTML = `
 
     <div class="pk-bar">
       <div class="sum" id="pkSum"></div>
+      <button class="pk-b pk-delb" id="pkDel" type="button" style="display:none">刪除</button>
       <button class="pk-b" id="pkSave" type="button">暫存</button>
       <button class="pk-b" id="pkDone" type="button">完成</button>
       <button class="pk-b pri" id="pkOut" type="button">一鍵輸出</button>
@@ -246,7 +247,6 @@ function renderSide(){
       const tag = !s.items.length ? '' : n ? `<span class="pk-left">${n} 項未撿</span>` : '<span class="pk-left ok">✓ 撿好</span>';
       return `<button type="button" class="pk-ord${n ? ' pending' : ''}${s.id === S.curId && !S.closed ? ' cur' : ''}" data-pkopen="${s.id}"><span class="t"><span class="nm">${esc(s.customer || '（未填客戶）')}</span><span class="tr"><span class="pk-pill">${esc(s.location)}</span>${tag}${s.status === 'done' ? '<span class="pk-pill done">已完成</span>' : ''}</span></span><span class="m"><span>${s.items.length} 項 · 已留 ${k}/${s.items.length}</span>${s.items.length ? '<span class="d">' + keepDays(s) + '天</span>' : ''}</span></button>`; }).join('')
       : `<div class="pk-empty">${S.tab === 'done' ? '還沒有完成的單' : '沒有進行中的單'}</div>`}
-    ${canDelete() && !S.closed && S.slips.has(S.curId) && hasContent(cur()) ? `<button class="pk-b ${S.confirmDel === S.curId ? 'red' : ''}" type="button" data-pk="del">${S.confirmDel === S.curId ? '確定刪除這張單？' : '刪除這張單'}</button>` : ''}
     <p class="pk-hint">單子 3 台電腦即時同步。</p>`;
 }
 function renderLocs(){
@@ -299,6 +299,7 @@ function renderSum(){
   const s = cur(); const n = s.items.length, k = s.items.filter(i => i.reserved).length, q = s.items.reduce((a, b) => a + (b.preorder && b.tbd ? 0 : (+b.qty || 0)), 0);
   $('pkSum').innerHTML = `<b>${n}</b> 項 · 共 ${q} 件 · 已留 ${k}/${n}${s.status === 'done' ? ' <span class="pk-pill done">已完成</span>' : ''}`;
   $('pkDone').textContent = s.status === 'done' ? '改回進行中' : '完成';
+  $('pkDel').style.display = canDelete() && (hasContent(s) || S.saved.has(s.id)) ? '' : 'none';
 }
 function renderRules(){
   const list = S.rules.slice().sort((a, b) => (b.on - a.on) || (b.count - a.count));
@@ -556,10 +557,27 @@ $('pkDone').addEventListener('click', async () => {
   renderSum(); renderSide(); toast(s.status === 'done' ? '已完成，可在左邊「已完成」找到' : '改回進行中');
 });
 const outSheet = $('pkOutSheet');
-// 一鍵輸出：顯示文字，同時把這張單暫存起來、編輯區收起來（輸出視窗還是照常可以複製）
+// 刪除這張撿貨單（老闆帳號才可以刪；會先確認一次）
+$('pkDel').addEventListener('click', async () => {
+  const s = cur(); if(!s) return;
+  if(!confirm(`確定要刪除${(s.customer || '').trim() ? '「' + s.customer.trim() + '」的' : '這張'}撿貨單嗎？刪除後沒辦法復原。`)) return;
+  const id = s.id; clearTimeout(saveT);
+  try{ if(S.saved.has(id)) await FB.deletePickslip(id); }catch(err){ toast('刪除失敗：' + (err && err.code === 'permission-denied' ? '沒有權限' : (err.message || err))); return; }
+  S.slips.delete(id); S.saved.delete(id); pickDefault(); renderAll(); toast('已刪除');
+});
+// 一鍵輸出：直接複製到剪貼簿，同時把這張單暫存起來、編輯區收起來；複製失敗才打開視窗讓你手動複製
+function copyText(t){
+  return new Promise(ok => {
+    const legacy = () => { let r = false; try{ const ta = document.createElement('textarea'); ta.value = t; ta.style.position = 'fixed'; ta.style.opacity = '0'; document.body.appendChild(ta); ta.select(); r = document.execCommand('copy'); ta.remove(); }catch(e){} ok(r); };
+    try{ navigator.clipboard.writeText(t).then(() => ok(true), legacy); }catch(e){ legacy(); }
+  });
+}
 $('pkOut').addEventListener('click', async () => {
   const s = cur(); if(!hasContent(s)){ toast('這張單還是空的'); return; }
-  $('pkOutText').textContent = buildText(); $('pkCopyNote').textContent = ''; outSheet.style.display = 'flex';
+  const t = buildText();
+  const copied = await copyText(t);
+  if(copied) toast('已複製，可以直接貼上');
+  else { $('pkOutText').textContent = t; $('pkCopyNote').textContent = '沒辦法自動複製，請按「全部複製」'; outSheet.style.display = 'flex'; }
   clearTimeout(saveT); s.updatedAt = Date.now(); await saveNow(s);
   S.closed = true; S.idle = false; S.confirmDel = null; renderAll();
 });

@@ -271,3 +271,7 @@ textarea.pk-in.pk-src:focus{box-shadow:inset 0 0 0 2px var(--blue);}
 .pk-ctotal b{font-size:22px; font-variant-numeric:tabular-nums;}
 .pk-cwarn{margin:0; color:var(--sg-pend); font-weight:700; font-size:13px; text-align:right;}
 @media (max-width:560px){ .pk-cq{display:none;} }
+
+/* 底部列的刪除鈕：白底紅字，跟其他按鈕分開 */
+#tab-pick .pk-b.pk-delb{background:#fff; color:#B3261E; box-shadow:inset 0 0 0 1.5px #E7C3BF;}
+#tab-pick .pk-b.pk-delb:hover{background:#FBEDEA;}
