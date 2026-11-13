@@ -704,10 +704,10 @@ function renderCalc(){
     let pick = '';
     if(open){
       const qv = S.calcQ || '';
-      const cands = qv.trim() ? searchRows(qv) : guess(it.name, 5).map(v => v.x);
+      const cands = candsFor(it, qv);
       pick = `<div class="pk-cpick">
         <input class="pk-in" id="pkCalcQ" placeholder="搜尋 POS 商品（品名、條碼或編號）" value="${esc(qv)}" autocomplete="off">
-        ${cands.length ? cands.map(x => `<button type="button" class="pk-copt" data-pick="${esc(rowKey(x))}"><span>${esc(x.r[4])}</span><b>${priceAt(x, g) == null ? '—' : '$' + money(priceAt(x, g))}</b></button>`).join('') : '<p class="pk-hint">找不到，換個關鍵字試試。</p>'}
+        <div id="pkCalcOpts">${optsHTML(cands, g)}</div>
         ${S.links.some(v => v.q === norm(it.name)) ? '<button type="button" class="pk-b" data-unlink="1">取消這個對照</button>' : ''}
       </div>`;
     }
@@ -729,6 +729,10 @@ function renderCalc(){
   if(open()){ const inp = $('pkCalcQ'); if(inp && S.calcFocus){ inp.focus(); inp.setSelectionRange(inp.value.length, inp.value.length); } }
   function open(){ return !!S.calcOpen; }
 }
+function candsFor(it, qv){ return qv.trim() ? searchRows(qv) : guess(it.name, 5).map(v => v.x); }
+function optsHTML(cands, g){
+  return cands.length ? cands.map(x => `<button type="button" class="pk-copt" data-pick="${esc(rowKey(x))}"><span>${esc(x.r[4])}</span><b>${priceAt(x, g) == null ? '—' : '$' + money(priceAt(x, g))}</b></button>`).join('') : '<p class="pk-hint">找不到，換個關鍵字試試。</p>';
+}
 function searchRows(qv){
   const toks = qv.trim().split(/\s+/).map(norm).filter(Boolean); if(!toks.length) return [];
   const raw = qv.trim();
@@ -736,7 +740,7 @@ function searchRows(qv){
   for(const x of index().list){
     if(x.k === raw || String(x.r[2]) === raw || String(x.r[3]) === raw || toks.every(t => x.n.includes(t))){ out.push(x); if(out.length >= 8) break; }
   }
-  return out;
+  return out.length ? out : guess(qv, 8).filter(v => v.sc >= 0.3).map(v => v.x);   // 完全符合的找不到，就列最像的
 }
 $('pkCalcBtn').addEventListener('click', () => { if(!hasContent(cur())){ toast('這張單還是空的'); return; } S.calcOpen = null; S.calcQ = ''; renderCalc(); calcSheet.style.display = 'flex'; });
 calcSheet.addEventListener('click', e => {
@@ -775,7 +779,13 @@ function toOrder(){
   switchTab('order');
   if(!c) setTimeout(() => alert(`已轉到打單：${lines.length} 項\n客戶資料裡找不到「${(cur().customer || '').trim() || '未填客戶'}」，請在打單畫面選客人（價錢已先用 ${gradeNow()} 級）`), 80);
 }
-calcSheet.addEventListener('input', e => { if(e.target.id === 'pkCalcQ'){ S.calcQ = e.target.value; S.calcFocus = true; renderCalc(); } });
+// 搜尋框：只更新下面的選項，不重畫整個視窗（中文輸入法選字時才不會被打斷）
+function refreshOpts(inp){
+  S.calcQ = inp.value; const it = cur().items.find(i => i.id === S.calcOpen); const box = $('pkCalcOpts');
+  if(it && box) box.innerHTML = optsHTML(candsFor(it, S.calcQ), gradeNow());
+}
+calcSheet.addEventListener('input', e => { if(e.target.id === 'pkCalcQ' && !e.isComposing) refreshOpts(e.target); });
+calcSheet.addEventListener('compositionend', e => { if(e.target.id === 'pkCalcQ') refreshOpts(e.target); });
 document.addEventListener('keydown', e => { if(e.key === 'Escape') calcSheet.style.display = 'none'; });
 
 // 一開始先放一張空白單，雲端資料到了再換成最近那張
