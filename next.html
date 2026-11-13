@@ -136,6 +136,15 @@
   /* 搜尋頁搜尋框：與打單頁同樣的白底浮起樣式 */
   #tab-search{--sbh:50px;}
   #tab-search .search-box{background:#fff; border-radius:14px; box-shadow:0 4px 14px rgba(0,0,0,.12); padding:0 8px 0 16px; min-height:var(--sbh); height:var(--sbh); box-sizing:border-box;}
+  /* 客戶分頁：搜尋框白底黑框加陰影，跟搜尋、打單一樣明顯；排序切換 */
+  #tab-customers .search-box{background:#fff; border-radius:14px; box-shadow:0 0 0 1.5px #1F1F1F, 0 4px 14px rgba(0,0,0,.10); padding:0 8px 0 16px; min-height:var(--sbh); height:var(--sbh); box-sizing:border-box; color:#1F1F1F;}
+  #tab-customers .search-box input{font-size:17px;}
+  #tab-customers .search-box:focus-within{box-shadow:0 0 0 2.5px #1F1F1F, 0 6px 18px rgba(0,0,0,.14);}
+  #tab-customers .status-row{display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap;}
+  .cust-sort{display:inline-flex; align-items:center; gap:6px; font-size:13px; color:var(--secondary);}
+  .cust-sort .seg{display:inline-flex; background:var(--gray-fill); border-radius:9px; padding:2px;}
+  .cust-sort .seg button{border:0; background:transparent; font:600 13px var(--sysfont, inherit); color:var(--secondary); padding:5px 12px; border-radius:7px; cursor:pointer;}
+  .cust-sort .seg button.on{background:#1F1F1F; color:#fff;}
   #tab-search .search-box svg{color:var(--blue);}
   #tab-search .search-box input{padding:0 4px; height:100%; font-size:16px;}
   #tab-search .search-box input::placeholder{color:#6F6A64;}
@@ -756,10 +765,11 @@ body.cust-view .prices{grid-template-columns:minmax(0,1fr) !important; max-width
   <section class="tab-panel" id="tab-customers">
     <div class="search-box sticky-controls" style="margin-bottom:14px;">
       <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-      <input id="custListSearch" type="text" placeholder="搜尋客戶姓名或電話…" autocomplete="off">
+      <input id="custListSearch" type="text" placeholder="搜尋客戶：姓名、暱稱、電話或會員號碼" autocomplete="off">
     </div>
     <div class="status-row">
       <span id="custListStatus">載入中…</span>
+      <span class="cust-sort">排序<span class="seg" id="custSortSeg"><button type="button" data-sort="name">姓名</button><button type="button" data-sort="no">會員號碼</button><button type="button" data-sort="grade">會員等級</button></span></span>
     </div>
     <div class="cust-table-wrap">
       <table class="cust-list">
@@ -2561,11 +2571,27 @@ const custListSearch = document.getElementById('custListSearch');
 const custListBody = document.getElementById('custListBody');
 const custListStatus = document.getElementById('custListStatus');
 
+// 客戶清單排序：姓名（原本的順序）／會員號碼／會員等級（A→D，同等級再照會員號碼）；記在這台電腦
+let custSort = 'name';
+try{ custSort = localStorage.getItem('joeda.custSort') || 'name'; }catch(e){}
+const natCmp = (a, b) => String(a || '').localeCompare(String(b || ''), 'zh-Hant', { numeric: true, sensitivity: 'base' });
+const noCmp = (a, b) => { const x = (a.memberNo || '').trim(), y = (b.memberNo || '').trim(); if(!x !== !y) return x ? -1 : 1; return natCmp(x, y) || natCmp(a.name, b.name); };
+function sortCusts(list){
+  if(custSort === 'no') return list.slice().sort(noCmp);
+  if(custSort === 'grade') return list.slice().sort((a, b) => natCmp(a.grade || 'A', b.grade || 'A') || noCmp(a, b));
+  return list;
+}
+document.getElementById('custSortSeg').addEventListener('click', e => {
+  const b = e.target.closest('[data-sort]'); if(!b) return;
+  custSort = b.dataset.sort; try{ localStorage.setItem('joeda.custSort', custSort); }catch(err){}
+  renderCustomerList();
+});
 function renderCustomerList(){
+  document.querySelectorAll('#custSortSeg button').forEach(b => b.classList.toggle('on', b.dataset.sort === custSort));
   const q = custListSearch.value.trim().toLowerCase();
-  const list = customers.filter(c =>
+  const list = sortCusts(customers.filter(c =>
     !q || custMatch(c, q)
-  );
+  ));
   custListStatus.textContent = customers.length
     ? `共 ${customers.length} 位客戶，顯示 ${list.length} 位`
     : '目前沒有客戶資料，請到「⚙ 管理客戶」新增或匯入';
