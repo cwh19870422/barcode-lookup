@@ -64,7 +64,7 @@ panel.innerHTML = `
       <ul class="pk-list" id="pkPre"></ul>
       <div class="pk-sep wait" id="pkWaitSep" style="display:none">等到貨</div>
       <ul class="pk-list" id="pkWait"></ul>
-      <p class="pk-hint">加入商品：按 Enter 或「加入」，Shift+Enter 換行；貼上好幾行會一次整理加入。數量可以寫 *3、x3、+3、留3、5pcs。點號碼切換：一般 → 預訂 → 等到貨 → 一般（預訂、等到貨會移到最下面）。數量可以清空不填。按住 ⠿ 拖曳調整順序。點圓圈＝全部已留，長按（或按右鍵）圓圈可改留幾個。</p>
+      <p class="pk-hint" hidden>加入商品：按 Enter 或「加入」，Shift+Enter 換行；貼上好幾行會一次整理加入。數量可以寫 *3、x3、+3、留3、5pcs。點號碼切換：一般 → 預訂 → 等到貨 → 一般（預訂、等到貨會移到最下面）。數量可以清空不填。按住 ⠿ 拖曳調整順序。點圓圈＝全部已留，長按（或按右鍵）圓圈可改留幾個。</p>
       <div class="pk-notewrap" id="pkNoteWrap" style="display:none">   <!-- 備註：平常藏起來，按標題列的「✎ 備註」才打開 -->
         <label class="pk-note-lbl" for="pkNote">備註</label>
         <textarea class="pk-in pk-note" id="pkNote" rows="2" placeholder="例如：週五來拿、要開發票…（輸出時會放在最下面）"></textarea>
@@ -83,7 +83,7 @@ panel.innerHTML = `
       <button class="pk-b pk-delb" id="pkDel" type="button" style="display:none">刪除</button>
       <button class="pk-b" id="pkSave" type="button">暫存</button>
       <button class="pk-b" id="pkDone" type="button">完成</button>
-      <button class="pk-b pri" id="pkOut" type="button">一鍵輸出</button>
+      <button class="pk-b pri" id="pkOut" type="button">快速複製</button>
     </div>
   </div>
 </div>

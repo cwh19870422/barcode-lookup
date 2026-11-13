@@ -454,6 +454,9 @@ table.cart-table tr.ret-row .cart-name::before{content:'退貨 '; color:#c0392b;
   .txn-detail td{padding:5px 4px; border-top:1px solid var(--line);}
   .txn-detail td.num, .txn-detail th.num{text-align:right;}
   .txn-detail .txn-actions{margin-top:8px; display:flex; justify-content:flex-end;}
+  .txn-detail .txn-actions{gap:8px; flex-wrap:wrap;}
+  .txn-detail .txn-actions .txn-small-btn{background:transparent; border:1.5px solid var(--ink); color:var(--ink); padding:8px 16px; border-radius:10px; font-size:13px;}
+  .txn-detail .txn-actions .txn-small-btn.danger{border-color:var(--red); color:var(--red);}
   .cart-title-left{display:flex; align-items:center; gap:10px; flex-wrap:wrap;}
   .op-sel{font:inherit; font-size:13px; font-weight:600; box-sizing:border-box; height:32px; min-width:112px; padding:0 8px; border:1.5px solid #1F1F1F; border-radius:8px; background:#fff; color:#1F1F1F;}
   .cart-title-left{flex:1; min-width:0; margin-right:12px;}
@@ -589,11 +592,11 @@ body.cust-view .prices{grid-template-columns:minmax(0,1fr) !important; max-width
 
 <div class="tabs-sticky-wrap" id="tabsStickyWrap">
   <div class="tabs">
+    <button class="tab-btn" data-tab="pick"><span class="tic">📦</span>撿貨</button>
     <button class="tab-btn active" data-tab="search"><span class="tic">🔍</span>搜尋</button>
     <button class="tab-btn" data-tab="order"><span class="tic">🧾</span>打單</button>
-    <button class="tab-btn" data-tab="txns"><span class="tic">📊</span>交易紀錄</button>
+    <button class="tab-btn" data-tab="txns"><span class="tic">📊</span>交易</button>
     <button class="tab-btn" data-tab="customers"><span class="tic">👤</span>客戶</button>
-    <button class="tab-btn" data-tab="pick"><span class="tic">📦</span>撿貨單</button>
   </div>
 </div>
 
@@ -805,7 +808,7 @@ body.cust-view .prices{grid-template-columns:minmax(0,1fr) !important; max-width
 
 <div id="printArea"></div>
 <div id="ubAlert"><div class="ck-card"><div class="ck-msg">⚠ 找不到這個條碼</div><div class="ub-code" id="ubCode"></div><div class="ub-sub">這個商品尚未建檔，請另外處理</div><button type="button" class="ck-ok" id="ubOk">確定</button></div></div>
-<div id="ckAlert"><div class="ck-card"><div class="ck-msg" id="ckMsg"></div><button type="button" class="ck-ok" id="ckOk">確定</button></div></div>
+<div id="ckAlert"><div class="ck-card"><div class="ck-msg" id="ckMsg"></div><button type="button" class="ck-ok" id="ckOk">複製並關閉</button></div></div>
 <div id="previewOverlay">
   <div class="pv-bar">
     <button type="button" id="pvOut">－ 縮小</button>
@@ -2247,14 +2250,30 @@ function closeUnknownBarcode(){
 document.getElementById('ubOk').addEventListener('click', closeUnknownBarcode);
 document.addEventListener('keydown', e=>{ if((e.key==='Escape'||e.key==='Enter') && document.getElementById('ubAlert').classList.contains('on')){ e.preventDefault(); closeUnknownBarcode(); } });
 
+let ckCopyText = '';
 function showCheckoutAlert(name, total){
   document.getElementById('ckMsg').innerHTML = '帳單金額 <span class="ck-amt">$' + fmt(total) + '</span> 請登記';
+  const d = new Date();
+  ckCopyText = [(d.getMonth()+1) + '/' + d.getDate(), '$' + fmt(total), '未付款', '已出貨'].join('  ');   // 四段之間固定空兩格，例：11/13  $300  未付款  已出貨
   document.getElementById('ckAlert').classList.add('on');
   document.getElementById('ckOk').focus();
 }
 function closeCheckoutAlert(){ document.getElementById('ckAlert').classList.remove('on'); }
-document.getElementById('ckOk').addEventListener('click', closeCheckoutAlert);
-document.addEventListener('keydown', e=>{ if((e.key==='Escape'||e.key==='Enter') && document.getElementById('ckAlert').classList.contains('on')){ e.preventDefault(); closeCheckoutAlert(); } });
+// 按「複製並關閉」（或 Enter）：把「日期 金額 未付款  已出貨」複製到剪貼簿；Esc 只關閉不複製
+function copyAndCloseCheckoutAlert(){
+  const text = ckCopyText;
+  const fallback = () => { try{ const ta = document.createElement('textarea'); ta.value = text; ta.style.cssText = 'position:fixed;left:-9999px;top:0;'; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); ta.remove(); }catch(e){} };
+  try{
+    if(navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).catch(fallback); else fallback();
+  }catch(e){ fallback(); }
+  closeCheckoutAlert();
+}
+document.getElementById('ckOk').addEventListener('click', copyAndCloseCheckoutAlert);
+document.addEventListener('keydown', e=>{
+  if(!document.getElementById('ckAlert').classList.contains('on')) return;
+  if(e.key==='Enter'){ e.preventDefault(); copyAndCloseCheckoutAlert(); }
+  else if(e.key==='Escape'){ e.preventDefault(); closeCheckoutAlert(); }
+});
 
 document.getElementById('checkoutBtn').addEventListener('click', ()=>{
   if(!cart.length){ alert('清單是空的，沒有可結帳的內容'); return; }
@@ -3425,6 +3444,6 @@ setTxnRange('month');
 init();
 </script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.2/Sortable.min.js"></script>
-<script src="./pick.js?v=20261113d"></script>
+<script src="./pick.js?v=20261113e"></script>
 </body>
 </html>
