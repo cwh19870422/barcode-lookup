@@ -37,9 +37,10 @@ panel.innerHTML = `
     <div class="pk-cust">
       <div class="search-box">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-        <input id="pkCust" type="text" list="pkCustList" placeholder="幫誰留貨？例如：苗栗店" autocomplete="off">
+        <input id="pkCust" type="text" placeholder="幫誰留貨？搜尋姓名、暱稱、電話或會員號碼" autocomplete="off">
         <span id="pkGrade"></span>
       </div>
+      <div class="cust-dropdown" id="pkCustDrop"></div>
       <datalist id="pkCustList"></datalist>
     </div>
     <div class="pk-locs" id="pkLocs"></div>
@@ -251,10 +252,15 @@ function renderSide(){
 function renderLocs(){
   $('pkLocs').innerHTML = LOCS.map(l => `<button type="button" class="pk-chip${cur().location === l ? ' on' : ''}" data-pkloc="${l}">${l}</button>`).join('');
 }
+// 這張單的客人：先看選過的客戶 id，沒有的話用名字或暱稱對
+function custOf(s){
+  s = s || cur(); const list = (typeof customers !== 'undefined' && Array.isArray(customers)) ? customers : [];
+  if(s.custId){ const c = list.find(x => x.id === s.custId); if(c) return c; }
+  const name = (s.customer || '').trim(); if(!name) return null;
+  return list.find(x => (x.name || '').trim() === name) || list.find(x => (x.nick || '').trim() === name) || null;
+}
 function renderGrade(){
-  const name = (cur().customer || '').trim();
-  const list = (typeof customers !== 'undefined' && Array.isArray(customers)) ? customers : [];
-  const c = name && list.find(x => (x.name || '').trim() === name);
+  const c = custOf();
   $('pkGrade').innerHTML = c ? `<span class="grade-badge grade-${esc(c.grade || 'A')}">${esc(c.grade || 'A')}</span>` : '';
 }
 function renderCustList(){
@@ -373,7 +379,39 @@ $('pkSide').addEventListener('click', async e => {
     S.slips.delete(id); S.saved.delete(id); pickDefault(); renderAll(); toast('已刪除');
   }
 });
-$('pkCust').addEventListener('input', e => { cur().customer = e.target.value; renderGrade(); touch(); });
+// 客人：跟打單一樣，可以搜尋姓名、暱稱、電話、會員號碼，點選後帶入客戶資料（等級）
+const custDrop = $('pkCustDrop');
+let custHi = -1;
+function renderCustDrop(){
+  const raw = $('pkCust').value.trim(), q = raw.toLowerCase();
+  if(!q){ custDrop.classList.remove('open'); custDrop.innerHTML = ''; return; }
+  const list = (typeof customers !== 'undefined' && Array.isArray(customers)) ? customers : [];
+  const hit = (typeof custMatch === 'function' ? list.filter(c => custMatch(c, q)) : list.filter(c => (c.name || '').toLowerCase().includes(q))).slice(0, 8);
+  const known = new Set(list.map(c => (c.name || '').trim()));
+  const past = [...new Set(Array.from(S.slips.values()).map(x => (x.customer || '').trim()))].filter(n => n && !known.has(n) && n.toLowerCase().includes(q) && n !== raw).slice(0, 3);
+  if(!hit.length && !past.length){ custDrop.classList.remove('open'); custDrop.innerHTML = ''; return; }
+  const phones = c => (typeof custPhones === 'function' ? custPhones(c) : [c.phone, c.phone2].filter(Boolean).join(' / '));
+  custDrop.innerHTML = hit.map(c => `<div class="cust-opt" data-cid="${esc(c.id)}"><div><div class="co-name">${esc(c.name || '')}</div><div class="co-sub">${esc([c.memberNo, phones(c)].filter(Boolean).join(' · '))}</div></div><span class="grade-badge grade-${esc(c.grade || 'A')}">${esc(c.grade || 'A')}</span></div>`).join('')
+    + past.map(n => `<div class="cust-opt" data-pname="${esc(n)}"><div><div class="co-name">${esc(n)}</div><div class="co-sub">之前的撿貨單（不在客戶資料裡）</div></div></div>`).join('');
+  custHi = -1; custDrop.classList.add('open');
+}
+function pickCust(opt){
+  const s = cur(), list = (typeof customers !== 'undefined' && Array.isArray(customers)) ? customers : [];
+  if(opt.dataset.cid){ const c = list.find(x => x.id === opt.dataset.cid); if(!c) return; s.customer = c.name || ''; s.custId = c.id; }
+  else { s.customer = opt.dataset.pname; s.custId = null; }
+  $('pkCust').value = s.customer; custDrop.classList.remove('open'); renderGrade(); touch();
+}
+$('pkCust').addEventListener('input', e => { cur().customer = e.target.value; cur().custId = null; renderGrade(); touch(); renderCustDrop(); });
+$('pkCust').addEventListener('focus', renderCustDrop);
+$('pkCust').addEventListener('keydown', e => {
+  const opts = [...custDrop.querySelectorAll('.cust-opt')]; if(!custDrop.classList.contains('open') || !opts.length) return;
+  if(e.key === 'ArrowDown' || e.key === 'ArrowUp'){ e.preventDefault(); custHi = (custHi + (e.key === 'ArrowDown' ? 1 : -1) + opts.length) % opts.length; opts.forEach((o, i) => o.classList.toggle('hi', i === custHi)); }
+  else if(e.key === 'Enter' && !e.isComposing){ e.preventDefault(); pickCust(opts[Math.max(0, custHi)]); }
+  else if(e.key === 'Escape') custDrop.classList.remove('open');
+});
+custDrop.addEventListener('mousedown', e => e.preventDefault());
+custDrop.addEventListener('click', e => { const o = e.target.closest('.cust-opt'); if(o) pickCust(o); });
+document.addEventListener('click', e => { if(!e.target.closest('.pk-cust')) custDrop.classList.remove('open'); });
 $('pkNote').addEventListener('input', e => { cur().note = e.target.value; touch(); $('pkNoteBtn').classList.toggle('has', !!e.target.value.trim()); });
 // 備註：有內容或按了「✎ 備註」才顯示；內容清空、離開輸入框就收回去
 function noteHas(){ return !!((cur() && cur().note) || '').trim(); }
@@ -624,10 +662,7 @@ function matchOf(it){
   if(g[0] && g[0].sc >= 0.8 && (!g[1] || g[0].sc - g[1].sc >= 0.1 || g[1].x.n === g[0].x.n)) return { x: g[0].x, how: 'auto' };
   return { x: null, how: 'none', best: g[0] && g[0].sc >= 0.35 ? g[0].x : null };
 }
-function calcCust(){
-  const name = (cur().customer || '').trim(); if(!name) return null;
-  return posCusts().find(c => (c.name || '').trim() === name) || posCusts().find(c => (c.nick || '').trim() === name) || null;
-}
+const calcCust = () => custOf();
 const gradeNow = () => { const c = calcCust(); return c ? (c.grade || 'A') : (cur().calcGrade || 'A'); };
 const GI = { A: 6, B: 7, C: 8, D: 9 };
 const priceAt = (x, g) => { const v = parseFloat(String(x.r[GI[g] || 6]).replace(/,/g, '')); return isNaN(v) ? null : v; };

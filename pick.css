@@ -24,7 +24,8 @@
 .pk-main.is-closed > :not(.pk-closed), .pk-main:not(.is-closed) > .pk-closed{display:none;}
 .pk-card.pk-closed{align-items:center; text-align:center; padding:36px 16px; gap:10px;}
 .pk-closed-t{font-size:18px; font-weight:700; color:#1E8E3E;}
-.pk-cust{display:flex; gap:8px; align-items:center;}
+.pk-cust{display:flex; gap:8px; align-items:center; position:relative;}
+#tab-pick .cust-opt.hi{background:var(--sg-row);}
 .pk-cust .search-box{flex:1; min-width:0;}
 .pk-cust .grade-badge{margin-right:6px;}
 .pk-locs{display:flex; flex-wrap:wrap; gap:6px;}
