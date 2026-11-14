@@ -1620,17 +1620,19 @@ orderInput.addEventListener('keydown', (e)=>{
 
 // 條碼槍防呆：掃描時如果游標不在搜尋框（例如剛按過「加入」、＋－或點到空白處），
 // 條碼槍送出的 Enter 會「按下」目前停在的按鈕，造成上一個商品又被加入一次（數量 1→2）。
-// 所以只要在打單頁、游標不在任何輸入欄／下拉時按下一般字元或數字，就先把游標移回搜尋框，字元會照常輸入進去。
+// 所以只要在打單頁或搜尋頁、游標不在任何輸入欄／下拉時按下一般字元或數字，就先把游標移回搜尋框，字元會照常輸入進去。
 document.addEventListener('keydown', (e)=>{
   if(e.ctrlKey || e.metaKey || e.altKey || e.isComposing) return;
   if(e.key.length !== 1) return;                              // 只處理可印字元（數字、字母、*、-）
-  const tab = document.getElementById('tab-order');
-  if(!tab || !tab.classList.contains('active')) return;
+  // 目前在打單頁或搜尋頁才處理，各自導向自己的搜尋框
+  const target = document.getElementById('tab-order').classList.contains('active') ? orderInput
+               : document.getElementById('tab-search').classList.contains('active') ? document.getElementById('searchInput') : null;
+  if(!target) return;
   const t = e.target;
   if(t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.tagName === 'SELECT' || t.isContentEditable)) return;
   if(document.querySelector('.qk-mask.on, #previewOverlay.on, #ubAlert.on, #ckAlert.on, .pk-mask.on')) return;   // 有彈出視窗時不搶游標
-  orderInput.focus({preventScroll:true});
-  orderInput.select();   // 搜尋框若還留著上次的字，第一個字元會直接取代它
+  target.focus({preventScroll:true});
+  target.select();   // 搜尋框若還留著上次的字，第一個字元會直接取代它
 });
 // 按完「加入」後，讓按鈕放開焦點，避免之後的 Enter 又按到它
 orderResultsEl.addEventListener('click', (e)=>{
