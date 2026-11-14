@@ -98,6 +98,12 @@ panel.innerHTML = `
   <h3>算金額 <button class="pk-b" type="button" data-pkcclose>關閉</button></h3>
   <div id="pkCalcBody"></div>
 </div></div>
+<div class="pk-scrim" id="pkPeopleSheet" style="display:none"><div class="pk-sheet pk-pdlg" role="dialog" aria-label="新增一位">
+  <h3 id="pkPdTitle">新增一位</h3>
+  <div id="pkPdBody"></div>
+  <p class="pk-cwarn" id="pkPdErr" style="text-align:left"></p>
+  <div class="pk-row" style="justify-content:flex-end"><button class="pk-b" type="button" data-pdcancel="1">取消</button><button class="pk-b pri" type="button" data-pdok="1">確定</button></div>
+</div></div>
 <div class="pk-toast" id="pkToast" style="display:none"></div>`;
 
 let toastT;
@@ -311,12 +317,6 @@ function renderPeople(){
   const s = cur(), ppl = peopleOf(s);
   if(S.who && !ppl.includes(S.who)) S.who = ppl[0] || null;
   if(!S.who && ppl.length) S.who = ppl[0];
-  if(S.pEdit){   // 加人／改名：直接在這一列打字（不用跳出視窗）
-    const ed = S.pEdit;
-    $('pkPeople').innerHTML = `<span class="pk-plab">${ed.old ? '改名' : '加人'}</span><input class="pk-in pk-pin" id="pkPin" value="${esc(ed.old || '')}" placeholder="輸入名字，例如：曾于芳" autocomplete="off"><button type="button" class="pk-b pri" data-pok="1">${ed.old ? '確定' : '加入'}</button><button type="button" class="pk-b" data-pcancel="1">取消</button>`;
-    const inp = $("pkPin"); inp.focus(); inp.select();
-    return;
-  }
   $('pkPeople').innerHTML = ppl.length
     ? `<span class="pk-plab">分人：${ppl.map(esc).join('、')}</span><button type="button" class="pk-pchip add" data-padd="1">＋ 新增一位</button>`
     : `<button type="button" class="pk-pchip add" data-padd="1" title="同一間公司有好幾個人留貨時，可以在這張單裡分人">＋ 新增一位</button>`;
@@ -374,7 +374,6 @@ function renderClosed(){
     <div class="pk-row" style="justify-content:center"><button class="pk-b" type="button" data-pkreopen>繼續編輯這張</button><button class="pk-b pri" type="button" data-pknew>＋ 新撿貨單</button></div>`;
 }
 function renderAll(){
-  if(!editing()) S.pEdit = null;
   renderClosed();
   $('pkCust').value = cur().customer || '';
   $('pkNote').value = cur().note || '';
@@ -494,26 +493,50 @@ $('pkNote').addEventListener('blur', () => { if(!noteHas()){ S.noteOpen = false;
 $('pkPeople').addEventListener('click', e => {
   const s = cur();
   const w = e.target.closest('[data-pwho]'); if(w){ S.who = w.dataset.pwho; renderPeople(); return; }
-  if(e.target.closest('[data-padd]')){ S.pEdit = { old: '' }; renderPeople(); return; }
-  if(e.target.closest('[data-pcancel]')){ S.pEdit = null; renderPeople(); return; }
-  if(e.target.closest('[data-pok]')) peopleOk();
+  if(e.target.closest('[data-padd]')) openPeopleDlg('');
 });
-$('pkPeople').addEventListener('keydown', e => {
-  if(e.target.id !== 'pkPin') return;
-  if(e.key === 'Enter' && !e.isComposing){ e.preventDefault(); peopleOk(); }
-  if(e.key === 'Escape'){ S.pEdit = null; renderPeople(); }
+// 新增一位／改名的視窗（畫在網頁上，不用瀏覽器內建視窗）
+// 第一次新增：要填「分組名稱」（原本那些商品是誰的）和「新加的人」；之後只填新加的人
+const pdlg = $('pkPeopleSheet');
+function openPeopleDlg(old){
+  const s = cur(), first = !old && !peopleOf(s).length, cnt = s.items.length;
+  S.pEdit = { old, first };
+  $('pkPdTitle').textContent = old ? '改名' : '新增一位';
+  const fld = (id, lab, ph, v) => `<label class="pk-pdf"><span>${lab}</span><input class="pk-in" id="${id}" placeholder="${ph}" value="${esc(v || '')}" autocomplete="off"></label>`;
+  $('pkPdBody').innerHTML = old ? fld('pkPdNew', '新的名字', '例如：曾于芳', old)
+    : (first ? fld('pkPdGroup', `分組名稱（原本${cnt ? '這 ' + cnt + ' 項商品' : '的清單'}是誰的）`, '例如：曾于芳', '') : '') + fld('pkPdNew', '新加的人', '例如：王小美', '');
+  $('pkPdErr').textContent = '';
+  pdlg.style.display = 'flex';
+  const f = $(first ? 'pkPdGroup' : 'pkPdNew'); f.focus(); f.select();
+}
+function closePeopleDlg(){ pdlg.style.display = 'none'; S.pEdit = null; }
+pdlg.addEventListener('click', e => {
+  if(e.target === pdlg || e.target.closest('[data-pdcancel]')){ closePeopleDlg(); return; }
+  if(e.target.closest('[data-pdok]')) peopleOk();
+});
+pdlg.addEventListener('keydown', e => {
+  if(e.key === 'Escape'){ closePeopleDlg(); return; }
+  if(e.key === 'Enter' && !e.isComposing){ e.preventDefault();
+    if(e.target.id === 'pkPdGroup'){ $('pkPdNew').focus(); return; }   // 第一格按 Enter 跳到下一格
+    peopleOk(); }
 });
 function peopleOk(){
-  const s = cur(), ed = S.pEdit, n = ($('pkPin').value || '').trim(); if(!ed) return;
-  if(!n){ $('pkPin').focus(); return; }
+  const s = cur(), ed = S.pEdit; if(!ed) return;
+  const err = m => { $('pkPdErr').textContent = m; };
+  const n = ($('pkPdNew').value || '').trim(), g = ed.first ? ($('pkPdGroup').value || '').trim() : '';
+  if(ed.first && !g){ err('請填分組名稱'); $('pkPdGroup').focus(); return; }
+  if(!n){ err(ed.old ? '請填名字' : '請填新加的人'); $('pkPdNew').focus(); return; }
   const ppl = peopleOf(s).slice();
   if(ed.old){   // 改名
-    if(n !== ed.old && !ppl.includes(n)){ s.people = ppl.map(p => p === ed.old ? n : p); s.items.forEach(i => { if(i.who === ed.old) i.who = n; }); if(S.who === ed.old) S.who = n; }
-  } else if(!ppl.includes(n)){
+    if(n !== ed.old && ppl.includes(n)){ err('已經有「' + n + '」了'); return; }
+    s.people = ppl.map(p => p === ed.old ? n : p); s.items.forEach(i => { if(i.who === ed.old) i.who = n; }); if(S.who === ed.old) S.who = n;
+  } else {
+    if(ed.first && g === n){ err('分組名稱和新加的人不能一樣'); return; }
+    if(ppl.includes(n)){ err('已經有「' + n + '」了'); return; }
+    if(ed.first){ ppl.push(g); s.items.forEach(i => { i.who = g; }); }   // 原本的商品都放進第一組
     ppl.push(n); s.people = ppl;
-    if(ppl.length === 1) s.items.forEach(i => { if(!i.who) i.who = n; });   // 第一個人：原本的商品都先算他的
   }
-  S.who = n; S.pEdit = null; touch(); renderItems(); renderSide();
+  closePeopleDlg(); S.who = n; touch(); renderItems(); renderSide();
   const box = [...document.querySelectorAll('[data-padd-in]')].find(x => x.dataset.paddIn === n); if(box) box.focus();
 }
 // 分人時，每個人自己的加入格
@@ -531,7 +554,7 @@ $('pkMain').addEventListener('input', e => { if(e.target.dataset && e.target.dat
 $('pkMain').addEventListener('click', e => {
   const s = cur();
   const go = e.target.closest('[data-padd-go]'); if(go){ personAdd(go.dataset.paddGo); return; }
-  const rn = e.target.closest('[data-prn]'); if(rn){ S.pEdit = { old: rn.dataset.prn }; renderPeople(); return; }
+  const rn = e.target.closest('[data-prn]'); if(rn){ openPeopleDlg(rn.dataset.prn); return; }
   const rm = e.target.closest('[data-prm]'); if(rm){ const o = rm.dataset.prm;
     if(!confirm(`把「${o}」移除？他的商品會留在這張單（變成未分人），不會刪掉。`)) return;
     s.people = peopleOf(s).filter(p => p !== o); s.items.forEach(i => { if(i.who === o) i.who = ''; if(!s.people.length) delete i.who; });

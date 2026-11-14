@@ -307,3 +307,9 @@ textarea.pk-in.pk-src:focus{box-shadow:inset 0 0 0 2px var(--blue);}
 .pk-sep2{list-style:none; margin:4px 0 0;}
 .pk-whoh{margin-top:10px;}
 #tab-pick .pk-padd textarea.pk-in{background:transparent; box-shadow:none;}
+
+/* 新增一位視窗 */
+.pk-pdlg{max-width:440px; gap:12px;}
+.pk-pdf{display:flex; flex-direction:column; gap:5px; font-size:13px; font-weight:700; color:#3A3733;}
+#tab-pick .pk-pdf .pk-in{background:#fff; box-shadow:inset 0 0 0 1.5px #1F1F1F; font-size:16px; padding:10px 12px;}
+.pk-pdlg .pk-cwarn:empty{display:none;}
