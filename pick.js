@@ -266,14 +266,7 @@ function renderSide(){
   // 進行中：照位置分區，每區標題旁有「全部複製」（同一區每張單一起複製，中間分隔線）
   const body = !list.length ? `<div class="pk-empty">${S.tab === 'done' ? '還沒有完成的單' : '沒有進行中的單'}</div>`
     : S.tab === 'done' ? list.map(card).join('')
-    : (() => {   // 進行中：只分「未撿完」「已撿完」兩區；整區複製改成上面一排位置按鈕
-        const locs = LOCS.map(l => [l, list.filter(s => s.location === l && hasContent(s)).length]).filter(x => x[1]);
-        const copyRow = locs.length ? `<div class="pk-copyrow"><span>整區複製</span>${locs.map(([l, c]) => `<button type="button" class="pk-loccopy" data-pkcopyloc="${esc(l)}" title="把「${esc(l)}」的 ${c} 張單一起複製">${esc(l)} ${c}</button>`).join('')}</div>` : '';
-        const todo = list.filter(s => !s.items.length || left(s) > 0), ok = list.filter(s => s.items.length && !left(s));
-        return copyRow
-          + (todo.length ? `<div class="pk-lochd"><span>未撿完 · ${todo.length} 張</span></div>` + todo.map(card).join('') : '')
-          + (ok.length ? `<div class="pk-lochd"><span>已撿完 · ${ok.length} 張</span></div>` + ok.map(card).join('') : '');
-      })();
+    : list.map(card).join('');   // 跟原本一樣一整列：未撿完的排最上面（另一種顏色）
   $('pkSide').innerHTML = `
     <button class="pk-new" type="button" data-pk="new">＋ 新撿貨單</button>
     <div class="pk-seg"><button type="button" data-pktab="draft" class="${S.tab === 'draft' ? 'on' : ''}">進行中 ${drafts.filter(hasContent).length}</button><button type="button" data-pktab="done" class="${S.tab === 'done' ? 'on' : ''}">已完成 ${dones.length}</button></div>

@@ -317,3 +317,12 @@ textarea.pk-in.pk-src:focus{box-shadow:inset 0 0 0 2px var(--blue);}
 .pk-copyrow{display:flex; flex-wrap:wrap; align-items:center; gap:5px; padding:4px 2px 2px; font-size:12px; font-weight:700; color:#85807A;}
 .pk-copyrow .pk-loccopy{padding:4px 9px;}
 @media (max-width:760px){ .pk-copyrow{flex-wrap:nowrap; white-space:nowrap;} }
+
+/* 客人卡片：位置框和撿好框一樣大、靠右；第二排的留貨天數靠右（不管瀏覽器怎麼排都固定） */
+#tab-pick .pk-ord .t, #tab-pick .pk-ord .m{width:100%; box-sizing:border-box;}
+#tab-pick .pk-ord .t{display:grid; grid-template-columns:minmax(0,1fr) auto; align-items:center; column-gap:6px;}
+#tab-pick .pk-ord .t .tr{display:flex; justify-content:flex-end; gap:4px; margin-left:0;}
+#tab-pick .pk-ord .t .tr .pk-pill, #tab-pick .pk-ord .t .tr .pk-left{width:58px; min-width:0; box-sizing:border-box; text-align:center; padding:1px 0; white-space:nowrap; overflow:hidden; text-overflow:clip;}
+#tab-pick .pk-ord .m{display:grid; grid-template-columns:minmax(0,1fr) auto; align-items:center; column-gap:8px;}
+#tab-pick .pk-ord .m > span:first-child{min-width:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+#tab-pick .pk-ord .m .d{justify-self:end; text-align:right;}
