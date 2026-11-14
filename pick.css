@@ -337,3 +337,7 @@ textarea.pk-in.pk-src:focus{box-shadow:inset 0 0 0 2px var(--blue);}
 .pk-whoh .pk-whonm:hover{background:#ECE8E2;}
 #tab-pick .pk-rnin{width:180px; flex:0 0 auto; padding:5px 8px; font:700 15px var(--sysfont); background:#fff; box-shadow:inset 0 0 0 1.5px #1F1F1F;}
 .pk-whoh .pk-ptag, .pk-whoh .pk-whonm span{flex:0 0 auto;}
+/* 名字標籤一律白底；新增一位的視窗放畫面中間 */
+.pk-people .pk-ptag.main{background:#fff; color:#1F1F1F; box-shadow:inset 0 0 0 1.5px #1F1F1F;}
+#pkPeopleSheet{align-items:center; padding:16px;}
+#pkPeopleSheet .pk-sheet{border-radius:18px; padding:18px; box-shadow:0 12px 40px rgba(0,0,0,.25);}
