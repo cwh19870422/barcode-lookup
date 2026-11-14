@@ -275,3 +275,20 @@ textarea.pk-in.pk-src:focus{box-shadow:inset 0 0 0 2px var(--blue);}
 /* 底部列的刪除鈕：白底紅字，跟其他按鈕分開 */
 #tab-pick .pk-b.pk-delb{background:#fff; color:#B3261E; box-shadow:inset 0 0 0 1.5px #E7C3BF;}
 #tab-pick .pk-b.pk-delb:hover{background:#FBEDEA;}
+
+/* 分人（同公司多人） */
+.pk-people{display:flex; flex-wrap:wrap; align-items:center; gap:6px;}
+.pk-plab{font-size:13px; font-weight:700; color:var(--sg-muted, #85807A); margin-right:2px;}
+.pk-pchip{border:0; border-radius:999px; padding:6px 14px; font:600 14px var(--sysfont); background:#fff; color:var(--sg-ink, #1F1F1F); box-shadow:inset 0 0 0 1.5px var(--sg-line2, #D2CCC3); cursor:pointer;}
+.pk-pchip.on{background:#1F1F1F; color:#fff; box-shadow:none;}
+.pk-pchip.add{background:transparent; color:var(--sg-muted, #85807A); box-shadow:inset 0 0 0 1.5px var(--sg-line2, #D2CCC3); border:0; font-size:13px; padding:5px 12px;}
+.pk-people .pk-hint{flex-basis:100%; margin:0 2px;}
+.pk-whoh{list-style:none; display:flex; align-items:center; gap:8px; padding:8px 4px 2px; font-size:14px; border-top:2px solid #1F1F1F; margin-top:4px;}
+.pk-whoh:first-child{border-top:0; margin-top:0; padding-top:2px;}
+.pk-whoh b{font-size:15px;} .pk-whoh span{color:var(--sg-muted, #85807A); font-size:12px; flex:1;}
+.pk-whoh button{border:0; background:transparent; color:var(--sg-muted, #85807A); font:600 12px var(--sysfont); cursor:pointer; padding:2px 4px; text-decoration:underline;}
+.pk-whotag{flex:0 0 auto; border:0; border-radius:6px; padding:3px 8px; font:700 12px var(--sysfont); background:#fff; color:#3A3733; box-shadow:inset 0 0 0 1px var(--sg-line2, #D2CCC3); cursor:pointer; white-space:nowrap;}
+/* 左邊清單：位置分區＋全部複製 */
+.pk-lochd{display:flex; align-items:center; justify-content:space-between; gap:8px; font-size:13px; font-weight:800; color:#3A3733; padding:8px 4px 0;}
+.pk-loccopy{border:0; background:#1F1F1F; color:#fff; font:700 12px var(--sysfont); border-radius:8px; padding:4px 10px; cursor:pointer;}
+@media (max-width:760px){ .pk-lochd{flex-direction:column; justify-content:center; align-items:flex-start; padding:0 2px 0 6px; border-left:2px solid #1F1F1F; white-space:nowrap;} }

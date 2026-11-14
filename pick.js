@@ -43,6 +43,7 @@ panel.innerHTML = `
       <div class="cust-dropdown" id="pkCustDrop"></div>
       <datalist id="pkCustList"></datalist>
     </div>
+    <div class="pk-people" id="pkPeople"></div>
     <div class="pk-locs" id="pkLocs"></div>
 
     <div class="pk-card">
@@ -206,20 +207,32 @@ function mergeParsed(r){
   if(r.customer && !s.customer){ s.customer = r.customer; $('pkCust').value = r.customer; renderGrade(); }
   if(r.location && LOCS.includes(r.location)){ s.location = r.location; renderLocs(); }
   if(r.items.some(i => i.price)) s.showPrice = true;
-  if(r.items.length && !s.items.length) s.firstAt = Date.now();   // 留貨天數從加進第一筆商品那天開始算
+  if(r.items.length && !s.items.length) s.firstAt = Date.now();
+  if(peopleOf(s).length && S.who) r.items.forEach(i => { if(!i.who) i.who = S.who; });   // 分人時，新商品放到目前選的人   // 留貨天數從加進第一筆商品那天開始算
   s.items = normals().concat(r.items.filter(i => !i.preorder && !i.wait), pres(), r.items.filter(i => i.preorder && !i.wait), waits(), r.items.filter(i => i.wait));
   touch(); renderItems();
 }
 
 // ---------- 輸出 ----------
-function buildText(){
-  const s = cur();
+const DIVIDER = '————————————';   // 不同人、不同張單之間的分隔線
+// 這張單有分人的話，照人分組（沒指定人的放最前面）
+const peopleOf = s => Array.isArray(s.people) ? s.people : [];
+function whoGroups(s, items){
+  const ppl = peopleOf(s); if(!ppl.length) return [{ who: null, items }];
+  const g = [{ who: '', items: items.filter(i => !i.who || !ppl.includes(i.who)) }].concat(ppl.map(p => ({ who: p, items: items.filter(i => i.who === p) })));
+  return g.filter(x => x.who || x.items.length);
+}
+function buildText(s){
+  s = s || cur();
   const name = (s.customer || '').trim();
   const head = '#' + s.location + (name ? ' （' + name + '）' : '');
   const line = it => it.preorder && it.tbd ? `${it.name}${s.showPrice && it.price ? ' ' + it.price : ''}（數量待確認）` : `${it.name}${s.showPrice && it.price ? ' ' + it.price : ''}${it.qty ? ' *' + it.qty : ''}${it.reserved ? '（已留）' : isPartial(it) ? '（已留' + kOf(it) + '）' : ''}`;
-  const n = normals().map((it, i) => `${i + 1}. ${line(it)}`), p = pres().map(it => '（預訂）' + line(it)), w = waits().map(it => '（等到貨）' + line(it));
-  const groups = [n, p, w].filter(g => g.length).map(g => g.join('\n'));
-  let t = head + '\n\n' + groups.join('\n\n');   // 每一組中間空一行
+  const block = items => {
+    const n = items.filter(i => !i.preorder && !i.wait).map((it, i) => `${i + 1}. ${line(it)}`), p = items.filter(i => i.preorder && !i.wait).map(it => '（預訂）' + line(it)), w = items.filter(i => i.wait).map(it => '（等到貨）' + line(it));
+    return [n, p, w].filter(g => g.length).map(g => g.join('\n')).join('\n\n');   // 每一組中間空一行
+  };
+  const parts = whoGroups(s, s.items).filter(g => g.items.length).map(g => (g.who ? '【' + g.who + '】\n' : '') + block(g.items));
+  let t = head + '\n\n' + parts.join('\n' + DIVIDER + '\n');   // 不同人中間一條分隔線
   const note = (s.note || '').trim();
   if(note) t += '\n\n' + note;   // 備註放最下面，上面空一行（不加「備註：」）
   return t;
@@ -240,13 +253,20 @@ function renderSide(){
   const list = (S.tab === 'done' ? dones : drafts).sort((a, b) => ((left(b) > 0) - (left(a) > 0)) || (b.updatedAt - a.updatedAt));
   const ts = t => { const d = new Date(t), today = new Date(); const same = d.toDateString() === today.toDateString();
     return (same ? '今天 ' : (d.getMonth() + 1) + '/' + d.getDate() + ' ') + two(d.getHours()) + ':' + two(d.getMinutes()); };
+  const card = s => { const k = s.items.filter(i => i.reserved).length, n = left(s), ppl = peopleOf(s);
+      const tag = !s.items.length ? '' : n ? `<span class="pk-left">${n} 項未撿</span>` : '<span class="pk-left ok">✓ 撿好</span>';
+      return `<button type="button" class="pk-ord${n ? ' pending' : ''}${s.id === S.curId && !S.closed ? ' cur' : ''}" data-pkopen="${s.id}"><span class="t"><span class="nm">${esc(s.customer || '（未填客戶）')}</span><span class="tr"><span class="pk-pill">${esc(s.location)}</span>${tag}${s.status === 'done' ? '<span class="pk-pill done">已完成</span>' : ''}</span></span><span class="m"><span>${ppl.length ? esc(ppl.join('、')) + ' · ' : ''}${s.items.length} 項 · 已留 ${k}/${s.items.length}</span>${s.items.length ? '<span class="d">' + keepDays(s) + '天</span>' : ''}</span></button>`; };
+  // 進行中：照位置分區，每區標題旁有「全部複製」（同一區每張單一起複製，中間分隔線）
+  const body = !list.length ? `<div class="pk-empty">${S.tab === 'done' ? '還沒有完成的單' : '沒有進行中的單'}</div>`
+    : S.tab === 'done' ? list.map(card).join('')
+    : LOCS.map(l => { const g = list.filter(s => s.location === l); if(!g.length) return '';
+        const real = g.filter(hasContent).length;
+        return `<div class="pk-lochd"><span>${esc(l)} · ${g.length} 張</span>${real ? `<button type="button" class="pk-loccopy" data-pkcopyloc="${esc(l)}">全部複製</button>` : ''}</div>` + g.map(card).join(''); }).join('')
+      + (list.some(s => !LOCS.includes(s.location)) ? list.filter(s => !LOCS.includes(s.location)).map(card).join('') : '');
   $('pkSide').innerHTML = `
     <button class="pk-new" type="button" data-pk="new">＋ 新撿貨單</button>
     <div class="pk-seg"><button type="button" data-pktab="draft" class="${S.tab === 'draft' ? 'on' : ''}">進行中 ${drafts.filter(hasContent).length}</button><button type="button" data-pktab="done" class="${S.tab === 'done' ? 'on' : ''}">已完成 ${dones.length}</button></div>
-    ${list.length ? list.map(s => { const k = s.items.filter(i => i.reserved).length, n = left(s);
-      const tag = !s.items.length ? '' : n ? `<span class="pk-left">${n} 項未撿</span>` : '<span class="pk-left ok">✓ 撿好</span>';
-      return `<button type="button" class="pk-ord${n ? ' pending' : ''}${s.id === S.curId && !S.closed ? ' cur' : ''}" data-pkopen="${s.id}"><span class="t"><span class="nm">${esc(s.customer || '（未填客戶）')}</span><span class="tr"><span class="pk-pill">${esc(s.location)}</span>${tag}${s.status === 'done' ? '<span class="pk-pill done">已完成</span>' : ''}</span></span><span class="m"><span>${s.items.length} 項 · 已留 ${k}/${s.items.length}</span>${s.items.length ? '<span class="d">' + keepDays(s) + '天</span>' : ''}</span></button>`; }).join('')
-      : `<div class="pk-empty">${S.tab === 'done' ? '還沒有完成的單' : '沒有進行中的單'}</div>`}
+    ${body}
     <p class="pk-hint">單子 3 台電腦即時同步。</p>`;
 }
 function renderLocs(){
@@ -285,12 +305,24 @@ function itemHTML(it, idx){
     <button type="button" class="pk-del" data-act="del" aria-label="刪除">×</button>
   </li>`;
 }
+function renderPeople(){
+  const s = cur(), ppl = peopleOf(s);
+  if(S.who && !ppl.includes(S.who)) S.who = ppl[0] || null;
+  if(!S.who && ppl.length) S.who = ppl[0];
+  $('pkPeople').innerHTML = ppl.length
+    ? `<span class="pk-plab">分人</span>${ppl.map(p => `<button type="button" class="pk-pchip${S.who === p ? ' on' : ''}" data-pwho="${esc(p)}" title="新加的商品會放到這個人">${esc(p)}</button>`).join('')}<button type="button" class="pk-pchip add" data-padd="1">＋ 加人</button><span class="pk-hint">新加的商品會放到黑色的人；拖曳商品可以換人</span>`
+    : `<button type="button" class="pk-pchip add" data-padd="1" title="同一間公司有好幾個人留貨時，可以在這張單裡分人">＋ 分人（同公司多人）</button>`;
+}
 function renderItems(){
-  const n = normals(), p = pres(), w = waits();
-  $('pkMain').innerHTML = n.map((it, i) => itemHTML(it, i + 1)).join('') || (p.length || w.length ? '' : '<li class="pk-empty">還沒有商品。在上面那一格打商品，或貼上一整串文字、截圖。</li>');
-  $('pkPre').innerHTML = p.map(it => itemHTML(it, 0)).join('');
+  const n = normals(), p = pres(), w = waits(), ppl = peopleOf(cur());
+  renderPeople();
+  const whoTag = it => ppl.length ? `<button type="button" class="pk-whotag" data-act="who" title="換人">${esc(it.who && ppl.includes(it.who) ? it.who : '未分人')}</button>` : '';
+  $('pkMain').innerHTML = (ppl.length
+    ? whoGroups(cur(), n).map(g => `<li class="pk-whoh" data-who="${esc(g.who)}"><b>${esc(g.who || '未分人')}</b><span>${g.items.length} 項</span>${g.who ? `<button type="button" data-prn="${esc(g.who)}">改名</button><button type="button" data-prm="${esc(g.who)}">移除</button>` : ''}</li>` + g.items.map((it, i) => itemHTML(it, i + 1)).join('')).join('')
+    : n.map((it, i) => itemHTML(it, i + 1)).join('')) || (p.length || w.length ? '' : '<li class="pk-empty">還沒有商品。在上面那一格打商品，或貼上一整串文字、截圖。</li>');
+  $('pkPre').innerHTML = p.map(it => itemHTML(it, 0).replace('<input class="pk-nm"', whoTag(it) + '<input class="pk-nm"')).join('');
   $('pkPreSep').style.display = p.length ? 'flex' : 'none';
-  $('pkWait').innerHTML = w.map(it => itemHTML(it, 0)).join('');
+  $('pkWait').innerHTML = w.map(it => itemHTML(it, 0).replace('<input class="pk-nm"', whoTag(it) + '<input class="pk-nm"')).join('');
   $('pkWaitSep').style.display = w.length ? 'flex' : 'none';
   $('pkShowPrice').checked = !!cur().showPrice;
   renderSum();
@@ -366,6 +398,15 @@ window.Pick = Pick;
 
 // ---------- 事件 ----------
 $('pkSide').addEventListener('click', async e => {
+  const cl = e.target.closest('[data-pkcopyloc]');
+  if(cl){ const l = cl.dataset.pkcopyloc;
+    const g = Array.from(S.slips.values()).filter(s => s.status !== 'done' && s.location === l && hasContent(s))
+      .sort((a, b) => ((a.items.some(i => kOf(i) < effQ(i)) ? 0 : 1) - (b.items.some(i => kOf(i) < effQ(i)) ? 0 : 1)) || (b.updatedAt - a.updatedAt));
+    if(!g.length) return;
+    const t = g.map(s => buildText(s)).join('\n' + DIVIDER + '\n');
+    if(await copyText(t)) toast(`已複製「${l}」${g.length} 張單`);
+    else { $('pkOutText').textContent = t; $('pkCopyNote').textContent = '沒辦法自動複製，請按「全部複製」'; outSheet.style.display = 'flex'; }
+    return; }
   const t = e.target.closest('[data-pk],[data-pktab],[data-pkopen]'); if(!t) return;
   if(t.dataset.pktab){ S.tab = t.dataset.pktab; S.confirmDel = null; renderSide(); return; }
   if(t.dataset.pkopen){ const old = cur(); if(old && !hasContent(old) && !S.saved.has(old.id)) S.slips.delete(old.id);
@@ -426,6 +467,27 @@ $('pkNoteBtn').addEventListener('click', () => {
   S.noteOpen = true; renderNote(); $('pkNote').focus();
 });
 $('pkNote').addEventListener('blur', () => { if(!noteHas()){ S.noteOpen = false; renderNote(); } });
+// 分人：同一間公司好幾個人留貨，放在同一張單裡分段
+$('pkPeople').addEventListener('click', e => {
+  const s = cur();
+  const w = e.target.closest('[data-pwho]'); if(w){ S.who = w.dataset.pwho; renderPeople(); return; }
+  if(e.target.closest('[data-padd]')){
+    const n = (prompt('加一個人（例如：曾于芳）') || '').trim(); if(!n) return;
+    const ppl = peopleOf(s).slice(); if(ppl.includes(n)){ S.who = n; renderPeople(); return; }
+    ppl.push(n); s.people = ppl;
+    if(ppl.length === 1) s.items.forEach(i => { if(!i.who) i.who = n; });   // 第一個人：原本的商品都先算他的
+    S.who = n; touch(); renderItems(); renderSide();
+  }
+});
+$('pkMain').addEventListener('click', e => {
+  const s = cur();
+  const rn = e.target.closest('[data-prn]'); if(rn){ const o = rn.dataset.prn, n = (prompt('改名', o) || '').trim(); if(!n || n === o) return;
+    s.people = peopleOf(s).map(p => p === o ? n : p); s.items.forEach(i => { if(i.who === o) i.who = n; }); if(S.who === o) S.who = n; touch(); renderItems(); renderSide(); return; }
+  const rm = e.target.closest('[data-prm]'); if(rm){ const o = rm.dataset.prm;
+    if(!confirm(`把「${o}」移除？他的商品會留在這張單（變成未分人），不會刪掉。`)) return;
+    s.people = peopleOf(s).filter(p => p !== o); s.items.forEach(i => { if(i.who === o) i.who = ''; if(!s.people.length) delete i.who; });
+    touch(); renderItems(); renderSide(); }
+});
 $('pkLocs').addEventListener('click', e => { const b = e.target.closest('[data-pkloc]'); if(!b) return; cur().location = b.dataset.pkloc; renderLocs(); touch(); });
 $('pkShowPrice').addEventListener('change', e => { cur().showPrice = e.target.checked; renderItems(); touch(); });
 
@@ -436,6 +498,7 @@ const findItem = el => { const li = el.closest('.pk-it'); return li && cur().ite
     const s = cur(), a = b.dataset.act;
     if(a === 'del'){ s.items = s.items.filter(i => i !== it); toast('已刪除「' + it.name + '」'); }
     if(a === 'tbd') it.tbd = !it.tbd;
+    if(a === 'who'){ const ppl = peopleOf(s); const i = ppl.indexOf(it.who); it.who = ppl[(i + 1) % ppl.length] || ''; }
     if(a === 'circ'){ if(b._long){ b._long = false; return; } setKept(it, it.reserved ? 0 : effQ(it)); }   // 點圓圈：全部已留／取消
     if(a === 'plus'){ const k = kOf(it); it.qty = (it.qty || 0) + 1; setKept(it, k); }
     if(a === 'minus'){ const k = kOf(it); if(it.qty) it.qty = Math.max(1, it.qty - 1); setKept(it, k); }
@@ -479,12 +542,13 @@ const findItem = el => { const li = el.closest('.pk-it'); return li && cur().ite
   });
 });
 function syncOrder(){
-  const ids = [...$('pkMain').children, ...$('pkPre').children, ...$('pkWait').children].map(li => li.dataset.id).filter(Boolean);
   const map = Object.fromEntries(cur().items.map(i => [i.id, i]));
+  if(peopleOf(cur()).length){ let who = ''; [...$('pkMain').children].forEach(li => { if(li.classList.contains('pk-whoh')) who = li.dataset.who || ''; else if(li.dataset.id && map[li.dataset.id]) map[li.dataset.id].who = who; }); }
+  const ids = [...$('pkMain').children, ...$('pkPre').children, ...$('pkWait').children].map(li => li.dataset.id).filter(Boolean);
   cur().items = ids.map(id => map[id]).filter(Boolean);
   renderItems(); touch();
 }
-if(window.Sortable) [$('pkMain'), $('pkPre'), $('pkWait')].forEach(L => Sortable.create(L, { handle: '.pk-grip', animation: 150, filter: '.pk-empty', onEnd: syncOrder }));
+if(window.Sortable) [$('pkMain'), $('pkPre'), $('pkWait')].forEach(L => Sortable.create(L, { handle: '.pk-grip', animation: 150, draggable: '.pk-it', filter: '.pk-empty', onEnd: syncOrder }));
 
 // 加入商品：一筆或一整串都從這一格加入（一整串會自動拆行、抓客人和位置）
 const addIn = $('pkAddIn');
