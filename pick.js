@@ -266,10 +266,14 @@ function renderSide(){
   // 進行中：照位置分區，每區標題旁有「全部複製」（同一區每張單一起複製，中間分隔線）
   const body = !list.length ? `<div class="pk-empty">${S.tab === 'done' ? '還沒有完成的單' : '沒有進行中的單'}</div>`
     : S.tab === 'done' ? list.map(card).join('')
-    : LOCS.map(l => { const g = list.filter(s => s.location === l); if(!g.length) return '';
-        const real = g.filter(hasContent).length;
-        return `<div class="pk-lochd"><span>${esc(l)} · ${g.length} 張</span>${real ? `<button type="button" class="pk-loccopy" data-pkcopyloc="${esc(l)}">全部複製</button>` : ''}</div>` + g.map(card).join(''); }).join('')
-      + (list.some(s => !LOCS.includes(s.location)) ? list.filter(s => !LOCS.includes(s.location)).map(card).join('') : '');
+    : (() => {   // 進行中：只分「未撿完」「已撿完」兩區；整區複製改成上面一排位置按鈕
+        const locs = LOCS.map(l => [l, list.filter(s => s.location === l && hasContent(s)).length]).filter(x => x[1]);
+        const copyRow = locs.length ? `<div class="pk-copyrow"><span>整區複製</span>${locs.map(([l, c]) => `<button type="button" class="pk-loccopy" data-pkcopyloc="${esc(l)}" title="把「${esc(l)}」的 ${c} 張單一起複製">${esc(l)} ${c}</button>`).join('')}</div>` : '';
+        const todo = list.filter(s => !s.items.length || left(s) > 0), ok = list.filter(s => s.items.length && !left(s));
+        return copyRow
+          + (todo.length ? `<div class="pk-lochd"><span>未撿完 · ${todo.length} 張</span></div>` + todo.map(card).join('') : '')
+          + (ok.length ? `<div class="pk-lochd"><span>已撿完 · ${ok.length} 張</span></div>` + ok.map(card).join('') : '');
+      })();
   $('pkSide').innerHTML = `
     <button class="pk-new" type="button" data-pk="new">＋ 新撿貨單</button>
     <div class="pk-seg"><button type="button" data-pktab="draft" class="${S.tab === 'draft' ? 'on' : ''}">進行中 ${drafts.filter(hasContent).length}</button><button type="button" data-pktab="done" class="${S.tab === 'done' ? 'on' : ''}">已完成 ${dones.length}</button></div>
@@ -288,6 +292,7 @@ function custOf(s){
 }
 function renderGrade(){
   const c = custOf();
+  if(typeof renderPeople === 'function' && $('pkPeople')) renderPeople();
   $('pkCustX').style.display = (cur().customer || '').trim() ? '' : 'none';
   $('pkGrade').innerHTML = c ? `<span class="grade-badge grade-${esc(c.grade || 'A')}">${esc(c.grade || 'A')}</span>` : '';
 }
@@ -319,7 +324,7 @@ function renderPeople(){
   if(!S.who && ppl.length) S.who = ppl[0];
   $('pkPeople').innerHTML = ppl.length
     ? `<span class="pk-plab">分人：${ppl.map(esc).join('、')}</span><button type="button" class="pk-pchip add" data-padd="1">＋ 新增一位</button>`
-    : `<button type="button" class="pk-pchip add" data-padd="1" title="同一間公司有好幾個人留貨時，可以在這張單裡分人">＋ 新增一位</button>`;
+    : ((s.customer || '').trim() && s.items.length ? `<button type="button" class="pk-pchip add" data-padd="1" title="這張單臨時要加別人的商品時，才按這裡">＋ 新增一位</button>` : '');   // 一開始都是一個人，先打客人、加商品；要追加別人時才出現
 }
 function renderItems(){
   const n = normals(), p = pres(), w = waits(), ppl = peopleOf(cur());
@@ -464,7 +469,7 @@ function pickCust(opt){
   else { s.customer = opt.dataset.pname; s.custId = null; }
   $('pkCust').value = s.customer; custDrop.classList.remove('open'); renderGrade(); touch();
 }
-$('pkCust').addEventListener('input', e => { cur().customer = e.target.value; cur().custId = null; renderGrade(); touch(); renderCustDrop(); });
+$('pkCust').addEventListener('input', e => { cur().customer = e.target.value; cur().custId = null; renderGrade(); renderPeople(); touch(); renderCustDrop(); });
 $('pkCust').addEventListener('focus', e => { e.target.select(); renderCustDrop(); });   // 點進去就全選，直接打字就能換客人
 $('pkCustX').addEventListener('click', () => { const s = cur(); s.customer = ''; s.custId = null; $('pkCust').value = ''; renderGrade(); touch(); renderSide(); $('pkCust').focus(); });
 $('pkCust').addEventListener('keydown', e => {
@@ -504,10 +509,10 @@ function openPeopleDlg(old){
   $('pkPdTitle').textContent = old ? '改名' : '新增一位';
   const fld = (id, lab, ph, v) => `<label class="pk-pdf"><span>${lab}</span><input class="pk-in" id="${id}" placeholder="${ph}" value="${esc(v || '')}" autocomplete="off"></label>`;
   $('pkPdBody').innerHTML = old ? fld('pkPdNew', '新的名字', '例如：曾于芳', old)
-    : (first ? fld('pkPdGroup', `分組名稱（原本${cnt ? '這 ' + cnt + ' 項商品' : '的清單'}是誰的）`, '例如：曾于芳', '') : '') + fld('pkPdNew', '新加的人', '例如：王小美', '');
+    : (first ? fld('pkPdGroup', `分組名稱（原本${cnt ? '這 ' + cnt + ' 項商品' : '的清單'}是誰的）`, '例如：曾于芳', (s.customer || '').trim()) : '') + fld('pkPdNew', '新加的人', '例如：王小美', '');
   $('pkPdErr').textContent = '';
   pdlg.style.display = 'flex';
-  const f = $(first ? 'pkPdGroup' : 'pkPdNew'); f.focus(); f.select();
+  const f = $('pkPdNew'); f.focus(); f.select();   // 分組名稱先帶入客人名字，游標直接在「新加的人」
 }
 function closePeopleDlg(){ pdlg.style.display = 'none'; S.pEdit = null; }
 pdlg.addEventListener('click', e => {

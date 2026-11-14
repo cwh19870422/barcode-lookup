@@ -313,3 +313,7 @@ textarea.pk-in.pk-src:focus{box-shadow:inset 0 0 0 2px var(--blue);}
 .pk-pdf{display:flex; flex-direction:column; gap:5px; font-size:13px; font-weight:700; color:#3A3733;}
 #tab-pick .pk-pdf .pk-in{background:#fff; box-shadow:inset 0 0 0 1.5px #1F1F1F; font-size:16px; padding:10px 12px;}
 .pk-pdlg .pk-cwarn:empty{display:none;}
+
+.pk-copyrow{display:flex; flex-wrap:wrap; align-items:center; gap:5px; padding:4px 2px 2px; font-size:12px; font-weight:700; color:#85807A;}
+.pk-copyrow .pk-loccopy{padding:4px 9px;}
+@media (max-width:760px){ .pk-copyrow{flex-wrap:nowrap; white-space:nowrap;} }
