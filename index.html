@@ -595,7 +595,7 @@ body.cust-view .prices{grid-template-columns:minmax(0,1fr) !important; max-width
     <p class="eyebrow"><span class="dot"></span>BARCODE DATABASE</p>
     <p class="sub" id="headerStats">載入中…</p>
   </div>
-  <div class="top-actions"><a class="top-link" id="topLink" href="./update.html"><span class="ico">⚙</span><span class="lbl">更新資料</span></a><button class="top-link" id="lockBtn" type="button"><span class="ico">🔒</span><span class="lbl">老闆登入</span></button></div>
+  <div class="top-actions"><button class="top-link" id="refreshBtn" type="button" title="重新載入最新版本與資料"><span class="ico">🔄</span><span class="lbl">重新整理</span></button><a class="top-link" id="topLink" href="./update.html"><span class="ico">⚙</span><span class="lbl">更新資料</span></a><button class="top-link" id="lockBtn" type="button"><span class="ico">🔒</span><span class="lbl">老闆登入</span></button></div>
 </header>
 <div class="barcode-strip"></div>
 
@@ -3440,6 +3440,17 @@ async function tryUnlock(){
   }
 }
 document.getElementById('lockForm').addEventListener('submit', (e)=>{ e.preventDefault(); tryUnlock(); });
+// 重新整理：先強制向伺服器重抓主頁與腳本（略過快取），再重新載入，確保拿到最新版程式與快捷鍵／資料
+document.getElementById('refreshBtn').addEventListener('click', async ()=>{
+  const btn = document.getElementById('refreshBtn');
+  if(btn.disabled) return;
+  btn.disabled = true; btn.querySelector('.lbl').textContent = '整理中…';
+  try{
+    const urls = [location.pathname, ...[...document.querySelectorAll('script[src],link[rel=stylesheet][href]')].map(e=>e.src||e.href).filter(u=>u.startsWith(location.origin))];
+    await Promise.all(urls.map(u=>fetch(u,{cache:'reload'}).catch(()=>{})));
+  }catch(e){}
+  location.reload();
+});
 document.getElementById('lockBtn').addEventListener('click', ()=>{ if(window.FB) FB.logout(); else showLock(); });
 applyMode();
 showLock();
