@@ -39,6 +39,7 @@ panel.innerHTML = `
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
         <input id="pkCust" type="text" placeholder="幫誰留貨？搜尋姓名、暱稱、電話或會員號碼" autocomplete="off">
         <span id="pkGrade"></span>
+        <button type="button" class="pk-custx" id="pkCustX" title="清除，改選別的客人" aria-label="清除客人" style="display:none">✕</button>
       </div>
       <div class="cust-dropdown" id="pkCustDrop"></div>
       <datalist id="pkCustList"></datalist>
@@ -281,6 +282,7 @@ function custOf(s){
 }
 function renderGrade(){
   const c = custOf();
+  $('pkCustX').style.display = (cur().customer || '').trim() ? '' : 'none';
   $('pkGrade').innerHTML = c ? `<span class="grade-badge grade-${esc(c.grade || 'A')}">${esc(c.grade || 'A')}</span>` : '';
 }
 function renderCustList(){
@@ -316,8 +318,8 @@ function renderPeople(){
     return;
   }
   $('pkPeople').innerHTML = ppl.length
-    ? `<span class="pk-plab">分人</span>${ppl.map(p => `<button type="button" class="pk-pchip${S.who === p ? ' on' : ''}" data-pwho="${esc(p)}" title="新加的商品會放到這個人">${esc(p)}</button>`).join('')}<button type="button" class="pk-pchip add" data-padd="1">＋ 加人</button><span class="pk-hint">新加的商品會放到黑色的人；拖曳商品可以換人</span>`
-    : `<button type="button" class="pk-pchip add" data-padd="1" title="同一間公司有好幾個人留貨時，可以在這張單裡分人">＋ 分人（同公司多人）</button>`;
+    ? `<span class="pk-plab">分人</span>${ppl.map(p => `<button type="button" class="pk-pchip${S.who === p ? ' on' : ''}" data-pwho="${esc(p)}" title="新加的商品會放到這個人">${esc(p)}</button>`).join('')}<button type="button" class="pk-pchip add" data-padd="1">＋ 新增一位</button><span class="pk-hint">新加的商品會放到黑色的人；拖曳商品可以換人</span>`
+    : `<button type="button" class="pk-pchip add" data-padd="1" title="同一間公司有好幾個人留貨時，可以在這張單裡分人">＋ 新增一位</button>`;
 }
 function renderItems(){
   const n = normals(), p = pres(), w = waits(), ppl = peopleOf(cur());
@@ -451,7 +453,8 @@ function pickCust(opt){
   $('pkCust').value = s.customer; custDrop.classList.remove('open'); renderGrade(); touch();
 }
 $('pkCust').addEventListener('input', e => { cur().customer = e.target.value; cur().custId = null; renderGrade(); touch(); renderCustDrop(); });
-$('pkCust').addEventListener('focus', renderCustDrop);
+$('pkCust').addEventListener('focus', e => { e.target.select(); renderCustDrop(); });   // 點進去就全選，直接打字就能換客人
+$('pkCustX').addEventListener('click', () => { const s = cur(); s.customer = ''; s.custId = null; $('pkCust').value = ''; renderGrade(); touch(); renderSide(); $('pkCust').focus(); });
 $('pkCust').addEventListener('keydown', e => {
   const opts = [...custDrop.querySelectorAll('.cust-opt')]; if(!custDrop.classList.contains('open') || !opts.length) return;
   if(e.key === 'ArrowDown' || e.key === 'ArrowUp'){ e.preventDefault(); custHi = (custHi + (e.key === 'ArrowDown' ? 1 : -1) + opts.length) % opts.length; opts.forEach((o, i) => o.classList.toggle('hi', i === custHi)); }
