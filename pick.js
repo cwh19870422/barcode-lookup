@@ -318,20 +318,33 @@ function renderPeople(){
     return;
   }
   $('pkPeople').innerHTML = ppl.length
-    ? `<span class="pk-plab">分人</span>${ppl.map(p => `<button type="button" class="pk-pchip${S.who === p ? ' on' : ''}" data-pwho="${esc(p)}" title="新加的商品會放到這個人">${esc(p)}</button>`).join('')}<button type="button" class="pk-pchip add" data-padd="1">＋ 新增一位</button><span class="pk-hint">新加的商品會放到黑色的人；拖曳商品可以換人</span>`
+    ? `<span class="pk-plab">分人：${ppl.map(esc).join('、')}</span><button type="button" class="pk-pchip add" data-padd="1">＋ 新增一位</button>`
     : `<button type="button" class="pk-pchip add" data-padd="1" title="同一間公司有好幾個人留貨時，可以在這張單裡分人">＋ 新增一位</button>`;
 }
 function renderItems(){
   const n = normals(), p = pres(), w = waits(), ppl = peopleOf(cur());
   renderPeople();
-  const whoTag = it => ppl.length ? `<button type="button" class="pk-whotag" data-act="who" title="換人">${esc(it.who && ppl.includes(it.who) ? it.who : '未分人')}</button>` : '';
-  $('pkMain').innerHTML = (ppl.length
-    ? whoGroups(cur(), n).map(g => `<li class="pk-whoh" data-who="${esc(g.who)}"><b>${esc(g.who || '未分人')}</b><span>${g.items.length} 項</span>${g.who ? `<button type="button" data-prn="${esc(g.who)}">改名</button><button type="button" data-prm="${esc(g.who)}">移除</button>` : ''}</li>` + g.items.map((it, i) => itemHTML(it, i + 1)).join('')).join('')
-    : n.map((it, i) => itemHTML(it, i + 1)).join('')) || (p.length || w.length ? '' : '<li class="pk-empty">還沒有商品。在上面那一格打商品，或貼上一整串文字、截圖。</li>');
-  $('pkPre').innerHTML = p.map(it => itemHTML(it, 0).replace('<input class="pk-nm"', whoTag(it) + '<input class="pk-nm"')).join('');
+  $('pkAddForm').style.display = ppl.length ? 'none' : '';   // 分人時，每個人下面各有自己的加入格
+  if(!ppl.length) $('pkAddExtra').dataset.who = '';
+  if(ppl.length){
+    // 分人：每個人一段＝標題、一般商品、預訂、等到貨、自己的加入格；人跟人之間一條粗線
+    $('pkMain').innerHTML = whoGroups(cur(), cur().items).map(g => {
+      const gn = g.items.filter(i => !i.preorder && !i.wait), gp = g.items.filter(i => i.preorder && !i.wait), gw = g.items.filter(i => i.wait);
+      return `<li class="pk-whoh" data-who="${esc(g.who)}"><b>${esc(g.who || '未分人')}</b><span>${g.items.length} 項</span>${g.who ? `<button type="button" data-prn="${esc(g.who)}">改名</button><button type="button" data-prm="${esc(g.who)}">移除</button>` : ''}</li>`
+        + gn.map((it, i) => itemHTML(it, i + 1)).join('')
+        + (gp.length ? '<li class="pk-sep pk-sep2">預訂</li>' + gp.map(it => itemHTML(it, 0)).join('') : '')
+        + (gw.length ? '<li class="pk-sep wait pk-sep2">等到貨</li>' + gw.map(it => itemHTML(it, 0)).join('') : '')
+        + (g.who ? `<li class="pk-padd" data-who="${esc(g.who)}"><span class="pk-addplus">＋</span><textarea class="pk-in" rows="1" placeholder="加商品給 ${esc(g.who)}：黑炫風 *25，或貼上一整串" data-padd-in="${esc(g.who)}"></textarea><button type="button" class="pk-b pri" data-padd-go="${esc(g.who)}">加入</button></li>` : '');
+    }).join('');
+    $('pkPre').innerHTML = ''; $('pkWait').innerHTML = '';
+    $('pkPreSep').style.display = 'none'; $('pkWaitSep').style.display = 'none';
+  } else {
+  $('pkMain').innerHTML = n.map((it, i) => itemHTML(it, i + 1)).join('') || (p.length || w.length ? '' : '<li class="pk-empty">還沒有商品。在上面那一格打商品，或貼上一整串文字、截圖。</li>');
+  $('pkPre').innerHTML = p.map(it => itemHTML(it, 0)).join('');
   $('pkPreSep').style.display = p.length ? 'flex' : 'none';
-  $('pkWait').innerHTML = w.map(it => itemHTML(it, 0).replace('<input class="pk-nm"', whoTag(it) + '<input class="pk-nm"')).join('');
+  $('pkWait').innerHTML = w.map(it => itemHTML(it, 0)).join('');
   $('pkWaitSep').style.display = w.length ? 'flex' : 'none';
+  }
   $('pkShowPrice').checked = !!cur().showPrice;
   renderSum();
 }
@@ -501,9 +514,23 @@ function peopleOk(){
     if(ppl.length === 1) s.items.forEach(i => { if(!i.who) i.who = n; });   // 第一個人：原本的商品都先算他的
   }
   S.who = n; S.pEdit = null; touch(); renderItems(); renderSide();
+  const box = [...document.querySelectorAll('[data-padd-in]')].find(x => x.dataset.paddIn === n); if(box) box.focus();
 }
+// 分人時，每個人自己的加入格
+function personAdd(who){
+  const box = [...document.querySelectorAll('[data-padd-in]')].find(x => x.dataset.paddIn === who); if(!box) return;
+  const t = box.value.trim(); if(!t){ box.focus(); return; }
+  const r = parseText(t); if(!r.items.length){ toast('看不出商品，請檢查文字格式'); return; }
+  r.customer = ''; r.items.forEach(i => { i.who = who; });
+  mergeParsed(r);
+  if(r.items.length > 1) toast('已加入 ' + r.items.length + ' 項給 ' + who);
+  const nb = [...document.querySelectorAll('[data-padd-in]')].find(x => x.dataset.paddIn === who); if(nb) nb.focus();
+}
+$('pkMain').addEventListener('keydown', e => { const w = e.target.dataset && e.target.dataset.paddIn; if(w != null && e.key === 'Enter' && !e.shiftKey && !e.isComposing){ e.preventDefault(); personAdd(w); } });
+$('pkMain').addEventListener('input', e => { if(e.target.dataset && e.target.dataset.paddIn != null){ e.target.style.height = 'auto'; e.target.style.height = Math.min(e.target.scrollHeight, 200) + 'px'; } });
 $('pkMain').addEventListener('click', e => {
   const s = cur();
+  const go = e.target.closest('[data-padd-go]'); if(go){ personAdd(go.dataset.paddGo); return; }
   const rn = e.target.closest('[data-prn]'); if(rn){ S.pEdit = { old: rn.dataset.prn }; renderPeople(); return; }
   const rm = e.target.closest('[data-prm]'); if(rm){ const o = rm.dataset.prm;
     if(!confirm(`把「${o}」移除？他的商品會留在這張單（變成未分人），不會刪掉。`)) return;

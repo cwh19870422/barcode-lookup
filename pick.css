@@ -297,3 +297,13 @@ textarea.pk-in.pk-src:focus{box-shadow:inset 0 0 0 2px var(--blue);}
 
 .pk-custx{flex:0 0 auto; border:0; background:var(--sg-chip, #ECE8E2); color:#3A3733; width:26px; height:26px; border-radius:50%; font:700 13px var(--sysfont); cursor:pointer; display:grid; place-items:center; padding:0;}
 .pk-custx:hover{background:#1F1F1F; color:#fff;}
+
+/* 分人：每個人自己的加入格 */
+.pk-padd{list-style:none; display:flex; align-items:flex-start; gap:6px; background:#fff; border-radius:10px; padding:3px 4px 3px 10px; box-shadow:0 0 0 1px var(--sg-line, #E4E0DA); margin-top:2px;}
+.pk-padd:focus-within{box-shadow:0 0 0 2px #1F1F1F;}
+.pk-padd .pk-addplus{line-height:36px; font-weight:800;}
+.pk-padd textarea.pk-in{flex:1; min-width:0; background:transparent; box-shadow:none; resize:none; min-height:36px; padding:8px 2px; font:14.5px/1.4 var(--sysfont);}
+.pk-padd .pk-b{margin-top:1px;}
+.pk-sep2{list-style:none; margin:4px 0 0;}
+.pk-whoh{margin-top:10px;}
+#tab-pick .pk-padd textarea.pk-in{background:transparent; box-shadow:none;}
