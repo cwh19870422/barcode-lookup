@@ -1,0 +1,58 @@
+name: sync-data
+
+# 每天台北時間 11:00–20:00 每整點，從 Dropbox 分享連結下載 15 個商品 xls，
+# 轉成資料、加密後，只在資料有變動時 commit data.boss.enc / data.staff.enc / data.meta.json。
+# 也可以到 Actions 頁面手動按 Run workflow。
+# 需要的 Secrets：DROPBOX_LINKS、JOEDA_BOSS_KEY、JOEDA_STAFF_KEY
+on:
+  schedule:
+    - cron: '0 3-12 * * *'   # UTC 03:00–12:00 = 台北 11:00–20:00
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: sync-data
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install xlsx reader
+        run: npm install --no-save --no-package-lock xlsx@0.18.5
+
+      - name: Download, convert and encrypt
+        env:
+          DROPBOX_LINKS: ${{ secrets.DROPBOX_LINKS }}
+          JOEDA_BOSS_KEY: ${{ secrets.JOEDA_BOSS_KEY }}
+          JOEDA_STAFF_KEY: ${{ secrets.JOEDA_STAFF_KEY }}
+        run: |
+          set -euo pipefail
+          node scripts/sync-from-dropbox.js data.json.new
+          node scripts/encrypt-data.js data.json.new .
+
+      - name: Commit encrypted data if changed
+        run: |
+          set -euo pipefail
+          rm -f data.json.new
+          if [ -z "$(git status --porcelain -- data.boss.enc data.staff.enc data.meta.json)" ]; then
+            echo "資料沒有變動，不 commit。"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data.boss.enc data.staff.enc data.meta.json
+          # 確認只有這三個加密檔被加入
+          test "$(git diff --cached --name-only | sort | tr '\n' ' ')" = "data.boss.enc data.meta.json data.staff.enc " 
+          git commit -m "auto-update: sync encrypted product data from Dropbox ($(TZ=Asia/Taipei date '+%Y-%m-%d %H:%M'))"
+          git pull --rebase origin main
+          git push origin main
