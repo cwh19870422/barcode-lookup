@@ -1,12 +1,12 @@
 name: sync-data
 
-# 每天台北時間 11:00–20:00 每整點，從 Dropbox 分享連結下載 15 個商品 xls，
+# 每天台北時間 11:17–20:17 每小時一次，從 Dropbox 分享連結下載 15 個商品 xls，
 # 轉成資料、加密後，只在資料有變動時 commit data.boss.enc / data.staff.enc / data.meta.json。
 # 也可以到 Actions 頁面手動按 Run workflow。
 # 需要的 Secrets：DROPBOX_LINKS、JOEDA_BOSS_KEY、JOEDA_STAFF_KEY
 on:
   schedule:
-    - cron: '0 3-12 * * *'   # UTC 03:00–12:00 = 台北 11:00–20:00
+    - cron: '17 3-12 * * *'  # UTC 03:17–12:17 = 台北 11:17–20:17（避開整點的排程高峰）
   workflow_dispatch:
 
 permissions:
