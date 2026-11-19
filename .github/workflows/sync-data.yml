@@ -1,17 +1,14 @@
 name: sync-data
 
-# 每天台北時間 11:17–20:17 每小時一次，從 Dropbox 分享連結下載 15 個商品 xls，
+# 每天台北時間 11:00–20:00 每整點（由 Claude 排程啟動），從 Dropbox 分享連結下載 15 個商品 xls，
 # 轉成資料、加密後，只在資料有變動時 commit data.boss.enc / data.staff.enc / data.meta.json。
 # 啟動方式：
 #   1. Claude 排程每小時推一個空 commit 到 sync-trigger 分支（主要的準時啟動來源）
 #   2. 到 Actions 頁面手動按 Run workflow
-#   3. GitHub 自己的 cron（備用，GitHub 常常延遲或跳過）
 # 需要的 Secrets：DROPBOX_LINKS、JOEDA_BOSS_KEY、JOEDA_STAFF_KEY
 on:
   push:
     branches: [sync-trigger]
-  schedule:
-    - cron: '17 3-12 * * *'  # UTC 03:17–12:17 = 台北 11:17–20:17（避開整點的排程高峰）
   workflow_dispatch:
 
 permissions:
