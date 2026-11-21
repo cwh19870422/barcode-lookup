@@ -477,7 +477,9 @@ table.cart-table tr.ret-row .cart-name::before{content:'退貨 '; color:#c0392b;
     .cart-title-left{display:contents;}
     .cart-title-row .cart-title{grid-column:1; grid-row:1; white-space:nowrap;}
     .cart-title-row .cart-count{grid-column:2; grid-row:1;}
-    .cart-title-row .op-sel{grid-column:1 / 3; grid-row:2; justify-self:start; min-width:0; width:84px; font-size:12px; padding:0 4px; height:30px;}
+    .cart-title-row .op-sel{grid-column:1; grid-row:2; justify-self:start; min-width:0; width:84px; font-size:12px; padding:0 4px; height:30px;}
+    .cart-title-row .cart-head-tools{grid-column:2; grid-row:2; justify-self:start; gap:5px;}
+    .cart-title-row .cart-head-tools button{font-size:12px; padding:0 8px; height:30px; border-radius:8px;}
     .cart-title-row .cart-head-actions{grid-column:3; grid-row:2; justify-self:end; display:flex; gap:5px; flex-wrap:nowrap;}
     .cart-title-row .cart-head-actions button{font-size:12px; padding:0 8px; height:30px; white-space:nowrap; border-radius:8px;}
     .cart-title-row{column-gap:6px;}
@@ -486,6 +488,8 @@ table.cart-table tr.ret-row .cart-name::before{content:'退貨 '; color:#c0392b;
     .cart-note-m:empty{display:none;}
   }
   .op-sel.empty{color:#85807A; border-color:#c7c7cc;}
+  .cart-head-tools{display:flex; gap:8px; align-items:center; flex:none;}
+  .cart-head-tools button{border:none; font-weight:600; font-size:13px; height:32px; padding:0 14px; border-radius:10px; cursor:pointer; font-family:var(--sysfont); white-space:nowrap;}
   .cart-head-actions{display:flex; gap:8px; align-items:center;}
   .cart-head-actions button{border:none; font-weight:600; font-size:13px; padding:7px 14px; border-radius:10px; cursor:pointer; font-family:var(--sysfont); white-space:nowrap;}
   .cart-actions{display:flex; gap:10px; margin-top:14px; align-items:stretch; background:var(--paper-alt); border:1px solid var(--line); border-radius:16px; padding:10px;}
@@ -706,11 +710,13 @@ body.cust-view .prices{grid-template-columns:minmax(0,1fr) !important; max-width
       <div class="cart-title-row">
         <div class="cart-title-left"><div class="cart-title">出貨清單</div><div class="cart-count" id="cartCount">0 項</div>
           <select id="operatorSel" class="op-sel" aria-label="打單人員"><option value="">打單人員</option><option>六六</option><option>宜惠</option><option>小豪</option><option>sam</option><option>文嘉</option><option>小蔚</option></select>
+          <span class="cart-head-tools">
+            <button class="btn-tax" id="hideMoneyBtn" title="隱藏所有金額，只顯示品名和數量（列印的帳單也一樣），再按一次還原">隱藏金額</button>
+            <button class="btn-tax" id="taxModeBtn" title="每個商品單價 ×1.05（四捨五入），再按一次還原">含稅金額</button>
+          </span>
           <span class="cart-cust-note" id="cartCustNote"></span>
         </div>
         <div class="cart-head-actions">
-          <button class="btn-tax" id="hideMoneyBtn" title="隱藏所有金額，只顯示品名和數量（列印的帳單也一樣），再按一次還原">隱藏金額</button>
-          <button class="btn-tax" id="taxModeBtn" title="每個商品單價 ×1.05（四捨五入），再按一次還原">含稅金額</button>
           <button class="btn-hold" id="holdCartBtn">暫存訂單</button>
           <button class="btn-clear" id="clearCartBtn">全部刪除</button>
         </div>
