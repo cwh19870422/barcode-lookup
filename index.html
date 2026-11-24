@@ -384,6 +384,14 @@ table.cart-table tr.ret-row .cart-name::before{content:'退貨 '; color:#c0392b;
   table.cart-table input.cart-name-input{font-weight:600; min-width:90px;}
   tr.cart-sel td{background:rgba(183,121,31,0.16) !important;}
   table.cart-table td.cart-name{cursor:pointer;}
+  /* 電腦／平板：備註欄縮成原本的一半，品名變寬、字放大 */
+  @media (min-width:641px){
+    table.cart-table th.th-note{width:12%; min-width:110px;}
+    table.cart-table > tbody > tr[data-idx] > td:first-child{font-size:16px; font-weight:500; line-height:1.4; padding-right:10px;}
+    table.cart-table input.cart-price, table.cart-table input.cart-qty{font-size:15px;}
+    table.cart-table td.cart-subtotal{font-size:15px;}
+    table.cart-table input.cart-name-input{font-size:16px;}
+  }
   .disc-tag{display:inline-block; margin-left:6px; font-size:11px; font-weight:700; color:var(--orange);}
   .quick-fee-btn:active{opacity:.6;}
   tr.fee-row td{background:rgba(31,31,31,0.04);}
@@ -1961,7 +1969,7 @@ function renderCart(){
     return;
   }
   let html = `<table class="cart-table"><thead><tr>
-    <th>品名</th><th style="width:70px;">單價</th><th style="width:56px;">數量</th><th style="width:70px;">小計</th><th>備註</th><th style="width:26px;"></th><th style="width:78px;">上次購買</th><th style="width:64px;">歷史</th>
+    <th>品名</th><th style="width:82px;">單價</th><th style="width:62px;">數量</th><th style="width:84px;">小計</th><th class="th-note">備註</th><th style="width:26px;"></th><th style="width:78px;">上次購買</th><th style="width:64px;">歷史</th>
   </tr></thead><tbody>`;
   cart.forEach((it,i)=>{
     const isFee = !!it.special;
