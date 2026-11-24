@@ -320,9 +320,14 @@ table.cart-table tr.ret-row .cart-name::before{content:'退貨 '; color:#c0392b;
 @media (max-width:640px){ table.cart-table tr.ret-row .cart-name::before{content:none;} }
   .cart-subtotal{font-weight:700; white-space:nowrap;}
   .cart-del{background:none; border:none; color:var(--red); font-size:16px; cursor:pointer; padding:4px;}
-  .cart-totals{display:flex; justify-content:flex-end; gap:26px; padding:14px 4px; border-top:1.5px solid var(--ink); margin-top:4px;}
-  .cart-totals .tline{font-size:13px; color:var(--secondary);}
-  .cart-totals .tline b{color:var(--ink); font-size:16px; margin-left:4px;}
+  .cart-totals{display:flex; justify-content:flex-end; align-items:baseline; flex-wrap:wrap; gap:10px 42px; padding:14px 4px; border-top:1.5px solid var(--ink); margin-top:4px;}
+  .cart-totals .tline{font-size:17px; color:var(--secondary); white-space:nowrap;}
+  .cart-totals .tline b{color:var(--ink); font-size:40px; font-weight:800; letter-spacing:-0.01em; margin-left:6px;}
+  @media (max-width:640px){
+    .cart-totals{gap:8px 22px;}
+    .cart-totals .tline{font-size:15px;}
+    .cart-totals .tline b{font-size:26px; margin-left:4px;}
+  }
   .quick-fee-row{display:grid; grid-template-columns:max-content repeat(6, minmax(0,112px)); justify-content:start; align-items:center; gap:8px; margin-top:12px;}
   .fl-short{display:none;}
   .quick-fee-label{font-size:12px; color:var(--secondary); font-weight:600; margin-right:2px;}
