@@ -104,6 +104,11 @@ panel.innerHTML = `
   <p class="pk-cwarn" id="pkPdErr" style="text-align:left"></p>
   <div class="pk-row" style="justify-content:flex-end"><button class="pk-b" type="button" data-pdcancel="1">取消</button><button class="pk-b pri" type="button" data-pdok="1">確定</button></div>
 </div></div>
+<div class="pk-scrim" id="pkRemoveSheet" style="display:none"><div class="pk-sheet pk-pdlg" role="dialog" aria-label="移除一位">
+  <h3 id="pkRmTitle">移除</h3>
+  <div id="pkRmBody"></div>
+  <div class="pk-row" id="pkRmBtns" style="justify-content:flex-end"></div>
+</div></div>
 <div class="pk-toast" id="pkToast" style="display:none"></div>`;
 
 let toastT;
@@ -332,7 +337,7 @@ function renderItems(){
       const nameEl = !g.who ? '<b>未分人</b>'
         : S.renaming === g.who ? `<input class="pk-in pk-rnin" data-rnin="${esc(g.who)}" value="${esc(g.who)}" autocomplete="off">`
         : `<button type="button" class="pk-whonm" data-prn="${esc(g.who)}" title="點一下改名字">${esc(g.who)} <span aria-hidden="true">✎</span></button>`;
-      return `<li class="pk-whoh" data-who="${esc(g.who)}">${nameEl}${isMain ? '<span class="pk-ptag main sm">主要</span>' : ''}<span>${g.items.length} 項</span>${g.who && !isMain ? `<button type="button" data-prm="${esc(g.who)}">移除</button>` : ''}</li>`
+      return `<li class="pk-whoh" data-who="${esc(g.who)}">${nameEl}${isMain ? '<span class="pk-ptag main sm">主要</span>' : ''}<span>${g.items.length} 項</span>${g.who ? `<button type="button" data-prm="${esc(g.who)}">移除</button>` : ''}</li>`
         + gn.map((it, i) => itemHTML(it, i + 1)).join('')
         + (gp.length ? '<li class="pk-sep pk-sep2">預訂</li>' + gp.map(it => itemHTML(it, 0)).join('') : '')
         + (gw.length ? '<li class="pk-sep wait pk-sep2">等到貨</li>' + gw.map(it => itemHTML(it, 0)).join('') : '')
@@ -572,11 +577,42 @@ $('pkMain').addEventListener('click', e => {
   const go = e.target.closest('[data-padd-go]'); if(go){ personAdd(go.dataset.paddGo); return; }
   const rn = e.target.closest('[data-prn]'); if(rn){ S.renaming = rn.dataset.prn; renderItems();
     const inp = [...document.querySelectorAll('[data-rnin]')].find(x => x.dataset.rnin === S.renaming); if(inp){ inp.focus(); inp.select(); } return; }
-  const rm = e.target.closest('[data-prm]'); if(rm){ const o = rm.dataset.prm;
-    if(!confirm(`把「${o}」移除？他的商品會留在這張單（變成未分人），不會刪掉。`)) return;
-    s.people = peopleOf(s).filter(p => p !== o); s.items.forEach(i => { if(i.who === o) i.who = ''; if(!s.people.length) delete i.who; });
-    touch(); renderItems(); renderSide(); }
+  const rm = e.target.closest('[data-prm]'); if(rm){ openRemoveDlg(rm.dataset.prm); return; }
 });
+// 移除一位：問「連商品一起移除」還是「商品留下（變未分人）」；他的商品都已留好（＝已取貨）時，預設連商品一起移除。
+// 移除到只剩一人（或沒人）就不用再分人，畫面回到單人模式。
+const rdlg = $('pkRemoveSheet');
+function openRemoveDlg(who){
+  const s = cur(), mine = s.items.filter(i => i.who === who), n = mine.length, k = mine.filter(i => i.reserved).length;
+  const allDone = n > 0 && k === n, rest = peopleOf(s).length - 1;
+  S.rmWho = who;
+  $('pkRmTitle').textContent = '移除「' + who + '」';
+  $('pkRmBody').innerHTML = `<p class="pk-hint" style="margin:0">${n ? `他有 ${n} 項商品，已留 ${k} 項${allDone ? '（都已留好，應該已經取貨了）' : ''}。` : '他目前沒有商品。'}${rest <= 1 ? '<br>移除後不用再分人，畫面會回到單人模式。' : ''}</p>`;
+  const cancel = '<button class="pk-b" type="button" data-rmact="cancel">取消</button>';
+  const keep = `<button class="pk-b${allDone ? '' : ' pri'}" type="button" data-rmact="keep" id="pkRmKeep">商品留下</button>`;
+  const del = `<button class="pk-b ${allDone ? 'pri' : 'pk-delb'}" type="button" data-rmact="del" id="pkRmDel">連商品一起移除</button>`;
+  $('pkRmBtns').innerHTML = !n ? cancel + '<button class="pk-b pri" type="button" data-rmact="keep" id="pkRmKeep">移除</button>'
+    : allDone ? cancel + keep + del : cancel + del + keep;
+  rdlg.style.display = 'flex';
+  const d = $(allDone ? 'pkRmDel' : 'pkRmKeep'); if(d) d.focus();
+}
+function closeRemoveDlg(){ rdlg.style.display = 'none'; S.rmWho = null; }
+function doRemove(who, withItems){
+  const s = cur(), n = s.items.filter(i => i.who === who).length, ppl = peopleOf(s).filter(p => p !== who);
+  if(withItems) s.items = s.items.filter(i => i.who !== who); else s.items.forEach(i => { if(i.who === who) i.who = ''; });
+  if(ppl.length <= 1){ s.people = []; s.items.forEach(i => { delete i.who; }); }   // 只剩一人或沒人：回到單人模式
+  else s.people = ppl;
+  if(S.who === who) S.who = null;
+  closeRemoveDlg(); touch(); renderItems(); renderSide();
+  toast(withItems && n ? `已移除「${who}」和他的 ${n} 項商品` : `已移除「${who}」`);
+}
+rdlg.addEventListener('click', e => {
+  if(e.target === rdlg){ closeRemoveDlg(); return; }
+  const b = e.target.closest('[data-rmact]'); if(!b) return;
+  if(b.dataset.rmact === 'cancel'){ closeRemoveDlg(); return; }
+  if(S.rmWho != null) doRemove(S.rmWho, b.dataset.rmact === 'del');
+});
+rdlg.addEventListener('keydown', e => { if(e.key === 'Escape') closeRemoveDlg(); });
 $('pkLocs').addEventListener('click', e => { const b = e.target.closest('[data-pkloc]'); if(!b) return; cur().location = b.dataset.pkloc; renderLocs(); touch(); });
 $('pkShowPrice').addEventListener('change', e => { cur().showPrice = e.target.checked; renderItems(); touch(); });
 
