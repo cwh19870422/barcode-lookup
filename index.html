@@ -320,11 +320,16 @@ table.cart-table tr.ret-row .cart-name::before{content:'退貨 '; color:#c0392b;
 @media (max-width:640px){ table.cart-table tr.ret-row .cart-name::before{content:none;} }
   .cart-subtotal{font-weight:700; white-space:nowrap;}
   .cart-del{background:none; border:none; color:var(--red); font-size:16px; cursor:pointer; padding:4px;}
-  .cart-totals{display:flex; justify-content:flex-end; align-items:baseline; flex-wrap:wrap; gap:10px 42px; padding:14px 4px; border-top:1.5px solid var(--ink); margin-top:4px;}
+  /* 底部：快捷（左）＋ 總計色塊（右）同一排、底部對齊；放不下就自動換成兩排（快捷在上、總計在下靠右） */
+  .cart-foot{display:flex; flex-wrap:wrap; justify-content:space-between; align-items:flex-end; gap:14px 24px; margin-top:4px;}
+  .cart-foot:has(.cart-totals[style*="flex"]){border-top:1.5px solid var(--ink); padding-top:14px;}
+  .cart-foot .quick-fee-row{margin-top:0; flex:none;}
+  .cart-totals{display:flex; align-items:baseline; flex-wrap:wrap; gap:6px 34px; margin-left:auto; padding:10px 22px; border-radius:14px; background:var(--paper-alt); max-width:100%;}
   .cart-totals .tline{font-size:17px; color:var(--secondary); white-space:nowrap;}
   .cart-totals .tline b{color:var(--ink); font-size:40px; font-weight:800; letter-spacing:-0.01em; margin-left:6px;}
   @media (max-width:640px){
-    .cart-totals{gap:8px 22px;}
+    .cart-foot .quick-fee-row{width:100%;}
+    .cart-totals{gap:4px 20px; padding:8px 16px;}
     .cart-totals .tline{font-size:15px;}
     .cart-totals .tline b{font-size:26px; margin-left:4px;}
   }
@@ -736,19 +741,21 @@ body.cust-view .prices{grid-template-columns:minmax(0,1fr) !important; max-width
       </div>
       <div class="edit-banner" id="editBanner"><span id="editBannerText"></span><button type="button" id="cancelEditBtn">取消編輯</button></div>
       <div id="cartBody"></div>
-      <div class="cart-totals" id="cartTotals" style="display:none;">
-        <div class="tline">總數量 <b id="totalQty">0</b></div>
-        <div class="tline" id="untaxedLine" style="display:none;">未稅總額 <b id="untaxedAmt">0</b></div>
-        <div class="tline tline-amt"><span id="totalAmtLabel">總金額</span> <b id="totalAmt">0</b></div>
-      </div>
-      <div class="quick-fee-row">
-        <span class="quick-fee-label">快捷</span>
-        <button type="button" class="quick-fee-btn" id="tempItemBtn"><span class="fl-full">自訂</span><span class="fl-short">臨時</span></button>
-        <button type="button" class="quick-fee-btn" data-fee="運費"><span class="fl-full">運費</span><span class="fl-short">運費</span></button>
-        <button type="button" class="quick-fee-btn qf-tax" id="taxBtn"><span class="fl-full">稅金</span><span class="fl-short">稅金</span></button>
-        <button type="button" class="quick-fee-btn" data-fee="前帳"><span class="fl-full">前帳</span><span class="fl-short">前帳</span></button>
-        <button type="button" class="quick-fee-btn refund" data-fee="退費"><span class="fl-full">退費</span><span class="fl-short">退費</span></button>
-        <button type="button" class="quick-fee-btn disc-btn" id="discBtn"><span class="fl-full">折數</span><span class="fl-short">折數</span></button>
+      <div class="cart-foot">
+        <div class="quick-fee-row">
+          <span class="quick-fee-label">快捷</span>
+          <button type="button" class="quick-fee-btn" id="tempItemBtn"><span class="fl-full">自訂</span><span class="fl-short">臨時</span></button>
+          <button type="button" class="quick-fee-btn" data-fee="運費"><span class="fl-full">運費</span><span class="fl-short">運費</span></button>
+          <button type="button" class="quick-fee-btn qf-tax" id="taxBtn"><span class="fl-full">稅金</span><span class="fl-short">稅金</span></button>
+          <button type="button" class="quick-fee-btn" data-fee="前帳"><span class="fl-full">前帳</span><span class="fl-short">前帳</span></button>
+          <button type="button" class="quick-fee-btn refund" data-fee="退費"><span class="fl-full">退費</span><span class="fl-short">退費</span></button>
+          <button type="button" class="quick-fee-btn disc-btn" id="discBtn"><span class="fl-full">折數</span><span class="fl-short">折數</span></button>
+        </div>
+        <div class="cart-totals" id="cartTotals" style="display:none;">
+          <div class="tline">總數量 <b id="totalQty">0</b></div>
+          <div class="tline" id="untaxedLine" style="display:none;">未稅總額 <b id="untaxedAmt">0</b></div>
+          <div class="tline tline-amt"><span id="totalAmtLabel">總金額</span> <b id="totalAmt">0</b></div>
+        </div>
       </div>
       <div class="cart-actions">
         <div class="print-group">
