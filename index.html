@@ -3434,8 +3434,6 @@ function applyMode(){
   if(!boss){
     if(sel && sel.value === 'cost'){ sel.value = 'grade'; sel.dispatchEvent(new Event('change')); }
     if(costOpt){ window._costOpt = costOpt; costOpt.remove(); }
-    const active = document.querySelector('.tab-btn.active');
-    if(!active || active.dataset.tab === 'search') switchTab('order');
   }else{
     if(sel && !costOpt && window._costOpt) sel.appendChild(window._costOpt);
     const active = document.querySelector('.tab-btn.active');
