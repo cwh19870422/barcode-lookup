@@ -2276,7 +2276,7 @@ document.getElementById('printBtn').addEventListener('click', ()=>{
 });
 document.getElementById('printReceiptBtn').addEventListener('click', ()=>{
   if(!cart.length){ alert('清單是空的，先加入商品再列印'); return; }
-  printHtml(renderReceiptHtml({...snapshotCart(), date: (currentTxn && currentTxn.date) || new Date().toISOString()}), true);
+  printHtml(renderReceiptHtml({...snapshotCart(), date: (currentTxn && currentTxn.date) || new Date().toISOString(), operator: document.getElementById('operatorSel').value}), true);
 });
 
 // 結帳：存進該客人的交易紀錄（編輯舊訂單時則覆蓋原訂單），存完清空準備下一張單
@@ -2543,11 +2543,25 @@ function renderOrderHtmlNoPrice(o){
     </div>`;
 }
 
-// 80mm 感熱收據（精簡版）：只印客戶名、日期、品名／單價／數量／小計、總額
+// 80mm 感熱收據（精簡版）：客戶名＋日期；第二行左邊統編（有填才印）、右邊打單人員；品名／單價／數量／小計、總額
 function fmtDateTime24(iso){
   const d = new Date(iso);
   if(isNaN(d)) return '';
   return d.getFullYear() + '/' + pad2(d.getMonth()+1) + '/' + pad2(d.getDate()) + ' ' + pad2(d.getHours()) + ':' + pad2(d.getMinutes()) + ':' + pad2(d.getSeconds());
+}
+// 收據抬頭：第一行＝客戶名（左）、日期時間（右）；第二行＝統編（左，有填才印）、打單人員（右，在時間正下方）
+function receiptHead(o){
+  const c = o.customer;
+  const tax = c && c.taxId ? '統編：' + escapeHtml(c.taxId) : '';
+  const op = o.operator ? '打單人員：' + escapeHtml(o.operator) : '';
+  const rule = 'border-bottom:3px double #000; padding-bottom:5px;';
+  return `<div style="display:flex; justify-content:space-between; align-items:baseline; gap:6px; ${tax || op ? '' : rule}">
+        <span style="font-weight:700; font-size:17px;">${c ? escapeHtml(c.name || '') : ''}</span>
+        <span style="font-size:11px; white-space:nowrap;">${fmtDateTime24(o.date)}</span>
+      </div>` + (tax || op ? `
+      <div style="display:flex; justify-content:space-between; align-items:baseline; gap:6px; font-size:11px; ${rule}">
+        <span>${tax}</span><span style="white-space:nowrap;">${op}</span>
+      </div>` : '');
 }
 function renderReceiptHtml(o){
   const c = o.customer;
@@ -2556,11 +2570,8 @@ function renderReceiptHtml(o){
     const items = (o.lines || []).filter(l => l.type !== 'fee');
     const th0 = 'padding:5px 0 3px; border-bottom:1px solid #000; font-weight:700; white-space:nowrap;';
     return `
-    <div class="receipt-80" style="width:72mm; padding:2mm 1mm; color:#000; font-family:-apple-system,'PingFang TC','Microsoft JhengHei',sans-serif; font-size:12px; line-height:1.45;">
-      <div style="display:flex; justify-content:space-between; align-items:baseline; gap:6px; border-bottom:3px double #000; padding-bottom:5px;">
-        <span style="font-weight:700; font-size:17px;">${c ? escapeHtml(c.name || '') : ''}</span>
-        <span style="font-size:11px; white-space:nowrap;">${fmtDateTime24(o.date)}</span>
-      </div>
+    <div class="receipt-80" style="width:72mm; padding:2mm 1mm; color:#000; font-family:-apple-system,'PingFang TC','Microsoft JhengHei',sans-serif; font-size:12px; line-height:1.45; font-variant-numeric:tabular-nums;">
+      ${receiptHead(o)}
       <table style="width:100%; border-collapse:collapse; font-size:12px;">
         <thead><tr><th style="${th0} text-align:left;">品名</th><th style="${th0} text-align:center; padding-left:4px;">數量</th></tr></thead>
         <tbody>${items.map(l => `<tr><td style="${td} padding-right:4px;">${escapeHtml(l.name || '')}</td><td style="${td} text-align:center; white-space:nowrap;">${l.qty}</td></tr>`).join('')}</tbody>
@@ -2584,11 +2595,8 @@ function renderReceiptHtml(o){
     : `<div style="${rt} ${big}"><span>共 ${totalQty} 件　總額</span><span>${fmt(o.total)}</span></div>`;
   const th = 'padding:5px 0 3px; border-bottom:1px solid #000; font-weight:700; white-space:nowrap;';
   return `
-    <div class="receipt-80" style="width:72mm; padding:2mm 1mm; color:#000; font-family:-apple-system,'PingFang TC','Microsoft JhengHei',sans-serif; font-size:12px; line-height:1.45;">
-      <div style="display:flex; justify-content:space-between; align-items:baseline; gap:6px; border-bottom:3px double #000; padding-bottom:5px;">
-        <span style="font-weight:700; font-size:17px;">${c ? escapeHtml(c.name || '') : ''}</span>
-        <span style="font-size:11px; white-space:nowrap;">${fmtDateTime24(o.date)}</span>
-      </div>
+    <div class="receipt-80" style="width:72mm; padding:2mm 1mm; color:#000; font-family:-apple-system,'PingFang TC','Microsoft JhengHei',sans-serif; font-size:12px; line-height:1.45; font-variant-numeric:tabular-nums;">
+      ${receiptHead(o)}
       <table style="width:100%; border-collapse:collapse; font-size:12px;">
         <thead><tr>
           <th style="${th} text-align:left;">品名</th>
