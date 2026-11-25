@@ -117,7 +117,7 @@
     body .cart-actions{flex-wrap:wrap; gap:8px;} body .cart-actions .print-group{flex:1 1 100%; gap:8px;} body .cart-actions .print-group button{flex:1; padding:13px 6px;} body .cart-actions .btn-save{flex:1 1 100%;}
     .cart-title-row{flex-wrap:wrap; gap:8px;}
   }
-  .sticky-controls{position:sticky !important; top:var(--tabs-h, 62px); z-index:40 !important; background:var(--paper); padding-top:8px; padding-bottom:18px;}
+  .sticky-controls{position:relative !important; z-index:40 !important; background:var(--paper); padding-top:8px; padding-bottom:18px;}   /* 搜尋客戶列：不凍結 */
   .price-cell .val{padding-left:30px !important; padding-right:30px !important;}
   @media (max-width:520px){.price-cell .lbl{position:static; width:auto;} .price-cell .val{padding-left:2px !important; padding-right:2px !important;} .prices{grid-template-columns:repeat(5,minmax(0,1fr)); gap:5px;} body.staff .prices{grid-template-columns:repeat(4,minmax(0,1fr));} .price-cell{flex-direction:column;} .price-cell .lbl{padding:3px 0; font-size:12px; width:auto;} .price-cell .val{padding:8px 2px; font-size:15px !important;} header{padding:20px 16px 12px;} main{padding:12px 16px 60px;} .tabs{padding-left:16px; padding-right:16px;} .price-cell .val{font-size:17px;}}
   ::selection{background:rgba(68,65,62,0.25);}
@@ -229,6 +229,18 @@
     .cust-mini{position:fixed; top:0; left:0; right:0; z-index:60; background:var(--paper); padding:8px 16px; align-items:center; gap:10px; box-shadow:0 1px 0 var(--line), 0 4px 10px rgba(0,0,0,.06);}
     body.cm-show .cust-mini{display:flex;}
     .cust-mini .cm-name{font-size:15px; font-weight:700; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; min-width:0;}
+  }
+  /* ===== 出貨清單：固定留一塊區域（沒商品也留白）；超過就長大，到畫面上限後清單自己捲動；總計列固定在下方 ===== */
+  #tab-order{--cart-min:300px;}
+  #tab-order #cartBody{min-height:var(--cart-min); max-height:var(--cart-max, none); overflow-y:auto; -webkit-overflow-scrolling:touch;}
+  #tab-order #cartBody table.cart-table thead th{position:sticky; top:0; z-index:2; background:var(--card);}
+  #tab-order .cart-foot{position:sticky; bottom:var(--osb-reserve, 0px); z-index:30; background:var(--card); padding-top:10px; padding-bottom:8px; margin-top:0; box-shadow:0 -8px 10px -8px rgba(0,0,0,.12);}
+  @media (max-width:640px){
+    #tab-order{--cart-min:220px;}
+    /* 手機：快捷鍵太高，不跟著固定；只固定「總數量／總金額」那塊 */
+    #tab-order .cart-foot{display:contents;}
+    #tab-order .cart-foot .quick-fee-row{margin-top:10px; width:100%;}
+    #tab-order .cart-totals[style*="flex"]{position:sticky; bottom:var(--osb-reserve, 0px); z-index:30; margin-top:8px; box-shadow:0 0 0 5px var(--card), 0 -6px 10px -2px rgba(0,0,0,.10);}
   }
   #tab-order .qk{margin-top:0; padding:8px 16px;}
   #tab-order .cart-section{margin-top:12px; padding:12px 16px;}
@@ -502,6 +514,16 @@ table.cart-table tr.ret-row .cart-name::before{content:'退貨 '; color:var(--re
     .cart-title-row .cart-head-actions{grid-column:3; grid-row:2; justify-self:end; display:flex; gap:5px; flex-wrap:nowrap;}
     .cart-title-row .cart-head-actions button{font-size:12px; padding:0 8px; height:30px; white-space:nowrap; border-radius:8px;}
     .cart-title-row{column-gap:6px;}
+    /* 窄手機：標題列第二排會超出畫面（全部刪除被切掉）→ 縮小按鈕；更窄就把「暫存訂單／全部刪除」移到第三排靠右 */
+    @media (max-width:420px){
+      .cart-title-row .op-sel{width:76px; font-size:11.5px;}
+      .cart-title-row .cart-head-tools{gap:4px;} .cart-title-row .cart-head-actions{gap:4px;}
+      .cart-title-row .cart-head-tools button, .cart-title-row .cart-head-actions button{font-size:11.5px; padding:0 6px;}
+    }
+    @media (max-width:375px){
+      .cart-title-row .cart-head-tools{grid-column:2 / 4;}
+      .cart-title-row .cart-head-actions{grid-row:3; grid-column:1 / -1; justify-self:end;}
+    }
     .cart-title-row .cart-cust-note{display:none;}
     .cart-note-m{display:-webkit-box; margin:0 auto 8px; max-width:100%; text-align:center; flex:none; width:max-content;}
     .cart-note-m:empty{display:none;}
@@ -529,14 +551,17 @@ table.cart-table tr.ret-row .cart-name::before{content:'退貨 '; color:var(--re
   .btn-clear{background:var(--card); color:var(--red); box-shadow:inset 0 0 0 1.5px var(--red);}
   .btn-print{background:var(--card); color:var(--text); box-shadow:inset 0 0 0 1.5px var(--blue);}
 
-  .held-orders-title{font-size:12px; font-weight:600; color:var(--text); margin:0 0 8px;}
-  .held-order-card{background:var(--card); border-radius:12px; padding:12px 14px; box-shadow:var(--shadow); display:flex; align-items:center; gap:10px; margin-bottom:8px;}
-  .held-order-card .hoc-main{flex:1; min-width:0;}
+  /* 暫存訂單：每位客人一個小方塊，往右排、超過寬度自動換行；點方塊＝取回，右上角 ✕＝刪除 */
+  #heldOrdersPanel{display:none; flex-wrap:wrap; align-items:stretch; gap:8px; margin:0 0 6px;}
+  .held-orders-title{flex:0 0 100%; font-size:12px; font-weight:600; color:var(--text); margin:0 0 -2px;}
+  .held-order-card{position:relative; flex:0 0 auto; min-width:150px; max-width:240px; background:var(--card); border-radius:10px; padding:7px 30px 7px 12px; box-shadow:var(--shadow), inset 0 0 0 1px var(--line); cursor:pointer; user-select:none;}
+  .held-order-card:hover{background:var(--gray-fill);}
+  .held-order-card:focus-visible{outline:2.5px solid var(--text); outline-offset:1px;}
   .held-order-card .hoc-name{font-size:14px; font-weight:700; color:var(--text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
-  .held-order-card .hoc-sub{font-size:11.5px; color:var(--text); margin-top:2px;}
-  .held-order-card button{border:none; font-weight:600; font-size:12.5px; padding:8px 13px; border-radius:9px; cursor:pointer; font-family:var(--sysfont); flex-shrink:0;}
-  .hoc-resume{background:var(--blue); color:var(--onacc);}
-  .hoc-del{background:var(--gray-fill); color:var(--red);}
+  .held-order-card .hoc-sub{font-size:11.5px; color:var(--text); margin-top:1px; white-space:nowrap;}
+  .held-order-card .hoc-del{position:absolute; top:5px; right:5px; width:22px; height:22px; padding:0; border:none; border-radius:50%; background:transparent; color:var(--red); font:700 12px/22px var(--sysfont); text-align:center; cursor:pointer;}
+  .held-order-card .hoc-del:hover{background:var(--line);}
+  @media (max-width:640px){ .held-order-card{min-width:calc(50% - 4px); max-width:none; flex:1 1 calc(50% - 4px);} }
 
   .cust-table-wrap{background:var(--card); border-radius:14px; overflow:hidden; box-shadow:var(--shadow);}
   table.cust-list{width:100%; border-collapse:collapse;}
@@ -655,6 +680,7 @@ body.cust-view .prices{grid-template-columns:minmax(0,1fr) !important; max-width
 
   <section class="tab-panel" id="tab-order">
     <div class="cust-mini" id="custMini"><span class="cm-name" id="custMiniName"></span><span class="grade-badge" id="custMiniBadge"></span></div>
+    <div id="heldOrdersPanel" style="display:none;"></div>
     <div class="sticky-controls" id="orderStickyControls">
       <div class="cust-picker" id="custPickerWrap">
         <div class="cust-row">
@@ -713,7 +739,6 @@ body.cust-view .prices{grid-template-columns:minmax(0,1fr) !important; max-width
 
     </div>
 
-    <div id="heldOrdersPanel" style="display:none; margin-top:4px;"></div>
 
 
     <div class="qk" id="qkPanel">
@@ -1599,6 +1624,10 @@ function showAddedInCart(key, qty){
   const idx = cart.findIndex(it => it.key === key);
   const row = idx >= 0 && cartBody.querySelector(`tr[data-idx="${idx}"]`);
   if(!row) return;
+  // 清單自己會捲動：先把新加入的那一列捲進清單的可視範圍
+  { const rr = row.getBoundingClientRect(), cr = cartBody.getBoundingClientRect(), th = cartBody.querySelector('thead th'), headH = th ? th.offsetHeight : 0;
+    if(rr.bottom > cr.bottom) cartBody.scrollTop += rr.bottom - cr.bottom + 6;
+    else if(rr.top < cr.top + headH) cartBody.scrollTop -= (cr.top + headH - rr.top) + 6; }
   const bar = document.getElementById('orderSearchBar');
   const barH = bar ? bar.offsetHeight : 0;
   const r = row.getBoundingClientRect();
@@ -2187,24 +2216,26 @@ function renderHeldOrders(){
     const totalQty = realItems(h.cart).reduce((s,it)=>s+fmtNum(it.qty),0);
     const totalAmt = h.cart.reduce((s,it)=>s+fmtNum(it.unitPrice)*fmtNum(it.qty),0);
     const name = h.customer ? h.customer.name : '未指定客戶';
-    html += `<div class="held-order-card">
-      <div class="hoc-main">
-        <div class="hoc-name">${escapeHtml(name)}</div>
-        <div class="hoc-sub">${h.cart.length} 項商品 · 共 ${fmt(totalQty)} 件 · $${fmt(totalAmt)}</div>
-      </div>
-      <button class="hoc-resume" data-id="${h.id}">取回</button>
-      <button class="hoc-del" data-id="${h.id}">刪除</button>
+    html += `<div class="held-order-card" data-id="${h.id}" role="button" tabindex="0" title="點一下取回這筆暫存訂單">
+      <div class="hoc-name">${escapeHtml(name)}</div>
+      <div class="hoc-sub">${h.cart.length} 項 · ${fmt(totalQty)} 件 · $${fmt(totalAmt)}</div>
+      <button class="hoc-del" data-id="${h.id}" aria-label="刪除這筆暫存訂單" title="刪除">✕</button>
     </div>`;
   });
   panel.innerHTML = html;
-  panel.style.display = 'block';
+  panel.style.display = 'flex';
 }
 
 document.getElementById('heldOrdersPanel').addEventListener('click', (e)=>{
-  const resumeBtn = e.target.closest('.hoc-resume');
-  if(resumeBtn){ resumeHeldOrder(resumeBtn.dataset.id); return; }
   const delBtn = e.target.closest('.hoc-del');
-  if(delBtn){ deleteHeldOrder(delBtn.dataset.id); return; }
+  if(delBtn){ e.stopPropagation(); deleteHeldOrder(delBtn.dataset.id); return; }
+  const chip = e.target.closest('.held-order-card');
+  if(chip){ resumeHeldOrder(chip.dataset.id); }
+});
+document.getElementById('heldOrdersPanel').addEventListener('keydown', (e)=>{
+  if(e.key !== 'Enter' && e.key !== ' ') return;
+  const chip = e.target.closest('.held-order-card');
+  if(chip && e.target === chip){ e.preventDefault(); resumeHeldOrder(chip.dataset.id); }
 });
 
 document.getElementById('clearCartBtn').addEventListener('click', ()=>{
@@ -2653,20 +2684,44 @@ function updateStickyOffset(){
 function updateOrderTop(){
   const oc = document.getElementById('orderStickyControls');
   const tabsH = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--tabs-h')) || 0;
-  const ch = oc && oc.offsetParent !== null ? oc.offsetHeight : 0;
+  const ch = 0;   // 搜尋客戶列已不凍結，出貨清單標題列只需貼在頁籤下方
   // 手機版選了客戶：客戶資訊框不再凍結，標題列只需避開最上方的「名字＋等級」小條（沒顯示就貼頂）
   const tabEl = document.getElementById('tab-order');
   if(window.matchMedia('(max-width:640px)').matches && tabEl && tabEl.classList.contains('cust-on')){
     const mini = document.getElementById('custMini');
     const v = document.body.classList.contains('cm-show') && mini ? mini.offsetHeight : 0;
     document.documentElement.style.setProperty('--ord-top', v + 'px');
+    updateCartMax();
     return;
   }
   document.documentElement.style.setProperty('--ord-top', (tabsH + ch) + 'px');
+  updateCartMax();
+}
+// 出貨清單的高度上限：讓「標題＋清單＋總計＋按鈕」剛好放得進畫面（扣掉頁籤和底部搜尋列），超過就在清單內捲動
+function updateCartMax(){
+  const tab = document.getElementById('tab-order'), body = document.getElementById('cartBody');
+  if(!tab || !body || tab.offsetParent === null) return;
+  const sec = body.closest('.cart-section'), osb = document.getElementById('orderSearchBar');
+  if(!sec) return;
+  const reserve = osb ? osb.offsetHeight + (parseFloat(getComputedStyle(osb).bottom) || 0) : 0;
+  document.documentElement.style.setProperty('--osb-reserve', reserve + 'px');
+  const ordTop = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--ord-top')) || 0;
+  const h = sel => { const e = sec.querySelector(sel); return e && e.offsetParent !== null ? e.offsetHeight : 0; };
+  const cs = getComputedStyle(sec);
+  const used = (parseFloat(cs.paddingTop) || 0) + (parseFloat(cs.paddingBottom) || 0) + h('.cart-title-row') + h('#editBanner') + h('#cartCustNoteM') + (h('.cart-foot') || (h('.quick-fee-row') + h('.cart-totals') + 20)) + h('.cart-actions') + 20;
+  const max = Math.floor(window.innerHeight - ordTop - reserve - used);
+  const min = parseFloat(getComputedStyle(body).minHeight) || 0;
+  body.style.setProperty('--cart-max', Math.max(min, max) + 'px');
 }
 (function(){
   const oc = document.getElementById('orderStickyControls');
   if(oc && window.ResizeObserver) new ResizeObserver(updateOrderTop).observe(oc);
+  if(window.ResizeObserver){
+    const ro = new ResizeObserver(updateCartMax);
+    ['#tab-order .cart-foot', '#tab-order .quick-fee-row', '#cartTotals', '#tab-order .cart-actions', '#tab-order .cart-title-row', '#orderSearchBar', '#editBanner'].forEach(q => { const e = document.querySelector(q); if(e) ro.observe(e); });
+  }
+  window.addEventListener('resize', updateCartMax);
+  if(window.visualViewport) window.visualViewport.addEventListener('resize', updateCartMax);
   document.querySelectorAll('.tab-btn').forEach(b => b.addEventListener('click', ()=> setTimeout(updateOrderTop, 50)));
 })();
 window.addEventListener('resize', updateStickyOffset);
