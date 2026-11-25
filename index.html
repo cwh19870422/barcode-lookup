@@ -602,6 +602,7 @@ table.cart-table tr.ret-row .cart-name::before{content:'退貨 '; color:var(--re
   .pv-scroll{flex:1; overflow:auto; padding:18px; text-align:center;}
   .pv-sheet{display:inline-block; width:210mm; min-height:297mm; background:#fff; text-align:left; box-shadow:0 6px 30px rgba(0,0,0,.4); box-sizing:border-box; vertical-align:top;}
   @media print{
+    html, body{background:#fff !important;}   /* 網頁底色是淡灰（--paper）；桌面版直接列印會連背景一起印，所以列印時一律白底 */
     body > *{display:none !important;}
     body > #printArea{display:block !important; position:static; padding:10mm 8mm; box-sizing:border-box;}
     body > #printArea.rc{padding:0;}
