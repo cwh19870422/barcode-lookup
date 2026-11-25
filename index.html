@@ -596,9 +596,12 @@ table.cart-table tr.ret-row .cart-name::before{content:'退貨 '; color:var(--re
   #previewOverlay.on{display:flex;}
   .pv-bar{display:flex; align-items:center; gap:8px; padding:10px 14px; background:var(--blue); color:var(--onacc); flex-wrap:wrap;}
   .pv-bar button{border:none; border-radius:9px; padding:8px 14px; font:inherit; font-size:14px; font-weight:600; cursor:pointer; background:var(--card); color:var(--text);}
+  .pv-bar .pv-title{font-weight:700; font-size:15px; margin-right:6px;}
+  .pv-sheet.pv-rc{width:80mm; min-height:40mm;}
+  #previewOverlay.rc-mode{background:rgba(38,36,34,.96);}   /* 小張收據很窄，背景改深一點，不讓後面的打單畫面干擾 */
   .pv-bar .pv-pct{min-width:52px; text-align:center; font-size:14px; font-weight:600;}
   .pv-bar .pv-sp{flex:1;}
-  .pv-bar .pv-go{background:var(--blue); color:var(--onacc);}
+  .pv-bar .pv-go{background:var(--ink); color:var(--onacc); border:1.5px solid rgba(255,255,255,.6); padding:7px 24px;}   /* 現在「列印」是預覽裡的主要動作，要看得出來 */
   .pv-scroll{flex:1; overflow:auto; padding:18px; text-align:center;}
   .pv-sheet{display:inline-block; width:210mm; min-height:297mm; background:#fff; text-align:left; box-shadow:0 6px 30px rgba(0,0,0,.4); box-sizing:border-box; vertical-align:top;}
   @media print{
@@ -885,6 +888,7 @@ body.cust-view .prices{grid-template-columns:minmax(0,1fr) !important; max-width
 <div id="ckAlert"><div class="ck-card"><div class="ck-msg" id="ckMsg"></div><button type="button" class="ck-ok" id="ckOk">複製並關閉</button></div></div>
 <div id="previewOverlay">
   <div class="pv-bar">
+    <span class="pv-title" id="pvTitle"></span>
     <button type="button" id="pvOut">－ 縮小</button>
     <span class="pv-pct" id="pvPct">100%</span>
     <button type="button" id="pvIn">＋ 放大</button>
@@ -2385,44 +2389,58 @@ document.getElementById('clearCartBtn').addEventListener('click', ()=>{
   renderCart();
 });
 
-// A4 預覽：全螢幕顯示帳單，可放大縮小（方便截圖給客人確認）
-let pvZoom = 1;
+// 列印前一律先預覽：A4 帳單、小張收據都是「按列印 → 全螢幕預覽 → 在預覽裡按『列印』才真的送出」
+// 預覽看到的就是要印的內容（同一份資料），可放大縮小（方便截圖給客人確認）
+let pvZoom = 1, pvCur = null;   // pvCur = {kind:'a4'|'receipt', order}
+const PV_W = {a4:210, receipt:80};   // 紙寬 mm
 function pvApply(z){
   pvZoom = Math.max(0.4, Math.min(3, z));
   document.getElementById('pvSheet').style.zoom = pvZoom;
   document.getElementById('pvPct').textContent = Math.round(pvZoom*100) + '%';
 }
 function pvFitWidth(){
+  const kind = pvCur ? pvCur.kind : 'a4';
   const w = document.getElementById('pvScroll').clientWidth - 36;
-  pvApply(w / (210 / 25.4 * 96));
+  const z = w / (PV_W[kind] / 25.4 * 96);
+  pvApply(kind === 'receipt' ? Math.min(z, 2.2) : z);   // 小張收據很窄，最多放大到 220%，不要塞滿整個螢幕
 }
-function openPreview(){
-  if(!cart.length){ alert('清單是空的，先加入商品再預覽'); return; }
-  document.getElementById('pvSheet').innerHTML =
-    renderOrderHtml({...snapshotCart(), date: (currentTxn && currentTxn.date) || new Date().toISOString(), operator: document.getElementById('operatorSel').value});
+function openPreviewFor(kind, order){
+  pvCur = {kind, order};
+  const sheet = document.getElementById('pvSheet');
+  sheet.className = 'pv-sheet' + (kind === 'receipt' ? ' pv-rc' : '');
+  sheet.innerHTML = kind === 'receipt' ? renderReceiptHtml(order) : renderOrderHtml(order);
+  document.getElementById('pvTitle').textContent = kind === 'receipt' ? '小張收據預覽（80mm）' : 'A4 帳單預覽';
+  document.getElementById('previewOverlay').classList.toggle('rc-mode', kind === 'receipt');
   document.getElementById('previewOverlay').classList.add('on');
   document.getElementById('pvScroll').scrollTop = 0;
   pvFitWidth();
 }
+function currentOrder(){   // 打單畫面目前這張單（列印不會儲存；要存進客人紀錄請按「結帳」）
+  return {...snapshotCart(), date: (currentTxn && currentTxn.date) || new Date().toISOString(), operator: document.getElementById('operatorSel').value};
+}
+function previewCurrent(kind, emptyMsg){
+  if(!cart.length){ alert(emptyMsg); return; }
+  openPreviewFor(kind, currentOrder());
+}
 function closePreview(){ document.getElementById('previewOverlay').classList.remove('on'); }
-document.getElementById('previewBtn').addEventListener('click', openPreview);
+function pvPrintNow(){
+  if(!pvCur) return;
+  const {kind, order} = pvCur;
+  closePreview();
+  if(kind === 'receipt') printHtml(renderReceiptHtml(order), true);
+  else{ document.getElementById('printArea').innerHTML = renderOrderHtml(order); doPrint('a4'); }
+}
+document.getElementById('previewBtn').addEventListener('click', ()=> previewCurrent('a4', '清單是空的，先加入商品再預覽'));
 document.getElementById('pvClose').addEventListener('click', closePreview);
 document.getElementById('pvIn').addEventListener('click', ()=>pvApply(pvZoom + 0.1));
 document.getElementById('pvOut').addEventListener('click', ()=>pvApply(pvZoom - 0.1));
 document.getElementById('pvFit').addEventListener('click', pvFitWidth);
-document.getElementById('pvPrint').addEventListener('click', ()=>{ buildPrintArea(); doPrint('a4'); });
+document.getElementById('pvPrint').addEventListener('click', pvPrintNow);
 document.addEventListener('keydown', e=>{ if(e.key==='Escape' && document.getElementById('previewOverlay').classList.contains('on')) closePreview(); });
 window.addEventListener('resize', ()=>{ if(document.getElementById('previewOverlay').classList.contains('on')) pvFitWidth(); });
 
-document.getElementById('printBtn').addEventListener('click', ()=>{
-  if(!cart.length){ alert('清單是空的，先加入商品再列印'); return; }
-  buildPrintArea();   // 列印不會儲存；要存進客人紀錄請按「結帳」
-  doPrint('a4');
-});
-document.getElementById('printReceiptBtn').addEventListener('click', ()=>{
-  if(!cart.length){ alert('清單是空的，先加入商品再列印'); return; }
-  printHtml(renderReceiptHtml({...snapshotCart(), date: (currentTxn && currentTxn.date) || new Date().toISOString(), operator: document.getElementById('operatorSel').value}), true);
-});
+document.getElementById('printBtn').addEventListener('click', ()=> previewCurrent('a4', '清單是空的，先加入商品再列印'));
+document.getElementById('printReceiptBtn').addEventListener('click', ()=> previewCurrent('receipt', '清單是空的，先加入商品再列印'));
 
 // 結帳：存進該客人的交易紀錄（編輯舊訂單時則覆蓋原訂單），存完清空準備下一張單
 // 打單人員：記住這台電腦上次選的人
@@ -2776,7 +2794,7 @@ function doPrint(kind){
     heightPx = pa.scrollHeight; pa.style.cssText = old;
   }
   Promise.resolve(window.posDesktop.print({printer:name, kind, heightPx})).then(r => {
-    if(r && r.success) return;
+    if(r && r.success){ showToast('已送出列印'); return; }
     if(r && r.reason === 'not-found'){
       alert(`找不到印表機「${name}」（可能改過名稱或已移除），這次先改用列印視窗。\n請到右上角「🖨 印表機」重新選擇。`);
       window.print();
@@ -2845,11 +2863,6 @@ function printHtml(html, receipt){
   }
   doPrint(receipt ? 'receipt' : 'a4');
   if(st) st.remove();
-}
-
-function buildPrintArea(){
-  document.getElementById('printArea').innerHTML =
-    renderOrderHtml({...snapshotCart(), date: (currentTxn && currentTxn.date) || new Date().toISOString(), operator: document.getElementById('operatorSel').value});
 }
 
 const custListSearch = document.getElementById('custListSearch');
@@ -3371,12 +3384,12 @@ document.getElementById('txnList').addEventListener('click', async (e)=>{
   if(e.target.closest('.txn-edit')){ startEditTxn(item.dataset.id); return; }
   if(e.target.closest('.txn-reprint-receipt')){
     const t = allTxns.find(x => x.id === item.dataset.id);
-    if(t) printHtml(renderReceiptHtml(t), true);
+    if(t) openPreviewFor('receipt', t);
     return;
   }
   if(e.target.closest('.txn-reprint')){
     const t = allTxns.find(x => x.id === item.dataset.id);
-    if(t){ document.getElementById('printArea').innerHTML = renderOrderHtml(t); doPrint('a4'); }
+    if(t) openPreviewFor('a4', t);
     return;
   }
   if(e.target.closest('.txn-del')){
