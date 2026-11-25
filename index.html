@@ -301,6 +301,10 @@
   .qk-dlg h3{margin:0 0 10px; font-size:16px;}
   .qk-dlg label{display:block; font-size:12px; color:var(--text); margin:8px 0 3px;}
   .qk-dlg input[type=text], .qk-dlg input[type=number]{width:100%; border:1px solid var(--line); border-radius:9px; padding:9px 10px; font:15px var(--sysfont); background:var(--paper);}
+  .qk-dlg select{width:100%; border:1px solid var(--line); border-radius:9px; padding:9px 8px; font:14px var(--sysfont); background:var(--paper); color:var(--text);}
+  .pr-row{display:flex; gap:8px; align-items:center;} .pr-row select{flex:1; min-width:0;}
+  .pr-row button{flex:0 0 auto; border:1.5px solid var(--blue); background:var(--card); color:var(--text); border-radius:9px; padding:8px 12px; font:600 13px var(--sysfont); cursor:pointer; white-space:nowrap;}
+  .pr-note{font-size:12px; line-height:1.55; color:var(--secondary); margin-bottom:4px;}
   .qk-prices{display:grid; grid-template-columns:repeat(4,1fr); gap:6px;}
   .qk-prices label{margin:0 0 3px; text-align:center;}
   .qk-row{display:flex; gap:8px; margin-top:14px;}
@@ -642,7 +646,7 @@ body.cust-view .prices{grid-template-columns:minmax(0,1fr) !important; max-width
     <p class="eyebrow"><span class="dot"></span>BARCODE DATABASE</p>
     <p class="sub" id="headerStats">載入中…</p>
   </div>
-  <div class="top-actions"><button class="top-link" id="refreshBtn" type="button" title="重新載入最新版本與資料"><span class="ico">🔄</span><span class="lbl">重新整理</span></button><a class="top-link" id="topLink" href="./update.html"><span class="ico">⚙</span><span class="lbl">更新資料</span></a><button class="top-link" id="lockBtn" type="button"><span class="ico">🔒</span><span class="lbl">老闆登入</span></button></div>
+  <div class="top-actions"><button class="top-link" id="refreshBtn" type="button" title="重新載入最新版本與資料"><span class="ico">🔄</span><span class="lbl">重新整理</span></button><button class="top-link" id="printerBtn" type="button" title="設定小張收據／A4 各用哪台印表機（這台電腦）" style="display:none;"><span class="ico">🖨</span><span class="lbl">印表機</span></button><a class="top-link" id="topLink" href="./update.html"><span class="ico">⚙</span><span class="lbl">更新資料</span></a><button class="top-link" id="lockBtn" type="button"><span class="ico">🔒</span><span class="lbl">老闆登入</span></button></div>
 </header>
 <div class="barcode-strip"></div>
 
@@ -2268,14 +2272,14 @@ document.getElementById('pvClose').addEventListener('click', closePreview);
 document.getElementById('pvIn').addEventListener('click', ()=>pvApply(pvZoom + 0.1));
 document.getElementById('pvOut').addEventListener('click', ()=>pvApply(pvZoom - 0.1));
 document.getElementById('pvFit').addEventListener('click', pvFitWidth);
-document.getElementById('pvPrint').addEventListener('click', ()=>{ buildPrintArea(); window.print(); });
+document.getElementById('pvPrint').addEventListener('click', ()=>{ buildPrintArea(); doPrint('a4'); });
 document.addEventListener('keydown', e=>{ if(e.key==='Escape' && document.getElementById('previewOverlay').classList.contains('on')) closePreview(); });
 window.addEventListener('resize', ()=>{ if(document.getElementById('previewOverlay').classList.contains('on')) pvFitWidth(); });
 
 document.getElementById('printBtn').addEventListener('click', ()=>{
   if(!cart.length){ alert('清單是空的，先加入商品再列印'); return; }
   buildPrintArea();   // 列印不會儲存；要存進客人紀錄請按「結帳」
-  window.print();
+  doPrint('a4');
 });
 document.getElementById('printReceiptBtn').addEventListener('click', ()=>{
   if(!cart.length){ alert('清單是空的，先加入商品再列印'); return; }
@@ -2614,6 +2618,83 @@ function renderReceiptHtml(o){
 }
 
 // 列印：收據用 80mm 紙張尺寸（無邊界、長度自動），出貨單維持原本 A4 設定
+// ===== 桌面版（POS-APP）：小張收據、A4 各用自己的印表機，按了直接印 =====
+// 設定只存在這台電腦（localStorage）；沒設定、或用網頁版 → 照舊跳出列印視窗
+const PRINTER_KEY = 'joeda.printers';
+function printerCfg(){ try{ return JSON.parse(localStorage.getItem(PRINTER_KEY) || '{}') || {}; }catch(e){ return {}; } }
+function setPrinterCfg(k, v){ const c = printerCfg(); if(v) c[k] = v; else delete c[k]; try{ localStorage.setItem(PRINTER_KEY, JSON.stringify(c)); }catch(e){} }
+let printing = false;
+function doPrint(kind){
+  const name = printerCfg()[kind];
+  const pa = document.getElementById('printArea');
+  pa.classList.toggle('rc', kind === 'receipt');   // 小張收據無邊距；A4 要回到有邊距（之前印過收據後 A4 會沿用收據的樣式）
+  if(!window.posDesktop || !name){ window.print(); return; }
+  if(printing) return;   // 連點兩下不會印兩張
+  printing = true;
+  let heightPx = 0;
+  if(kind === 'receipt'){   // 畫面上 printArea 是隱藏的：暫時放到畫面外量高度
+    const old = pa.style.cssText;
+    pa.style.cssText = 'display:block; position:absolute; left:-9999px; top:0; width:80mm; padding:0;';
+    heightPx = pa.scrollHeight; pa.style.cssText = old;
+  }
+  Promise.resolve(window.posDesktop.print({printer:name, kind, heightPx})).then(r => {
+    if(r && r.success) return;
+    if(r && r.reason === 'not-found'){
+      alert(`找不到印表機「${name}」（可能改過名稱或已移除），這次先改用列印視窗。\n請到右上角「🖨 印表機」重新選擇。`);
+      window.print();
+    }else if(r && r.reason === 'cancelled'){
+      /* 使用者在系統端取消，不用提醒 */
+    }else{
+      alert(`列印失敗（${(r && r.reason) || '未知原因'}）。\n請確認「${name}」已開機、連線、有紙，再按一次列印。`);
+    }
+  }).catch(err => {
+    alert('列印失敗：' + (err && err.message || err));
+  }).finally(() => { printing = false; });
+}
+
+function samplePrint(kind){   // 印表機設定裡的「測試列印」：印一張範例，不會存進任何紀錄
+  const o = {customer:{name:'印表機測試'}, lines:[{type:'item', code:'TEST', name:'測試列印 ' + (kind === 'receipt' ? '小張收據' : 'A4 帳單'), unitPrice:100, qty:1, amount:100}], total:100, untaxed:100, hasTax:false, date:new Date().toISOString(), operator:''};
+  const pa = document.getElementById('printArea');
+  if(kind === 'receipt'){ printHtml(renderReceiptHtml(o), true); }
+  else{ pa.innerHTML = renderOrderHtml(o); doPrint('a4'); }
+}
+async function openPrinterSettings(){
+  if(!window.posDesktop) return;
+  let list = [];
+  try{ list = await window.posDesktop.listPrinters(); }catch(e){}
+  const cfg = printerCfg();
+  const opts = k => `<option value="">（不指定：按列印時跳出列印視窗）</option>` + list.map(p =>
+    `<option value="${escapeHtml(p.name)}"${cfg[k] === p.name ? ' selected' : ''}>${escapeHtml(p.displayName)}${p.isDefault ? '（Windows 預設）' : ''}</option>`).join('')
+    + (cfg[k] && !list.some(p => p.name === cfg[k]) ? `<option value="${escapeHtml(cfg[k])}" selected>${escapeHtml(cfg[k])}（找不到）</option>` : '');
+  const row = (k, label) => `<label>${label}</label><div class="pr-row"><select id="pr_${k}">${opts(k)}</select><button type="button" id="prTest_${k}">測試列印</button></div>`;
+  // 用自己的浮層（掛在 body 上）：快捷鍵的 qkMask 在「打單」分頁裡面，別的分頁開不出來
+  let m = document.getElementById('prMask');
+  if(!m){ m = document.createElement('div'); m.id = 'prMask'; m.className = 'qk-mask'; m.innerHTML = '<div class="qk-dlg" id="prDlg"></div>'; document.body.appendChild(m); }
+  document.getElementById('prDlg').innerHTML = `<h3>🖨 印表機設定</h3>
+    <div class="pr-note">只設定這台電腦。選好之後，按「列印小張收據」、「列印A4帳單」就直接送去對應的印表機，不會再跳列印視窗。</div>
+    ${row('receipt', '小張收據（80mm 熱感機，例如 HPRT TP805）')}${row('a4', 'A4 帳單（一般 A4 印表機）')}
+    ${list.length ? '' : '<div class="pr-note" style="color:var(--red);">沒有偵測到任何印表機，請先在 Windows 安裝印表機驅動。</div>'}
+    <div class="qk-row"><button type="button" class="pri" id="prDone">完成</button></div>`;
+  m.classList.add('on');
+  const done = () => { m.classList.remove('on'); m.removeEventListener('click', bg); };
+  const bg = e => { if(e.target === m) done(); };
+  m.addEventListener('click', bg);
+  ['receipt','a4'].forEach(k => {
+    const sel = document.getElementById('pr_' + k);
+    sel.addEventListener('change', () => setPrinterCfg(k, sel.value));
+    document.getElementById('prTest_' + k).addEventListener('click', () => {
+      if(!sel.value){ alert('請先在上面選一台印表機，再按測試列印'); return; }
+      setPrinterCfg(k, sel.value); samplePrint(k);
+    });
+  });
+  document.getElementById('prDone').addEventListener('click', done);
+}
+if(window.posDesktop){
+  const pb = document.getElementById('printerBtn');
+  pb.style.display = '';
+  pb.addEventListener('click', openPrinterSettings);
+}
+
 function printHtml(html, receipt){
   const pa = document.getElementById('printArea');
   pa.innerHTML = html;
@@ -2624,7 +2705,7 @@ function printHtml(html, receipt){
     st.textContent = '@page{size:80mm auto; margin:0;}';
     document.head.appendChild(st);
   }
-  window.print();
+  doPrint(receipt ? 'receipt' : 'a4');
   if(st) st.remove();
 }
 
@@ -3157,7 +3238,7 @@ document.getElementById('txnList').addEventListener('click', async (e)=>{
   }
   if(e.target.closest('.txn-reprint')){
     const t = allTxns.find(x => x.id === item.dataset.id);
-    if(t){ document.getElementById('printArea').innerHTML = renderOrderHtml(t); window.print(); }
+    if(t){ document.getElementById('printArea').innerHTML = renderOrderHtml(t); doPrint('a4'); }
     return;
   }
   if(e.target.closest('.txn-del')){
