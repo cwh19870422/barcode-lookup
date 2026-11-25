@@ -262,15 +262,24 @@
     /* 結帳：獨立一個大色塊（在金額左邊） */
     #tab-order .order-dock.docked .btn-save{grid-column:2; grid-row:1 / 3; width:auto; height:auto; min-height:0; padding:0 0 0 .2em; font-size:22px; letter-spacing:.2em; border-radius:14px;}
     /* 金額：獨立一個色塊（在結帳右邊） */
-    #tab-order .order-dock.docked .cart-totals{grid-column:3; grid-row:1 / 3; margin:0; max-width:360px; padding:4px 18px; gap:0 20px; align-content:center; justify-content:center; align-items:baseline; line-height:1.1;}
+    #tab-order .order-dock.docked .cart-totals{display:flex !important; grid-column:3; grid-row:1 / 3; margin:0; max-width:100%; padding:4px 18px; gap:0 18px; align-content:center; justify-content:space-between; align-items:baseline; line-height:1.1;}
     #tab-order .order-dock.docked .cart-totals .tline{font-size:14px;}
-    #tab-order .order-dock.docked .cart-totals .tline b{font-size:32px; margin-left:5px;}
+    #tab-order .order-dock.docked .cart-totals .tline b{display:inline-block; font-size:32px; margin-left:5px; font-variant-numeric:tabular-nums;}
+    /* 數量預留 2.4 位數、金額預留「11,550」的寬度（右對齊）：沒商品、幾百元、破萬，色塊都一樣大 */
+    #tab-order .order-dock.docked #totalQty{min-width:2.4ch; text-align:left;}
+    #tab-order .order-dock.docked #totalAmt, #tab-order .order-dock.docked #untaxedAmt{min-width:5.6ch; text-align:right;}
+    #tab-order .order-dock.docked .cart-totals .tline-amt{margin-left:auto;}
+    /* 含稅（三行資訊）：數量、未稅縮小成一行，含稅總額維持大字一行 */
+    #tab-order .order-dock.docked .cart-totals:has(#untaxedLine:not([style*="none"])){max-width:330px;}
+    #tab-order .order-dock.docked .cart-totals:has(#untaxedLine:not([style*="none"])) .tline:not(.tline-amt) b{font-size:24px;}
   }
   @media (min-width:760px) and (max-width:1000px){
     #tab-order .order-dock.docked{grid-template-columns:minmax(0,1fr) 100px auto;}
     #tab-order .order-dock.docked .btn-save{font-size:20px;}
     #tab-order .order-dock.docked .cart-totals{padding:4px 12px; gap:0 12px;}
-    #tab-order .order-dock.docked .cart-totals .tline b{font-size:26px;}
+    #tab-order .order-dock.docked .cart-totals .tline b{font-size:24px;}
+    #tab-order .order-dock.docked .cart-totals:has(#untaxedLine:not([style*="none"])){max-width:280px;}
+    #tab-order .order-dock.docked .cart-totals:has(#untaxedLine:not([style*="none"])) .tline:not(.tline-amt) b{font-size:20px;}
   }
   .cart-section.hide-money ~ .order-bottom #untaxedLine, .cart-section.hide-money ~ .order-bottom .tline-amt{display:none !important;}
   #tab-order .qk{margin-top:0; padding:8px 16px;}
@@ -2184,6 +2193,7 @@ function renderCart(){
   if(!cart.length){
     cartBody.innerHTML = `<div class="cart-empty">清單是空的，搜尋商品後點「加入」開始建立出貨單</div>`;
     cartTotalsEl.style.display = 'none';
+    updateCartTotals();   // 歸零（電腦版固定底座的金額色塊一直都在）
     return;
   }
   let html = `<table class="cart-table"><thead><tr>
