@@ -2787,11 +2787,20 @@ function doPrint(kind){
   if(!window.posDesktop || !name){ window.print(); return; }
   if(printing) return;   // 連點兩下不會印兩張
   printing = true;
-  let heightPx = 0;
+  let heightPx = 0, pageSt = null;
   if(kind === 'receipt'){   // 畫面上 printArea 是隱藏的：暫時放到畫面外量高度
     const old = pa.style.cssText;
     pa.style.cssText = 'display:block; position:absolute; left:-9999px; top:0; width:80mm; padding:0;';
     heightPx = pa.scrollHeight; pa.style.cssText = old;
+    // 紙高至少 90mm（比 80mm 寬度高）：短單據如果紙比寬度還矮，印表機會當成橫向，整張轉 90° 縮小
+    heightPx = Math.max(heightPx, 310);
+    // 這張紙的實際尺寸（要和 main.js 算給印表機的一模一樣：高度＝內容＋8mm）。
+    // @page 必須在「真的送去印」的那一刻還存在，所以等列印結束才拿掉；
+    // 不然會落回全站的 @page{size:A4}，內容被當成 A4 縮小塞進小紙張
+    const mm = (Math.ceil(heightPx * 264.583) + 8000) / 1000;
+    pageSt = document.createElement('style');
+    pageSt.textContent = `@page{size:80mm ${mm}mm; margin:0;}`;
+    document.head.appendChild(pageSt);
   }
   Promise.resolve(window.posDesktop.print({printer:name, kind, heightPx})).then(r => {
     if(r && r.success){ showToast('已送出列印'); return; }
@@ -2805,7 +2814,7 @@ function doPrint(kind){
     }
   }).catch(err => {
     alert('列印失敗：' + (err && err.message || err));
-  }).finally(() => { printing = false; });
+  }).finally(() => { printing = false; if(pageSt) pageSt.remove(); });
 }
 
 function samplePrint(kind){   // 印表機設定裡的「測試列印」：印一張範例，不會存進任何紀錄
