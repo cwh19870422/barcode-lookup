@@ -371,7 +371,7 @@ function renderClosed(){
   const s = cur();
   const where = window.innerWidth <= 760 ? '上面' : '左邊';
   if(S.idle){
-    $('pkClosed').innerHTML = `<div class="pk-closed-t" style="color:var(--ink)">請選一位客人</div>
+    $('pkClosed').innerHTML = `<div class="pk-closed-t" style="color:var(--text)">請選一位客人</div>
       <p class="pk-hint">點${where}的客人卡片開始撿貨，或開一張新的撿貨單。</p>
       <div class="pk-row" style="justify-content:center"><button class="pk-b pri" type="button" data-pknew>＋ 新撿貨單</button></div>`;
     return;
