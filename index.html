@@ -711,6 +711,7 @@ body.cust-view .prices{grid-template-columns:minmax(0,1fr) !important; max-width
           </div>
           <div class="tc-opt">以下選填</div>
           <input type="text" id="tempCustPhone" placeholder="電話">
+          <input type="text" id="tempCustTaxId" placeholder="統一編號（8 碼）" inputmode="numeric" autocomplete="off">
           <input type="text" id="tempCustAddress" placeholder="地址">
           <div class="tc-btns">
             <button type="button" id="tempCustCancelBtn">取消</button>
@@ -839,11 +840,11 @@ body.cust-view .prices{grid-template-columns:minmax(0,1fr) !important; max-width
         <button type="button" class="txn-small-btn" id="importBackupBtn" style="margin-left:0;">匯入備份</button>
         <input type="file" id="importBackupFile" accept=".json,application/json" style="display:none;">
       </div>
-      <div class="txn-hint">每筆交易按「列印A4帳單」或「儲存交易」時，會自動存進雲端資料庫（Firestore），多台電腦即時同步，不需要設定金鑰。畫面預設載入最近 12 個月，更早的紀錄按「⟳ 重新讀取」載入。</div>
+      <div class="txn-hint">每筆交易按「列印A4帳單」或「儲存交易」時，會自動存進雲端資料庫（Firestore），多台電腦即時同步，不需要設定金鑰。畫面預設顯示今天的交易（上方可改日期或點快速區間）；資料預設載入最近 12 個月，更早的紀錄按「⟳ 重新讀取」載入。</div>
     </div>
 
     <div class="txn-filters">
-      <input id="txnCust" type="text" list="txnCustList" placeholder="客人（留空 = 全部客人）" autocomplete="off">
+      <input id="txnCust" type="text" list="txnCustList" placeholder="客人：姓名、會員號碼、電話、統編…（留空 = 全部客人）" autocomplete="off">
       <datalist id="txnCustList"></datalist>
       <div class="txn-dates">
         <input id="txnFrom" type="date"> <span>～</span> <input id="txnTo" type="date">
@@ -1416,7 +1417,7 @@ function openTempForm(){
 }
 function closeTempForm(){
   tempCustForm.style.display = 'none';
-  ['tempCustName','tempCustPhone','tempCustAddress'].forEach(id=>{ document.getElementById(id).value=''; });
+  ['tempCustName','tempCustPhone','tempCustTaxId','tempCustAddress'].forEach(id=>{ document.getElementById(id).value=''; });
 }
 // 搜尋客戶：姓名、暱稱（不顯示，只用來搜尋）、會員號碼、電話、電話2 都找得到（電話忽略橫線與空白）
 const digitsOnly = v => String(v||'').replace(/[\s\-()（）]/g,'');
@@ -1479,7 +1480,7 @@ function selectCustomer(c){
   badge.textContent = (c.grade||'A') + '級';
   badge.className = 'grade-badge grade-' + (c.grade||'A');
   document.getElementById('tempBadge').style.display = c.temp ? 'inline-block' : 'none';
-  document.getElementById('custPhone').textContent = [c.memberNo ? ('會員 ' + c.memberNo) : '', custPhones(c) ? ('電話 ' + custPhones(c)) : ''].filter(Boolean).join('　');
+  document.getElementById('custPhone').textContent = [c.memberNo ? ('會員 ' + c.memberNo) : '', custPhones(c) ? ('電話 ' + custPhones(c)) : '', (c.temp && c.taxId) ? ('統編 ' + c.taxId) : ''].filter(Boolean).join('　');
   document.getElementById('custAddress').textContent = c.address ? ('地址 ' + c.address) : '';
   custInfoBar.style.display = 'block';
   custPickerWrap.style.display = 'none';
@@ -1512,8 +1513,10 @@ document.getElementById('tempCustConfirmBtn').addEventListener('click', ()=>{
   const grade = document.getElementById('tempCustGrade').value;
   const phone = document.getElementById('tempCustPhone').value.trim();
   const address = document.getElementById('tempCustAddress').value.trim();
-  selectCustomer({name, phone, address, grade, temp:true});
+  const taxId = document.getElementById('tempCustTaxId').value.replace(/\D/g,'').slice(0,8);   // 統編只留數字（印在 A4 帳單與小張收據上）
+  selectCustomer({name, phone, address, taxId, grade, temp:true});
 });
+document.getElementById('tempCustTaxId').addEventListener('input', e => { e.target.value = e.target.value.replace(/\D/g,'').slice(0,8); });   // 只留數字、最多 8 碼（貼上「12 345 678」這種有空白的也行）
 
 const orderInput = document.getElementById('orderSearchInput');
 const orderResultsEl = document.getElementById('orderResults');
@@ -3047,6 +3050,11 @@ function setTxnRange(kind){
   renderTxns();
 }
 document.querySelectorAll('.txn-chip').forEach(c => c.addEventListener('click', ()=> setTxnRange(c.dataset.range)));
+// 視窗開了好幾天沒關：如果還停在「今天」，切到交易分頁時重新算今天是哪一天
+document.querySelector('.tab-btn[data-tab="txns"]').addEventListener('click', ()=>{
+  const a = document.querySelector('.txn-chip.active');
+  if(a && a.dataset.range === 'today') setTxnRange('today');
+});
 [txnCustEl, txnFromEl, txnToEl].forEach(el => el.addEventListener('input', ()=>{
   if(el !== txnCustEl) document.querySelectorAll('.txn-chip').forEach(c => c.classList.remove('active'));
   renderTxns();
@@ -3066,11 +3074,21 @@ function renderTxns(){
 
   const q = txnCustEl.value.trim().toLowerCase();
   const from = txnFromEl.value, to = txnToEl.value;
+  // 客人搜尋跟打單一樣（custMatch）：姓名、暱稱、會員號碼、電話、電話2、統編、抬頭；
+  // 同時比對「結帳當時存的客人資料」和「客戶資料庫現在的資料」（事後才補的電話／統編也找得到）
+  const custById = q ? new Map(customers.filter(c => c.id).map(c => [c.id, c])) : null;
+  const txnCustMatch = t => {
+    if(txnCustName(t).toLowerCase().includes(q)) return true;
+    const c = t.customer; if(!c) return false;
+    if(custMatch(c, q)) return true;
+    const fresh = c.id ? custById.get(c.id) : null;
+    return !!(fresh && custMatch(fresh, q));
+  };
   const list = allTxns.filter(t => {
     const ds = localDateStr(t.date);
     if(from && ds < from) return false;
     if(to && ds > to) return false;
-    if(q && !txnCustName(t).toLowerCase().includes(q)) return false;
+    if(q && !txnCustMatch(t)) return false;
     return true;
   }).sort((a,b) => new Date(b.date) - new Date(a.date));
 
@@ -3552,7 +3570,7 @@ setTimeout(()=>{ if(!window.FB && document.body.classList.contains('locked')) do
 
 renderHeldOrders();
 updateEditBanner();
-setTxnRange('month');
+setTxnRange('today');   // 交易記錄預設顯示今天
 
 init();
 </script>
