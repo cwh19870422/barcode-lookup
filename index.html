@@ -230,10 +230,9 @@
     body.cm-show .cust-mini{display:flex;}
     .cust-mini .cm-name{font-size:15px; font-weight:700; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; min-width:0;}
   }
-  /* ===== 出貨清單：固定留一塊區域（沒商品也留白）；超過就長大，到畫面上限後清單自己捲動；總計列固定在下方 ===== */
+  /* ===== 出貨清單：固定留一塊區域（沒商品也留白），商品變多就自動長高；總計列固定在下方 ===== */
   #tab-order{--cart-min:300px;}
-  #tab-order #cartBody{min-height:var(--cart-min); max-height:var(--cart-max, none); overflow-y:auto; -webkit-overflow-scrolling:touch;}
-  #tab-order #cartBody table.cart-table thead th{position:sticky; top:0; z-index:2; background:var(--card);}
+  #tab-order #cartBody{min-height:var(--cart-min);}
   #tab-order .cart-foot{position:sticky; bottom:var(--osb-reserve, 0px); z-index:30; background:var(--card); padding-top:10px; padding-bottom:8px; margin-top:0; box-shadow:0 -8px 10px -8px rgba(0,0,0,.12);}
   @media (max-width:640px){
     #tab-order{--cart-min:220px;}
@@ -1624,10 +1623,6 @@ function showAddedInCart(key, qty){
   const idx = cart.findIndex(it => it.key === key);
   const row = idx >= 0 && cartBody.querySelector(`tr[data-idx="${idx}"]`);
   if(!row) return;
-  // 清單自己會捲動：先把新加入的那一列捲進清單的可視範圍
-  { const rr = row.getBoundingClientRect(), cr = cartBody.getBoundingClientRect(), th = cartBody.querySelector('thead th'), headH = th ? th.offsetHeight : 0;
-    if(rr.bottom > cr.bottom) cartBody.scrollTop += rr.bottom - cr.bottom + 6;
-    else if(rr.top < cr.top + headH) cartBody.scrollTop -= (cr.top + headH - rr.top) + 6; }
   const bar = document.getElementById('orderSearchBar');
   const barH = bar ? bar.offsetHeight : 0;
   const r = row.getBoundingClientRect();
@@ -2697,28 +2692,19 @@ function updateOrderTop(){
   document.documentElement.style.setProperty('--ord-top', (tabsH + ch) + 'px');
   updateCartMax();
 }
-// 出貨清單的高度上限：讓「標題＋清單＋總計＋按鈕」剛好放得進畫面（扣掉頁籤和底部搜尋列），超過就在清單內捲動
+// 固定總計列要貼在底部搜尋列的上方：量出搜尋列佔的高度
 function updateCartMax(){
-  const tab = document.getElementById('tab-order'), body = document.getElementById('cartBody');
-  if(!tab || !body || tab.offsetParent === null) return;
-  const sec = body.closest('.cart-section'), osb = document.getElementById('orderSearchBar');
-  if(!sec) return;
+  const tab = document.getElementById('tab-order'), osb = document.getElementById('orderSearchBar');
+  if(!tab || tab.offsetParent === null) return;
   const reserve = osb ? osb.offsetHeight + (parseFloat(getComputedStyle(osb).bottom) || 0) : 0;
   document.documentElement.style.setProperty('--osb-reserve', reserve + 'px');
-  const ordTop = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--ord-top')) || 0;
-  const h = sel => { const e = sec.querySelector(sel); return e && e.offsetParent !== null ? e.offsetHeight : 0; };
-  const cs = getComputedStyle(sec);
-  const used = (parseFloat(cs.paddingTop) || 0) + (parseFloat(cs.paddingBottom) || 0) + h('.cart-title-row') + h('#editBanner') + h('#cartCustNoteM') + (h('.cart-foot') || (h('.quick-fee-row') + h('.cart-totals') + 20)) + h('.cart-actions') + 20;
-  const max = Math.floor(window.innerHeight - ordTop - reserve - used);
-  const min = parseFloat(getComputedStyle(body).minHeight) || 0;
-  body.style.setProperty('--cart-max', Math.max(min, max) + 'px');
 }
 (function(){
   const oc = document.getElementById('orderStickyControls');
   if(oc && window.ResizeObserver) new ResizeObserver(updateOrderTop).observe(oc);
   if(window.ResizeObserver){
-    const ro = new ResizeObserver(updateCartMax);
-    ['#tab-order .cart-foot', '#tab-order .quick-fee-row', '#cartTotals', '#tab-order .cart-actions', '#tab-order .cart-title-row', '#orderSearchBar', '#editBanner'].forEach(q => { const e = document.querySelector(q); if(e) ro.observe(e); });
+    const osbEl = document.getElementById('orderSearchBar');
+    if(osbEl) new ResizeObserver(updateCartMax).observe(osbEl);
   }
   window.addEventListener('resize', updateCartMax);
   if(window.visualViewport) window.visualViewport.addEventListener('resize', updateCartMax);
