@@ -301,6 +301,13 @@
   .qk-dlg h3{margin:0 0 10px; font-size:16px;}
   .qk-dlg label{display:block; font-size:12px; color:var(--text); margin:8px 0 3px;}
   .qk-dlg input[type=text], .qk-dlg input[type=number]{width:100%; border:1px solid var(--line); border-radius:9px; padding:9px 10px; font:15px var(--sysfont); background:var(--paper);}
+  .hs-time{white-space:nowrap;}
+  @media (max-width:640px){ .hs-time{display:none;} }
+  #posToast{position:fixed; left:50%; bottom:84px; transform:translate(-50%,12px); background:var(--ink); color:var(--onacc); font:600 13px var(--sysfont); padding:10px 16px; border-radius:999px; box-shadow:0 4px 18px rgba(0,0,0,.25); opacity:0; pointer-events:none; transition:opacity .25s, transform .25s; z-index:3000; width:max-content; max-width:90vw; text-align:center;}
+  #posToast.on{opacity:1; transform:translate(-50%,0);}
+  .top-link.upd{background:var(--ink); color:var(--onacc);} .top-link.upd:hover{background:var(--text);}
+  .top-link.upd .long{display:none;} @media (min-width:1100px){ .top-link.upd .long{display:inline;} }
+  .upd-float{position:fixed; left:50%; bottom:84px; transform:translateX(-50%); z-index:3000; border:none; background:var(--ink); color:var(--onacc); font:700 14px var(--sysfont); padding:11px 20px; border-radius:999px; box-shadow:0 4px 18px rgba(0,0,0,.3); cursor:pointer; white-space:nowrap;}
   .qk-dlg select{width:100%; border:1px solid var(--line); border-radius:9px; padding:9px 8px; font:14px var(--sysfont); background:var(--paper); color:var(--text);}
   .pr-row{display:flex; gap:8px; align-items:center;} .pr-row select{flex:1; min-width:0;}
   .pr-row button{flex:0 0 auto; border:1.5px solid var(--blue); background:var(--card); color:var(--text); border-radius:9px; padding:8px 12px; font:600 13px var(--sysfont); cursor:pointer; white-space:nowrap;}
@@ -982,16 +989,19 @@ async function decryptPackage(pkg, keyB64){
   const plain = await crypto.subtle.decrypt({ name:'AES-GCM', iv: b64ToBytes(pkg.iv) }, key, b64ToBytes(pkg.ct));
   return JSON.parse(new TextDecoder().decode(plain));
 }
+let dataStamp = '', dataUpdatedAt = '', loadedIv = '', sameIvTries = 0;   // 目前載入的商品資料是哪一版（data.meta.json 的 sha256／更新時間）
+const fmtDataTime = iso => { const d = new Date(iso); return isNaN(d) ? '' : (d.getMonth()+1) + '/' + d.getDate() + ' ' + String(d.getHours()).padStart(2,'0') + ':' + String(d.getMinutes()).padStart(2,'0'); };
 function applyProducts(data, tag){
   cats = data.cats || [];
   rows = data.rows || [];
-  document.getElementById('headerStats').textContent =
-    rows.length.toLocaleString() + ' 筆商品 · ' + cats.length + ' 個分類' + (tag || '');
+  document.getElementById('headerStats').innerHTML =
+    escapeHtml(rows.length.toLocaleString() + ' 筆商品 · ' + cats.length + ' 個分類' + (tag || '')) +
+    (dataUpdatedAt && fmtDataTime(dataUpdatedAt) ? `<span class="hs-time" title="商品資料最後一次有變動的時間"> · 資料 ${escapeHtml(fmtDataTime(dataUpdatedAt))}</span>` : '');
   document.getElementById('statusText').textContent = '請輸入關鍵字開始搜尋';
   if(input && input.value.trim()) input.dispatchEvent(new Event('input'));
 }
 function clearProducts(){
-  cats = []; rows = []; productsRole = null;
+  cats = []; rows = []; productsRole = null; dataStamp = ''; dataUpdatedAt = ''; loadedIv = ''; sameIvTries = 0;
   document.getElementById('headerStats').textContent = '';
   document.getElementById('statusText').textContent = '請先登入';
   try{ resultsEl.innerHTML = ''; }catch(e){}
@@ -1004,13 +1014,16 @@ async function loadProducts(role){
     let encErr = null;
     try{
       const file = role === 'boss' ? 'data.boss.enc' : 'data.staff.enc';
-      const [res, keyB64] = await Promise.all([
-        fetch('./' + file + '?_=' + Date.now()),
-        window.FB.getDataKey(role)
+      const [res, keyB64, meta0] = await Promise.all([
+        fetch('./' + file + '?_=' + Date.now(), {cache:'no-store'}),
+        window.FB.getDataKey(role),
+        fetchMeta()
       ]);
       if(!res.ok) throw new Error(file + ' HTTP ' + res.status);
       if(!keyB64) throw new Error('雲端找不到解密鑰匙');
-      applyProducts(await decryptPackage(await res.json(), keyB64), ' · 🔒');
+      const pkg = await res.json();
+      dataStamp = meta0 ? meta0.sha256 : ''; dataUpdatedAt = meta0 ? meta0.updatedAt : ''; loadedIv = pkg.iv || ''; sameIvTries = 0;
+      applyProducts(await decryptPackage(pkg, keyB64), ' · 🔒');
       productsRole = role;
       return;
     }catch(e){ encErr = e; }
@@ -1027,6 +1040,79 @@ async function loadProducts(role){
   })();
   try{ await productsLoading; } finally { productsLoading = null; }
 }
+
+// ===== 自動檢查有沒有新的商品資料／新版程式 =====
+// 視窗整天開著也不用一直按「重新整理」：每 1 分鐘（以及切回視窗時）偷偷看一眼 data.meta.json（很小的檔案），
+// 有新資料就在背景換掉（不影響打到一半的單）；程式有新版本時，在上方提示，由你按一下更新（不會自己重新整理）。
+const nocacheUrl = u => u + (u.includes('?') ? '&' : '?') + '_=' + Date.now();
+async function fetchMeta(){
+  try{ const r = await fetch(nocacheUrl('./data.meta.json'), {cache:'no-store'}); return r.ok ? await r.json() : null; }catch(e){ return null; }
+}
+function showToast(msg){
+  let t = document.getElementById('posToast');
+  if(!t){ t = document.createElement('div'); t.id = 'posToast'; document.body.appendChild(t); }
+  t.textContent = msg; t.classList.add('on');
+  clearTimeout(showToast._t); showToast._t = setTimeout(()=> t.classList.remove('on'), 4500);
+}
+async function refreshProductsQuiet(meta){
+  const role = productsRole; if(!role || !window.FB) return false;
+  const file = role === 'boss' ? 'data.boss.enc' : 'data.staff.enc';
+  const [res, keyB64] = await Promise.all([fetch(nocacheUrl('./' + file), {cache:'no-store'}), window.FB.getDataKey(role)]);
+  if(!res.ok || !keyB64) return false;
+  const pkg = await res.json();
+  if(pkg.iv && pkg.iv === loadedIv){   // 資料檔還是舊的（網站新版還在傳播）：稍後再檢查；連續 3 次都一樣就當作這次沒有變動
+    if(++sameIvTries >= 3){ dataStamp = meta.sha256; sameIvTries = 0; }
+    return false;
+  }
+  const data = await decryptPackage(pkg, keyB64);
+  if(productsRole !== role) return false;   // 檢查途中登出了
+  loadedIv = pkg.iv || ''; dataStamp = meta.sha256; dataUpdatedAt = meta.updatedAt; sameIvTries = 0;
+  applyProducts(data, ' · 🔒');
+  return true;
+}
+let pageFp = null, autoBusy = false, autoTick = 0, lastAuto = 0;
+async function pageFingerprint(){   // 主頁與腳本、樣式的內容指紋
+  try{
+    const urls = [location.pathname, ...[...document.querySelectorAll('script[src],link[rel=stylesheet][href]')].map(e=>e.src||e.href).filter(u=>u.startsWith(location.origin))];
+    const texts = await Promise.all(urls.map(u => fetch(nocacheUrl(u), {cache:'no-store'}).then(r => r.ok ? r.text() : '')));
+    let h = 5381, n = 0;
+    for(const t of texts){ n += t.length; for(let i = 0; i < t.length; i++) h = ((h << 5) + h + t.charCodeAt(i)) | 0; }
+    return n ? n + ':' + h : null;
+  }catch(e){ return null; }
+}
+function showUpdateBanner(){
+  if(document.getElementById('updBanner')) return;
+  const b = document.createElement('button'); b.id = 'updBanner'; b.type = 'button'; b.title = '按一下重新載入，換成最新版本';
+  b.addEventListener('click', ()=> document.getElementById('refreshBtn').click());
+  if(window.innerWidth > 640){   // 電腦版：放在右上角按鈕列最左邊（跟其他按鈕同一排，不蓋住東西）
+    b.className = 'top-link upd';
+    b.innerHTML = '<span class="ico">🔄</span><span class="lbl">有新版本<span class="long">，按這裡更新</span></span>';
+    document.querySelector('.top-actions').prepend(b);
+  }else{                          // 手機：底部浮動提示
+    b.className = 'upd-float';
+    b.textContent = '🔄 有新版本，按這裡更新';
+    document.body.appendChild(b);
+  }
+}
+async function autoCheck(force){
+  if(autoBusy || document.hidden || !productsRole || document.body.classList.contains('locked')) return;
+  if(!force && Date.now() - lastAuto < 20000) return;
+  autoBusy = true; lastAuto = Date.now(); autoTick++;
+  try{
+    const meta = await fetchMeta();
+    if(meta && meta.sha256 && dataStamp && meta.sha256 !== dataStamp){
+      if(await refreshProductsQuiet(meta)) showToast('商品資料已更新（' + fmtDataTime(meta.updatedAt) + '）');
+    }
+    if(autoTick % 5 === 1){   // 程式版本：約每 5 分鐘一次（第一次當作基準）
+      const fp = await pageFingerprint();
+      if(fp){ if(pageFp === null) pageFp = fp; else if(fp !== pageFp) showUpdateBanner(); }
+    }
+  }catch(e){} finally{ autoBusy = false; }
+}
+setInterval(autoCheck, 60000);
+document.addEventListener('visibilitychange', ()=>{ if(!document.hidden) autoCheck(); });
+window.addEventListener('focus', ()=> autoCheck());
+window.addEventListener('online', ()=> autoCheck(true));
 
 async function init(){
   document.getElementById('statusText').textContent = '請先登入';
