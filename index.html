@@ -301,7 +301,7 @@
   .qk-dlg h3{margin:0 0 10px; font-size:16px;}
   .qk-dlg label{display:block; font-size:12px; color:var(--text); margin:8px 0 3px;}
   .qk-dlg input[type=text], .qk-dlg input[type=number]{width:100%; border:1px solid var(--line); border-radius:9px; padding:9px 10px; font:15px var(--sysfont); background:var(--paper);}
-  .hs-time{white-space:nowrap;}
+  #headerStats{cursor:pointer;} .hs-time{white-space:nowrap;}
   @media (max-width:640px){ .hs-time{display:none;} }
   #posToast{position:fixed; left:50%; bottom:84px; transform:translate(-50%,12px); background:var(--ink); color:var(--onacc); font:600 13px var(--sysfont); padding:10px 16px; border-radius:999px; box-shadow:0 4px 18px rgba(0,0,0,.25); opacity:0; pointer-events:none; transition:opacity .25s, transform .25s; z-index:3000; width:max-content; max-width:90vw; text-align:center;}
   #posToast.on{opacity:1; transform:translate(-50%,0);}
@@ -989,7 +989,7 @@ async function decryptPackage(pkg, keyB64){
   const plain = await crypto.subtle.decrypt({ name:'AES-GCM', iv: b64ToBytes(pkg.iv) }, key, b64ToBytes(pkg.ct));
   return JSON.parse(new TextDecoder().decode(plain));
 }
-let dataStamp = '', dataUpdatedAt = '', loadedIv = '', sameIvTries = 0;   // 目前載入的商品資料是哪一版（data.meta.json 的 sha256／更新時間）
+let dataStamp = '', dataUpdatedAt = '', loadedIv = '';   // 目前載入的商品資料是哪一版（data.meta.json 的 sha256／更新時間）
 const fmtDataTime = iso => { const d = new Date(iso); return isNaN(d) ? '' : (d.getMonth()+1) + '/' + d.getDate() + ' ' + String(d.getHours()).padStart(2,'0') + ':' + String(d.getMinutes()).padStart(2,'0'); };
 function applyProducts(data, tag){
   cats = data.cats || [];
@@ -1001,7 +1001,7 @@ function applyProducts(data, tag){
   if(input && input.value.trim()) input.dispatchEvent(new Event('input'));
 }
 function clearProducts(){
-  cats = []; rows = []; productsRole = null; dataStamp = ''; dataUpdatedAt = ''; loadedIv = ''; sameIvTries = 0;
+  cats = []; rows = []; productsRole = null; dataStamp = ''; dataUpdatedAt = ''; loadedIv = '';
   document.getElementById('headerStats').textContent = '';
   document.getElementById('statusText').textContent = '請先登入';
   try{ resultsEl.innerHTML = ''; }catch(e){}
@@ -1022,7 +1022,9 @@ async function loadProducts(role){
       if(!res.ok) throw new Error(file + ' HTTP ' + res.status);
       if(!keyB64) throw new Error('雲端找不到解密鑰匙');
       const pkg = await res.json();
-      dataStamp = meta0 ? meta0.sha256 : ''; dataUpdatedAt = meta0 ? meta0.updatedAt : ''; loadedIv = pkg.iv || ''; sameIvTries = 0;
+      diag.enc = {t:Date.now(), status:res.status, h:pickHdr(res), iv:(pkg.iv || '').slice(0,8)}; diag.loadedAt = Date.now();
+      dataStamp = meta0 ? meta0.sha256 : ''; dataUpdatedAt = meta0 ? meta0.updatedAt : ''; loadedIv = pkg.iv || '';
+      scheduleFastChecks();
       applyProducts(await decryptPackage(pkg, keyB64), ' · 🔒');
       productsRole = role;
       return;
@@ -1045,8 +1047,17 @@ async function loadProducts(role){
 // 視窗整天開著也不用一直按「重新整理」：每 1 分鐘（以及切回視窗時）偷偷看一眼 data.meta.json（很小的檔案），
 // 有新資料就在背景換掉（不影響打到一半的單）；程式有新版本時，在上方提示，由你按一下更新（不會自己重新整理）。
 const nocacheUrl = u => u + (u.includes('?') ? '&' : '?') + '_=' + Date.now();
+const diag = {meta:null, enc:null, loadedAt:0, checks:[]};   // 給「資料版本資訊」用：最近幾次檢查拿到什麼、伺服器回了哪些快取標頭
+const pickHdr = r => { const o = {}; ['age','x-cache','x-served-by','date','etag','last-modified','via','cache-control','x-github-request-id'].forEach(k => { const v = r.headers.get(k); if(v) o[k] = v; }); return o; };
 async function fetchMeta(){
-  try{ const r = await fetch(nocacheUrl('./data.meta.json'), {cache:'no-store'}); return r.ok ? await r.json() : null; }catch(e){ return null; }
+  const t = Date.now();
+  try{
+    const r = await fetch(nocacheUrl('./data.meta.json'), {cache:'no-store'});
+    const j = r.ok ? await r.json() : null;
+    diag.meta = {t, status:r.status, h:pickHdr(r), sha:j && j.sha256, upd:j && j.updatedAt};
+    diag.checks.push({t, sha:j && j.sha256, age:r.headers.get('age'), cache:r.headers.get('x-cache')}); if(diag.checks.length > 12) diag.checks.shift();
+    return j;
+  }catch(e){ diag.meta = {t, err:String(e)}; diag.checks.push({t, err:String(e)}); if(diag.checks.length > 12) diag.checks.shift(); return null; }
 }
 function showToast(msg){
   let t = document.getElementById('posToast');
@@ -1060,17 +1071,15 @@ async function refreshProductsQuiet(meta){
   const [res, keyB64] = await Promise.all([fetch(nocacheUrl('./' + file), {cache:'no-store'}), window.FB.getDataKey(role)]);
   if(!res.ok || !keyB64) return false;
   const pkg = await res.json();
-  if(pkg.iv && pkg.iv === loadedIv){   // 資料檔還是舊的（網站新版還在傳播）：稍後再檢查；連續 3 次都一樣就當作這次沒有變動
-    if(++sameIvTries >= 3){ dataStamp = meta.sha256; sameIvTries = 0; }
-    return false;
-  }
+  diag.enc = {t:Date.now(), status:res.status, h:pickHdr(res), iv:(pkg.iv || '').slice(0,8)};
+  if(pkg.iv && pkg.iv === loadedIv) return false;   // 資料檔還是舊的（網站新版還在傳播），稍後再試
   const data = await decryptPackage(pkg, keyB64);
   if(productsRole !== role) return false;   // 檢查途中登出了
-  loadedIv = pkg.iv || ''; dataStamp = meta.sha256; dataUpdatedAt = meta.updatedAt; sameIvTries = 0;
+  loadedIv = pkg.iv || ''; dataStamp = meta.sha256; dataUpdatedAt = meta.updatedAt; diag.loadedAt = Date.now();
   applyProducts(data, ' · 🔒');
   return true;
 }
-let pageFp = null, autoBusy = false, autoTick = 0, lastAuto = 0;
+let pageFp = null, autoBusy = false, autoTick = 0, lastAuto = 0, mismatchSha = '', mismatchSince = 0, lastEncTry = 0;
 async function pageFingerprint(){   // 主頁與腳本、樣式的內容指紋
   try{
     const urls = [location.pathname, ...[...document.querySelectorAll('script[src],link[rel=stylesheet][href]')].map(e=>e.src||e.href).filter(u=>u.startsWith(location.origin))];
@@ -1101,7 +1110,12 @@ async function autoCheck(force){
   try{
     const meta = await fetchMeta();
     if(meta && meta.sha256 && dataStamp && meta.sha256 !== dataStamp){
-      if(await refreshProductsQuiet(meta)) showToast('商品資料已更新（' + fmtDataTime(meta.updatedAt) + '）');
+      if(mismatchSha !== meta.sha256){ mismatchSha = meta.sha256; mismatchSince = Date.now(); lastEncTry = 0; }
+      if(Date.now() - lastEncTry >= 40000){   // 資料檔（約 1.5MB）最多每 40 秒重抓一次
+        lastEncTry = Date.now();
+        if(await refreshProductsQuiet(meta)){ showToast('商品資料已更新（' + fmtDataTime(meta.updatedAt) + '）'); mismatchSha = ''; }
+        else if(Date.now() - mismatchSince > 5 * 60000){ dataStamp = meta.sha256; mismatchSha = ''; }   // 5 分鐘都沒等到不同的資料檔：當作這次版本碼更新不影響內容，不再重試
+      }
     }
     if(autoTick % 5 === 1){   // 程式版本：約每 5 分鐘一次（第一次當作基準）
       const fp = await pageFingerprint();
@@ -1109,7 +1123,44 @@ async function autoCheck(force){
     }
   }catch(e){} finally{ autoBusy = false; }
 }
+// 剛載入（或按過「重新整理」）後的前 2 分鐘多看幾次：萬一網站那邊新資料還沒傳到、載入的是舊的，幾秒內就會自己補上
+let fastTimers = [];
+function scheduleFastChecks(){
+  fastTimers.forEach(clearTimeout);
+  fastTimers = [8000, 20000, 35000, 50000, 70000, 95000, 120000].map(ms => setTimeout(()=> autoCheck(true), ms));
+}
 setInterval(autoCheck, 60000);
+function diagText(){
+  const f = t => t ? new Date(t).toLocaleString('zh-TW', {hour12:false}) : '-';
+  const hs = h => Object.keys(h || {}).length ? Object.entries(h).map(([k, v]) => '    ' + k + ': ' + v).join('\n') : '    （沒有）';
+  const L = [];
+  L.push('【程式】' + (window.posDesktop ? '桌面版 POS-APP' : '網頁版') + '　' + (navigator.userAgent.match(/(Electron|Chrome|Edg|Safari)\/[\d.]+/g) || []).join(' '));
+  L.push('【商品資料】' + rows.length + ' 筆　資料時間 ' + (dataUpdatedAt ? f(dataUpdatedAt) : '-') + '　版本碼 ' + (dataStamp || '-'));
+  L.push('　載入／更新於 ' + f(diag.loadedAt) + '　目前時間 ' + f(Date.now()));
+  L.push('【最近一次資料檔回應】' + (diag.enc ? f(diag.enc.t) + ' HTTP ' + diag.enc.status + ' iv=' + diag.enc.iv : '-') + '\n' + hs(diag.enc && diag.enc.h));
+  L.push('【最近一次版本檔(meta)回應】' + (diag.meta ? f(diag.meta.t) + (diag.meta.err ? ' 失敗 ' + diag.meta.err : ' HTTP ' + diag.meta.status + ' 版本碼 ' + diag.meta.sha) : '-') + '\n' + hs(diag.meta && diag.meta.h));
+  L.push('【最近幾次檢查】\n' + (diag.checks.length ? diag.checks.map(c => '    ' + f(c.t) + '  ' + (c.err ? '失敗' : '版本碼 ' + c.sha + '  age=' + (c.age || '-') + '  x-cache=' + (c.cache || '-'))).join('\n') : '    （還沒有）'));
+  return L.join('\n');
+}
+function openDiag(){
+  let m = document.getElementById('diagMask');
+  if(!m){ m = document.createElement('div'); m.id = 'diagMask'; m.className = 'qk-mask'; m.innerHTML = '<div class="qk-dlg" id="diagDlg" style="max-width:560px;"></div>'; document.body.appendChild(m); }
+  document.getElementById('diagDlg').innerHTML = `<h3>商品資料版本資訊</h3><div class="pr-note">兩邊（網頁版、桌面版）看起來資料不一樣時，各按一下這裡，把內容複製給我，就能看出差在哪。</div>
+    <pre id="diagPre" style="white-space:pre-wrap; word-break:break-all; font:12px/1.55 ui-monospace,Consolas,monospace; background:var(--paper); border-radius:9px; padding:10px; margin:8px 0 0; max-height:50vh; overflow:auto;"></pre>
+    <div class="qk-row"><button type="button" id="diagCopy">複製內容</button><button type="button" class="pri" id="diagClose">關閉</button></div>`;
+  document.getElementById('diagPre').textContent = diagText();
+  m.classList.add('on');
+  const done = () => { m.classList.remove('on'); m.removeEventListener('click', bg); };
+  const bg = e => { if(e.target === m) done(); };
+  m.addEventListener('click', bg);
+  document.getElementById('diagClose').onclick = done;
+  document.getElementById('diagCopy').onclick = async () => {
+    const txt = document.getElementById('diagPre').textContent, b = document.getElementById('diagCopy');
+    try{ await navigator.clipboard.writeText(txt); }catch(e){ const r = document.createRange(); r.selectNodeContents(document.getElementById('diagPre')); const sel = getSelection(); sel.removeAllRanges(); sel.addRange(r); try{ document.execCommand('copy'); }catch(_){} }
+    b.textContent = '已複製'; setTimeout(()=> b.textContent = '複製內容', 1500);
+  };
+}
+document.getElementById('headerStats').addEventListener('click', ()=>{ if(rows.length) openDiag(); });
 document.addEventListener('visibilitychange', ()=>{ if(!document.hidden) autoCheck(); });
 window.addEventListener('focus', ()=> autoCheck());
 window.addEventListener('online', ()=> autoCheck(true));
