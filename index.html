@@ -241,14 +241,13 @@
     #tab-order .cart-foot .quick-fee-row{margin-top:10px; width:100%;}
     #tab-order .cart-totals[style*="flex"]{position:sticky; bottom:var(--osb-reserve, 0px); z-index:30; margin-top:8px; box-shadow:0 0 0 5px var(--card), 0 -6px 10px -2px rgba(0,0,0,.10);}
   }
-  /* ===== 打單：下半部「操作台」電腦版固定在畫面最下面；搜尋列在清單後面、搜尋結果接在搜尋列下面往下長（手機版維持原樣）===== */
+  /* ===== 打單：下半部「操作台＋搜尋列」電腦版整塊固定在畫面最下面，搜尋結果接在它下面往下長（手機版維持原樣）===== */
   .order-dock:not(.docked){display:contents;}
   .order-bottom{display:none;}
   @media (min-width:760px){
-    .order-bottom{display:block; position:sticky; bottom:0; z-index:45; background:var(--paper); margin-top:0; padding:10px 0 12px; box-shadow:0 -1px 0 var(--line), 0 -8px 18px rgba(0,0,0,.06);}
-    #tab-order .order-search-bar{bottom:var(--dock-h, 0px);}
-    #tab-order > .results:not(:empty){margin-bottom:12px;}   /* 捲到最底時，最後一筆結果和固定操作台之間留一點空隙 */   /* 搜尋列留在清單後面、結果上面（像舊版）；沒捲到時貼在固定操作台的正上方 */
-    #tab-order{margin-bottom:-80px;}   /* 抵掉 main 底部 80px 留白，捲到最底時固定區塊也貼齊畫面最下緣 */
+    .order-bottom{display:block; position:sticky; bottom:0; z-index:45; background:var(--paper); margin-top:12px; padding:10px 0 0; box-shadow:0 -1px 0 var(--line), 0 -12px 24px -10px rgba(0,0,0,.16);}
+    #tab-order .order-bottom .order-search-bar{position:static; margin:0; padding:10px 0 10px; border-radius:0; box-shadow:none; background:transparent;}
+    #tab-order:has(#orderResults:empty){margin-bottom:-80px;}   /* 沒有搜尋結果時：抵掉 main 底部 80px 留白，捲到最底時固定區塊也貼齊畫面最下緣 */
     #tab-order .order-dock.docked{display:grid; grid-template-columns:minmax(0,1fr) 124px auto; grid-template-rows:44px 44px; gap:8px 10px; background:var(--card); border-radius:16px; box-shadow:var(--shadow); padding:10px 14px;}
     #tab-order .order-dock.docked .cart-foot, #tab-order .order-dock.docked .cart-actions{display:contents;}
     /* 左上：快捷六顆（連成一條） */
@@ -912,9 +911,9 @@ body.cust-view .prices{grid-template-columns:minmax(0,1fr) !important; max-width
       <select class="sort-sel" title="排序方式"><option value="">排序：預設</option><option value="asc">賣價 低→高</option><option value="desc">賣價 高→低</option></select>
       </div>
     </div>
-    <div class="results" id="orderResults"></div>
-    <!-- 電腦版：操作台（快捷／列印／結帳／金額）固定在畫面最下面（由程式搬進來；手機版維持原樣） -->
+    <!-- 電腦版：操作台（快捷／列印／結帳／金額）＋搜尋列 一起固定在畫面最下面（由程式搬進來；手機版維持原樣）；搜尋結果接在它的下面，往下捲才看到 -->
     <div class="order-bottom" id="orderBottom"></div>
+    <div class="results" id="orderResults"></div>
   </section>
 
   <section class="tab-panel" id="tab-customers">
@@ -1882,8 +1881,10 @@ function revealOrderResults(){
   const rTop = orderResultsEl.getBoundingClientRect().top;
   if(rTop < window.innerHeight * 0.55) return;
   const ordTop = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--ord-top')) || 0;
-  // 搜尋列在結果上方：捲到搜尋列貼在頁籤下方，結果接在下面往下長
-  window.scrollTo({ top: window.scrollY + rTop - bar.offsetHeight - ordTop - 12, behavior: 'smooth' });
+  // 結果在搜尋列正下方：捲到搜尋列貼在頁籤下方、結果接在下面往下長
+  // 電腦版搜尋列上面緊貼著操作台，多捲 12px 讓操作台整個藏到頁籤後面；手機版維持原本留 12px
+  const docked = bar.parentNode && bar.parentNode.id === 'orderBottom';
+  window.scrollTo({ top: window.scrollY + rTop - bar.offsetHeight - ordTop - (docked ? 0 : 12), behavior: 'smooth' });
 }
 
 orderInput.addEventListener('input', ()=>{
@@ -2470,8 +2471,7 @@ function placeQtyPad(allowScroll){
   if(cqCur === null || !cqAnchor || !cqAnchor.isConnected) return;
   let r = cqAnchor.getBoundingClientRect();
   const ob = document.getElementById('orderBottom');
-  const sbar = document.getElementById('orderSearchBar'), sbTop = sbar ? sbar.getBoundingClientRect().top : innerHeight;   // 搜尋列在清單下方，貼在操作台上方時也要避開
-  const dockTop = (ob && ob.offsetHeight && ob.contains(document.getElementById('orderDock'))) ? Math.min(ob.getBoundingClientRect().top, Math.max(sbTop, r.bottom)) : innerHeight;
+  const dockTop = (ob && ob.offsetHeight && ob.contains(document.getElementById('orderDock'))) ? ob.getBoundingClientRect().top : innerHeight;
   const tw = document.getElementById('tabsStickyWrap');
   const topLimit = Math.max(0, tw ? tw.getBoundingClientRect().bottom : 0) + 4;   // 數字盤浮在最上層，可蓋過清單標題列，只避開頁籤
   const W = cqPad.offsetWidth, H = cqPad.offsetHeight, gap = 10;
@@ -3211,8 +3211,6 @@ function updateCartMax(){
   if(!tab || tab.offsetParent === null) return;
   const reserve = osb ? osb.offsetHeight + (parseFloat(getComputedStyle(osb).bottom) || 0) : 0;
   document.documentElement.style.setProperty('--osb-reserve', reserve + 'px');
-  const ob = document.getElementById('orderBottom');
-  document.documentElement.style.setProperty('--dock-h', (ob && ob.offsetParent !== null ? ob.offsetHeight : 0) + 'px');   // 搜尋列貼在固定操作台正上方用
 }
 (function(){
   const oc = document.getElementById('orderStickyControls');
@@ -3220,14 +3218,12 @@ function updateCartMax(){
   if(window.ResizeObserver){
     const osbEl = document.getElementById('orderSearchBar');
     if(osbEl) new ResizeObserver(updateCartMax).observe(osbEl);
-    const obEl = document.getElementById('orderBottom');
-    if(obEl) new ResizeObserver(updateCartMax).observe(obEl);
   }
   window.addEventListener('resize', updateCartMax);
   if(window.visualViewport) window.visualViewport.addEventListener('resize', updateCartMax);
   document.querySelectorAll('.tab-btn').forEach(b => b.addEventListener('click', ()=> setTimeout(updateOrderTop, 50)));
 })();
-// 電腦版：把「操作台（快捷／列印／結帳／金額）」搬到清單與搜尋結果的後面，固定在畫面最下面；手機版放回原位。搜尋列不搬，維持在清單後面、結果上面
+// 電腦版：把「操作台（快捷／列印／結帳／金額）」和「搜尋列」搬進固定底座（在清單後面、搜尋結果前面），整塊固定在畫面最下面；手機版放回原位
 (function(){
   const tab = document.getElementById('tab-order'), sec = tab.querySelector('.cart-section'), dock = document.getElementById('orderDock'),
         cloud = document.getElementById('cloudStatus'), bar = document.getElementById('orderSearchBar'), res = document.getElementById('orderResults'), bottom = document.getElementById('orderBottom');
@@ -3236,9 +3232,11 @@ function updateCartMax(){
   function place(){
     if(mq.matches){
       if(dock.parentNode !== sec) sec.insertBefore(dock, cloud);
+      if(bar.parentNode === bottom) tab.insertBefore(bar, res);
       dock.classList.remove('docked');
     }else{
       if(dock.parentNode !== bottom) bottom.appendChild(dock);
+      if(bar.parentNode !== bottom) bottom.appendChild(bar);
       dock.classList.add('docked');
     }
     updateCartMax();
@@ -3246,10 +3244,10 @@ function updateCartMax(){
   if(mq.addEventListener) mq.addEventListener('change', place); else mq.addListener(place);
   place();
 })();
-// 畫面底部被固定區塊佔掉的高度（電腦版＝操作台＋貼在它上方的搜尋列；手機版＝搜尋列）
+// 畫面底部被固定區塊佔掉的高度（電腦版＝操作台＋搜尋列；手機版＝搜尋列）
 function bottomDockH(){
   const b = document.getElementById('orderBottom'), bar = document.getElementById('orderSearchBar');
-  if(b && b.offsetParent !== null && b.contains(document.getElementById('orderDock'))) return b.offsetHeight + (bar ? bar.offsetHeight : 0);
+  if(b && bar && b.contains(bar) && b.offsetParent !== null) return b.offsetHeight;
   return bar ? bar.offsetHeight : 0;
 }
 window.addEventListener('resize', updateStickyOffset);
