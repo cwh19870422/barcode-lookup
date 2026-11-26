@@ -1923,6 +1923,20 @@ document.addEventListener('keydown', (e)=>{
   target.focus({preventScroll:true});
   target.select();   // 搜尋框若還留著上次的字，第一個字元會直接取代它
 });
+// 重新整理（或剛登入、剛切回視窗）後，輸入線要回到目前頁的搜尋框，不用再用滑鼠點一下
+// 只有電腦（有滑鼠）才會自動放回；iPad／手機自動聚焦會直接跳出螢幕鍵盤，所以不做
+const coarsePtrMq = window.matchMedia('(pointer:coarse)');
+function focusActiveSearch(){
+  if(coarsePtrMq.matches) return;
+  if(document.body.classList.contains('locked')) return;
+  const ae = document.activeElement;
+  if(ae && ae !== document.body && ae !== document.documentElement && /^(INPUT|TEXTAREA|SELECT)$/.test(ae.tagName)) return;   // 已經在輸入欄，不搶
+  if(document.querySelector('.qk-mask.on, #previewOverlay.on, #ubAlert.on, #ckAlert.on, .pk-mask.on')) return;                // 有彈出視窗時不搶
+  const t = document.getElementById('tab-order').classList.contains('active') ? orderInput
+          : document.getElementById('tab-search').classList.contains('active') ? document.getElementById('searchInput') : null;
+  if(t) t.focus({preventScroll:true});
+}
+window.addEventListener('focus', ()=> setTimeout(focusActiveSearch, 0));   // 視窗被切回來、而且目前沒停在任何輸入欄時
 // 按完「加入」後，讓按鈕放開焦點，避免之後的 Enter 又按到它
 orderResultsEl.addEventListener('click', (e)=>{
   const b = e.target.closest('.add-btn, .qty-plus, .qty-minus');
@@ -4071,6 +4085,7 @@ window.fbReady.then(FBlib=>{
       applyMode();
       startCloud();
       loadProducts(u.role);
+      setTimeout(focusActiveSearch, 150);   // 重新整理後登入自動還原：輸入線放回搜尋框
     }else{
       if(u) FBlib.logout();
       currentRole = null;
