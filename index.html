@@ -396,6 +396,36 @@ table.cart-table tr.ret-row .cart-name::before{content:'退貨 '; color:var(--re
 @media (max-width:640px){ table.cart-table tr.ret-row .cart-name::before{content:none;} }
   .cart-subtotal{font-weight:700; white-space:nowrap;}
   .cart-del{background:none; border:none; color:var(--red); font-size:16px; cursor:pointer; padding:4px;}
+  /* ===== iPad／觸控（寬 ≥760px）：出貨清單數量欄 = [−] 數字 [＋]；點數字彈出小數字盤（不叫系統鍵盤） ===== */
+  .cq-step{display:flex; align-items:center; gap:4px;}
+  .cq-step button{-webkit-user-select:none; user-select:none; -webkit-touch-callout:none; touch-action:manipulation; border:0; border-radius:10px; background:var(--paper-alt); color:var(--ink); height:44px; font-family:var(--sysfont); cursor:pointer;}
+  .cq-step .cq-m, .cq-step .cq-p{width:44px; font-size:24px; font-weight:700; line-height:1; padding:0;}
+  .cq-step .cq-v{min-width:52px; padding:0 6px; font-size:17px; font-weight:800; background:#fff; color:var(--text); box-shadow:inset 0 0 0 1.5px #D3C5AE;}
+  .cq-step button:active{background:#D8CBB4; transform:scale(.96);}
+  .cq-step .cq-v:active{background:#F3EBDD;}
+  table.cart-table tr.ret-row .cq-v{color:var(--red);}
+  table.cart-table tr.cq-editing td{background:#F3EBDD;}
+  @media (min-width:760px) and (pointer:coarse){ table.cart-table th.th-qty{width:154px !important;} }
+  .cq-pad{position:fixed; z-index:80; width:264px; background:#FAF7F1; border-radius:16px; padding:12px; box-shadow:0 10px 34px rgba(60,40,10,.28), 0 0 0 1px rgba(122,98,68,.25); display:none; touch-action:manipulation; -webkit-user-select:none; user-select:none; -webkit-touch-callout:none;}
+  .cq-pad.show{display:block;}
+  .cq-pad .cq-arrow{position:absolute; width:14px; height:14px; background:#FAF7F1; transform:rotate(45deg);}
+  .cq-pad.side .cq-arrow{display:none;}
+  .cq-pad.below .cq-arrow{top:-7px; box-shadow:-1px -1px 0 rgba(122,98,68,.25);}
+  .cq-pad.above .cq-arrow{bottom:-7px; box-shadow:1px 1px 0 rgba(122,98,68,.25);}
+  .cq-disp{background:#fff; border-radius:11px; box-shadow:inset 0 0 0 1.5px #D3C5AE; padding:6px 12px; margin-bottom:8px; min-height:56px;}
+  .cq-cap{font-size:11.5px; color:#5B4B35; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+  .cq-val{font-size:28px; font-weight:800; text-align:right; line-height:1.15; font-variant-numeric:tabular-nums; color:#2A1F12;}
+  .cq-val.ghost{color:#B7A98F;}
+  .cq-val.shake{animation:cqshake .25s;}
+  @keyframes cqshake{25%{transform:translateX(-5px)} 75%{transform:translateX(5px)}}
+  .cq-grid{display:grid; grid-template-columns:repeat(4,1fr); grid-template-rows:repeat(4,46px); gap:8px;}
+  .cq-grid button{border:0; border-radius:10px; background:#EBE2D2; color:#2C2318; font:700 21px var(--sysfont); touch-action:manipulation; cursor:pointer;}
+  .cq-grid button:active{background:#D8CBB4; transform:scale(.96);}
+  .cq-grid .cq-k0{grid-column:1 / span 2;}
+  .cq-grid .cq-fn{background:#DCD0BA; font-size:18px;}
+  .cq-grid .cq-ok{grid-column:4; grid-row:3 / span 2; background:#7A6244; color:#FBF7F0; font-size:20px; letter-spacing:.1em;}
+  .cq-grid .cq-ok:active{background:#6B553A;}
+  .cq-note{font-size:11px; color:#7a6a52; margin-top:8px; text-align:center;}
   /* 底部：快捷（左）＋ 總計色塊（右）同一排、底部對齊；放不下就自動換成兩排（快捷在上、總計在下靠右） */
   .cart-foot{display:flex; flex-wrap:wrap; justify-content:space-between; align-items:flex-end; gap:14px 24px; margin-top:4px;}
   .cart-foot:has(.cart-totals[style*="flex"]){border-top:1.5px solid var(--ink); padding-top:14px;}
@@ -2195,7 +2225,10 @@ function updateCartNote(){
   const m = document.getElementById('cartCustNoteM');
   if(m){ m.textContent = note; m.title = note; }
 }
+const touchQtyMq = window.matchMedia('(min-width:760px) and (pointer:coarse)');   // iPad／觸控平板：數量欄改用 −＋ 與小數字盤
+let cqPad = null, cqCur = null, cqBuf = '', cqNeg = false, cqAnchor = null;   // 小數字盤狀態（renderCart 會用到，所以放在前面）
 function renderCart(){
+  if(typeof closeQtyPad === 'function') closeQtyPad();
   applyTaxToCart();
   { const tb = document.getElementById('taxModeBtn'); if(tb){ tb.classList.toggle('on', taxMode);  } }
   { const hb = document.getElementById('hideMoneyBtn'); if(hb){ hb.classList.toggle('on', hideMoney); hb.textContent = hideMoney ? '顯示金額' : '隱藏金額'; }
@@ -2210,7 +2243,7 @@ function renderCart(){
     return;
   }
   let html = `<table class="cart-table"><thead><tr>
-    <th>品名</th><th style="width:82px;">單價</th><th style="width:62px;">數量</th><th class="th-sub" style="width:84px;">小計</th><th class="th-note">備註</th><th style="width:26px;"></th><th style="width:78px;">上次購買</th><th style="width:64px;">歷史</th>
+    <th>品名</th><th style="width:82px;">單價</th><th class="th-qty" style="width:62px;">數量</th><th class="th-sub" style="width:84px;">小計</th><th class="th-note">備註</th><th style="width:26px;"></th><th style="width:78px;">上次購買</th><th style="width:64px;">歷史</th>
   </tr></thead><tbody>`;
   cart.forEach((it,i)=>{
     const isFee = !!it.special;
@@ -2223,7 +2256,7 @@ function renderCart(){
         ? `<input type="text" class="cart-name-input" data-idx="${i}" value="${escapeHtml(it.name)}" placeholder="臨時商品名稱">`
         : escapeHtml(it.name) + (it.disc ? `<span class="disc-tag">${it.disc}折</span>` : '') + mLast}</td>
       <td class="c-price"><input type="number" inputmode="decimal" class="cart-price" data-idx="${i}" value="${shownPrice === 0 && isFee ? '' : shownPrice}" ${isFee ? 'placeholder="金額"' : ''}></td>
-      <td class="c-qty">${isFee ? '<span style="display:block;text-align:center;color:var(--text);">—</span>' : `<input type="number" class="cart-qty" data-idx="${i}" value="${it.qty}" step="1">`}</td>
+      <td class="c-qty">${isFee ? '<span style="display:block;text-align:center;color:var(--text);">—</span>' : (touchQtyMq.matches ? `<div class="cq-step"><button type="button" class="cq-m" data-idx="${i}" aria-label="減少數量">−</button><button type="button" class="cq-v" data-idx="${i}" aria-label="輸入數量">${it.qty}</button><button type="button" class="cq-p" data-idx="${i}" aria-label="增加數量">＋</button></div>` : `<input type="number" class="cart-qty" data-idx="${i}" value="${it.qty}" step="1">`)}</td>
       <td class="cart-subtotal" id="subtotal-${i}">${fmt(it.unitPrice*it.qty)}</td>
       <td class="c-note"><input type="text" class="cart-note" data-idx="${i}" value="${escapeHtml(it.note)}" placeholder="備註…"></td>
       <td class="c-del"><button class="cart-del" data-idx="${i}">✕</button></td>
@@ -2278,18 +2311,20 @@ cartBody.addEventListener('input', (e)=>{
   updateCartTotals();
 });
 
+// 數量改成負數（退貨）或改回正數後，整理這一行的 key；若剛好和另一行同 key 就併成一行
+function rekeyAfterQty(i){
+  const it = cart[i]; if(!it) return;
+  const base = String(it.key).replace(/\|ret$/,'');
+  const nk = base + (it.qty < 0 ? '|ret' : '');
+  if(nk !== it.key){
+    const dup = cart.find((c,j)=> j!==i && c.key===nk);
+    if(dup && !it.special){ dup.qty += it.qty; cart.splice(i,1); } else it.key = nk;
+  }
+}
 cartBody.addEventListener('change', (e)=>{
   if(e.target.classList.contains('cart-qty')){
     const i = parseInt(e.target.dataset.idx,10), it = cart[i];
-    if(it){
-      const base = String(it.key).replace(/\|ret$/,'');
-      const nk = base + (it.qty < 0 ? '|ret' : '');
-      if(nk !== it.key){
-        const dup = cart.find((c,j)=> j!==i && c.key===nk);   // 正負切換後若剛好和另一行同 key，就併成一行
-        if(dup && !it.special){ dup.qty += it.qty; cart.splice(i,1); } else it.key = nk;
-      }
-      renderCart();
-    }
+    if(it){ rekeyAfterQty(i); renderCart(); }
     return;
   }
   if(e.target.classList.contains('hp-only')){ histOnlyCust = !e.target.checked; renderCart(); }
@@ -2326,6 +2361,130 @@ cartBody.addEventListener('click', (e)=>{
   cart.splice(i,1);
   renderCart();
 });
+
+// ===== iPad／觸控：出貨清單數量 − ＋ 與小數字盤（不叫系統鍵盤）=====
+// 單點 ±1；按住 0.4 秒後連續加減（約 2.5 秒後加速）。數量最少停在 1（避免手滑變退貨）；退貨列（負數）則是增減退貨數字大小。
+function setCartQtyInPlace(i, q){
+  const it = cart[i]; if(!it) return;
+  it.qty = q;
+  const tr = cartBody.querySelector(`tr[data-idx="${i}"]`);
+  if(tr){ const qv = tr.querySelector('.cq-v'); if(qv) qv.textContent = q; tr.classList.toggle('ret-row', q < 0 && !it.special); }
+  const subEl = document.getElementById('subtotal-' + i);
+  if(subEl) subEl.textContent = fmt(it.unitPrice * it.qty);
+  updateCartTotals();
+}
+function stepCartQty(i, d){
+  const it = cart[i]; if(!it) return false;
+  const neg = it.qty < 0, mag = Math.abs(it.qty);
+  const nm = Math.max(1, Math.min(9999, mag + d));
+  if(nm === mag) return false;
+  setCartQtyInPlace(i, neg ? -nm : nm);
+  return true;
+}
+let cqRepT = null, cqRepI = null, cqRepeated = false;
+function cqStopRepeat(){ clearTimeout(cqRepT); clearInterval(cqRepI); cqRepT = cqRepI = null; }
+cartBody.addEventListener('pointerdown', (e)=>{
+  const b = e.target.closest('.cq-m, .cq-p'); if(!b) return;
+  const i = parseInt(b.dataset.idx,10), d = b.classList.contains('cq-p') ? 1 : -1;
+  cqStopRepeat(); cqRepeated = false;
+  cqRepT = setTimeout(()=>{              // 按住超過 0.4 秒才開始連續（手指要捲動畫面時不會誤加）
+    cqRepeated = true; let n = 0;
+    stepCartQty(i, d);
+    cqRepI = setInterval(()=>{ n++; stepCartQty(i, d * (n > 20 ? 5 : 1)); }, 110);
+  }, 400);
+});
+['pointerup','pointercancel'].forEach(t => document.addEventListener(t, cqStopRepeat, true));
+window.addEventListener('blur', (e)=>{ if(e.target === window) cqStopRepeat(); });
+cartBody.addEventListener('contextmenu', (e)=>{ if(e.target.closest('.cq-step')) e.preventDefault(); });
+cartBody.addEventListener('click', (e)=>{
+  const b = e.target.closest('.cq-m, .cq-p, .cq-v'); if(!b) return;
+  const i = parseInt(b.dataset.idx,10);
+  if(b.classList.contains('cq-v')){ openQtyPad(i, b); return; }
+  if(cqRepeated){ cqRepeated = false; return; }      // 剛剛是長按連續加減，放手那一下不再多加
+  stepCartQty(i, b.classList.contains('cq-p') ? 1 : -1);
+});
+// 小數字盤
+function cqEnsurePad(){
+  if(cqPad) return cqPad;
+  cqPad = document.createElement('div'); cqPad.className = 'cq-pad';
+  cqPad.innerHTML = `<div class="cq-arrow"></div>
+    <div class="cq-disp"><div class="cq-cap"></div><div class="cq-val ghost">0</div></div>
+    <div class="cq-grid">
+      <button data-k="7">7</button><button data-k="8">8</button><button data-k="9">9</button><button class="cq-fn" data-k="bs" aria-label="倒退">⌫</button>
+      <button data-k="4">4</button><button data-k="5">5</button><button data-k="6">6</button><button class="cq-fn" data-k="pm" aria-label="正負（退貨）">±</button>
+      <button data-k="1">1</button><button data-k="2">2</button><button data-k="3">3</button><button class="cq-ok" data-k="ok">確定</button>
+      <button class="cq-k0" data-k="0">0</button><button data-k="00">00</button>
+    </div>
+    <div class="cq-note">± ＝ 改成退貨（負數）　點空白處＝取消</div>`;
+  document.body.appendChild(cqPad);
+  cqPad.querySelector('.cq-grid').addEventListener('click', (e)=>{
+    const k = e.target.closest('button') && e.target.closest('button').dataset.k; if(!k || cqCur === null) return;
+    const it = cart[cqCur]; if(!it) { closeQtyPad(); return; }
+    if(k === 'bs'){ cqBuf = cqBuf.slice(0,-1); }
+    else if(k === 'pm'){ cqNeg = !cqNeg; }
+    else if(k === 'ok'){
+      if(!cqBuf && cqNeg === (it.qty < 0)){ closeQtyPad(); return; }      // 什麼都沒改
+      const v = (cqBuf ? parseInt(cqBuf,10) : Math.abs(it.qty)) * (cqNeg ? -1 : 1);   // 只按了 ± ＝ 把目前數量正負對調
+      if(!v){ const el = cqPad.querySelector('.cq-val'); el.classList.add('shake'); setTimeout(()=>el.classList.remove('shake'), 260); return; }   // 數量不能是 0
+      const i = cqCur; closeQtyPad();
+      it.qty = v; rekeyAfterQty(i); renderCart();
+      return;
+    } else { let nb = (cqBuf + k).replace(/^0+/, ''); if(nb === '') nb = '0'; if(nb.length > 4) return; cqBuf = nb; }
+    cqShowVal();
+  });
+  return cqPad;
+}
+function cqShowVal(){
+  const it = cart[cqCur], el = cqPad.querySelector('.cq-val');
+  if(!cqBuf){ el.textContent = (cqNeg ? '−' : '') + (it ? Math.abs(it.qty) : 0); el.classList.add('ghost'); }   // 還沒輸入：灰字顯示目前數量
+  else { el.textContent = (cqNeg ? '−' : '') + cqBuf; el.classList.remove('ghost'); }
+}
+function openQtyPad(i, anchor){
+  const it = cart[i]; if(!it) return;
+  const ae = document.activeElement; if(ae && /^(INPUT|TEXTAREA|SELECT)$/.test(ae.tagName)) ae.blur();   // 先收起系統鍵盤
+  cqEnsurePad(); cqCur = i; cqAnchor = anchor; cqBuf = ''; cqNeg = it.qty < 0;
+  cartBody.querySelectorAll('tr.cq-editing').forEach(r => r.classList.remove('cq-editing'));
+  const tr = anchor.closest('tr'); if(tr) tr.classList.add('cq-editing');
+  cqPad.querySelector('.cq-cap').textContent = it.name;   // 目前數量用灰字顯示在下面的大數字
+  cqShowVal(); cqPad.classList.add('show'); placeQtyPad(true);
+}
+function closeQtyPad(){
+  if(!cqPad || !cqPad.classList.contains('show')) { cqCur = null; return; }
+  cqPad.classList.remove('show'); cqCur = null; cqAnchor = null;
+  cartBody.querySelectorAll('tr.cq-editing').forEach(r => r.classList.remove('cq-editing'));
+}
+function placeQtyPad(allowScroll){
+  if(cqCur === null || !cqAnchor || !cqAnchor.isConnected) return;
+  let r = cqAnchor.getBoundingClientRect();
+  const ob = document.getElementById('orderBottom');
+  const dockTop = (ob && ob.offsetHeight && ob.contains(document.getElementById('orderDock'))) ? ob.getBoundingClientRect().top : innerHeight;
+  const tw = document.getElementById('tabsStickyWrap');
+  const topLimit = Math.max(0, tw ? tw.getBoundingClientRect().bottom : 0) + 4;   // 數字盤浮在最上層，可蓋過清單標題列，只避開頁籤
+  const W = cqPad.offsetWidth, H = cqPad.offsetHeight, gap = 10;
+  const fitsBelow = () => r.bottom + gap + H <= dockTop - 4, fitsAbove = () => r.top - gap - H >= topLimit;
+  if(allowScroll && !fitsBelow() && !fitsAbove()){          // 上下都放不下：把這一列捲到「上方剛好放得下」的位置
+    const dy = r.top - (topLimit + H + gap), before = window.scrollY;
+    if(Math.abs(dy) > 1){ window.scrollBy({top: dy, behavior: 'instant'}); if(window.scrollY !== before) return placeQtyPad(false); }
+  }
+  let mode = fitsBelow() ? 'below' : (fitsAbove() ? 'above' : 'side');
+  let top, left;
+  if(mode === 'side'){                                        // 還是放不下：放在數量欄旁邊（右邊優先）
+    left = (innerWidth - r.right - gap - 8 >= W) ? r.right + gap : Math.max(8, r.left - gap - W);
+    top = Math.max(topLimit, Math.min(r.top + r.height/2 - H/2, dockTop - H - 4));
+  } else {
+    top = mode === 'below' ? r.bottom + gap : r.top - H - gap;
+    left = Math.max(8, Math.min(r.left + r.width/2 - W/2, innerWidth - W - 8));
+  }
+  cqPad.style.left = left + 'px'; cqPad.style.top = top + 'px';
+  cqPad.classList.toggle('below', mode === 'below'); cqPad.classList.toggle('above', mode === 'above'); cqPad.classList.toggle('side', mode === 'side');
+  if(mode !== 'side') cqPad.querySelector('.cq-arrow').style.left = Math.max(18, Math.min(W - 30, r.left + r.width/2 - left - 7)) + 'px';
+}
+document.addEventListener('pointerdown', (e)=>{
+  if(cqPad && cqPad.classList.contains('show') && !cqPad.contains(e.target) && !e.target.closest('.cq-v')) closeQtyPad();   // 點空白處＝取消
+}, true);
+window.addEventListener('scroll', ()=>{ if(cqCur !== null) requestAnimationFrame(()=>placeQtyPad(false)); }, {passive:true});
+window.addEventListener('resize', ()=>{ if(cqCur !== null) placeQtyPad(false); });
+if(touchQtyMq.addEventListener) touchQtyMq.addEventListener('change', ()=>renderCart());   // 轉直橫、外接滑鼠等造成模式改變時重畫
 
 document.getElementById('hideMoneyBtn').addEventListener('click', ()=>{ hideMoney = !hideMoney; renderCart(); });
 document.getElementById('taxModeBtn').addEventListener('click', ()=>{
