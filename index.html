@@ -2631,6 +2631,7 @@ function openPreviewFor(kind, order){
   document.getElementById('pvTitle').textContent = kind === 'receipt' ? '小張收據預覽（80mm）' : 'A4 帳單預覽';
   document.getElementById('previewOverlay').classList.toggle('rc-mode', kind === 'receipt');
   document.getElementById('previewOverlay').classList.add('on');
+  if(kind === 'receipt') rcFitMin(sheet);     // 預覽和實際列印一樣長
   document.getElementById('pvScroll').scrollTop = 0;
   pvFitWidth();
 }
@@ -2945,6 +2946,28 @@ function receiptHead(o){
         <span>${tax}</span><span style="white-space:nowrap;">${op}</span>
       </div>` : '');
 }
+// 小張收據最小長度：品名表（表頭＋明細）至少撐到「6 個單行商品」的高度，商品少也不會印出一張很小的收據。
+// 每列高 = 上下內距 8px + 行高 1.45em + 底線 1px；表頭同高（字級 12px 時每列約 26.4px）。商品多、品名換行時自然變長，不受影響
+const RC_MIN_ROWS = 6;
+const RC_MIN_ITEMS = `min-height:calc(${RC_MIN_ROWS + 1} * (1.45em + 9px));`;
+// 上面的 CSS 是保底（6 個「單行」商品）。實際的品名常常會換行，所以畫出來之後再量：
+// 用這張單「現有商品的平均列高」× 6 當最小高度——1 個兩行的商品，也會撐到 6 個兩行商品的長度
+function rcFitMin(root){
+  const box = root && root.querySelector('.rc-items'); if(!box) return;
+  box.style.cssText = RC_MIN_ITEMS;              // 先回到保底（6 個單行商品）
+  const rows = box.querySelectorAll('tbody tr'), head = box.querySelector('thead');
+  if(!rows.length || rows.length >= RC_MIN_ROWS || !head) return;
+  let sum = 0; rows.forEach(r => { sum += r.offsetHeight; });
+  if(!sum) return;                               // 還沒排版（隱藏中）就維持保底
+  const need = head.offsetHeight + RC_MIN_ROWS * (sum / rows.length);
+  if(need > box.offsetHeight) box.style.minHeight = need + 'px';
+}
+function rcFitMinOffscreen(pa){                  // 列印區平常是隱藏的：暫時放到畫面外、用 80mm 寬量
+  const old = pa.style.cssText;
+  pa.style.cssText = 'display:block; position:absolute; left:-9999px; top:0; width:80mm; padding:0;';
+  rcFitMin(pa);
+  pa.style.cssText = old;
+}
 function renderReceiptHtml(o){
   const c = o.customer;
   const td = 'padding:4px 0; vertical-align:top; border-bottom:1px dotted #000;';
@@ -2954,10 +2977,12 @@ function renderReceiptHtml(o){
     return `
     <div class="receipt-80" style="width:72mm; padding:2mm 1mm; color:#000; font-family:-apple-system,'PingFang TC','Microsoft JhengHei',sans-serif; font-size:12px; line-height:1.45; font-variant-numeric:tabular-nums;">
       ${receiptHead(o)}
+      <div class="rc-items" style="${RC_MIN_ITEMS}">
       <table style="width:100%; border-collapse:collapse; font-size:12px;">
         <thead><tr><th style="${th0} text-align:left;">品名</th><th style="${th0} text-align:center; padding-left:4px;">數量</th></tr></thead>
         <tbody>${items.map(l => `<tr><td style="${td} padding-right:4px;">${escapeHtml(l.name || '')}</td><td style="${td} text-align:center; white-space:nowrap;">${l.qty}</td></tr>`).join('')}</tbody>
       </table>
+      </div>
       <div style="border-top:3px double #000; margin-top:8px; padding-top:6px; display:flex; justify-content:flex-end; font-weight:700; font-size:16px;">共 ${items.reduce((s,l)=>s+fmtNum(l.qty),0)} 件</div>
     </div>`;
   }
@@ -2979,6 +3004,7 @@ function renderReceiptHtml(o){
   return `
     <div class="receipt-80" style="width:72mm; padding:2mm 1mm; color:#000; font-family:-apple-system,'PingFang TC','Microsoft JhengHei',sans-serif; font-size:12px; line-height:1.45; font-variant-numeric:tabular-nums;">
       ${receiptHead(o)}
+      <div class="rc-items" style="${RC_MIN_ITEMS}">
       <table style="width:100%; border-collapse:collapse; font-size:12px;">
         <thead><tr>
           <th style="${th} text-align:left;">品名</th>
@@ -2988,6 +3014,7 @@ function renderReceiptHtml(o){
         </tr></thead>
         <tbody>${rowsHtml}</tbody>
       </table>
+      </div>
       <div style="border-top:3px double #000; margin-top:8px; padding-top:6px;">${totals}</div>
     </div>`;
 }
@@ -3003,6 +3030,7 @@ function doPrint(kind){
   const name = printerCfg()[kind];
   const pa = document.getElementById('printArea');
   pa.classList.toggle('rc', kind === 'receipt');   // 小張收據無邊距；A4 要回到有邊距（之前印過收據後 A4 會沿用收據的樣式）
+  if(kind === 'receipt') rcFitMinOffscreen(pa);    // 商品少於 6 個：撐到 6 個商品的長度
   if(!window.posDesktop || !name){ window.print(); return; }
   if(printing) return;   // 連點兩下不會印兩張
   printing = true;
